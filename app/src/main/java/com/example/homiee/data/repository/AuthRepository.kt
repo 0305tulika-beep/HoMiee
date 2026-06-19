@@ -41,12 +41,17 @@ class AuthRepository {
                 val body = response.body()
                 if (body != null) ApiResult.Success(body)
                 else ApiResult.Error("Something went wrong. Please try again.")
-            } else {
-                val errorBody = response.errorBody()?.string()
-                ApiResult.Error(parseErrorMessage(errorBody, response.code(), isLoginCall))
-            }
-        } catch (e: Exception) {
-            ApiResult.Error("Unable to connect. Please check your internet connection.")
+             } else {
+            val errorBody = response.errorBody()?.string()
+            android.util.Log.e("API_ERROR", "HTTP ${response.code()} - Body: $errorBody")
+            val errorMessage = parseErrorMessage(errorBody, response.code(), isLoginCall)
+            ApiResult.Error(errorMessage)
+        }
+        }  catch (e: Exception) {
+        // Network failure (no internet, server down, timeout, etc.)
+        android.util.Log.e("API_ERROR", "Exception: ${e.javaClass.simpleName} - ${e.message}", e)
+        ApiResult.Error("Unable to connect. Please check your internet connection.")
+    }
         }
     }
 
@@ -83,4 +88,3 @@ class AuthRepository {
         429 -> "Too many attempts. Please try again later."
         else -> "Something went wrong. Please try again."
     }
-}

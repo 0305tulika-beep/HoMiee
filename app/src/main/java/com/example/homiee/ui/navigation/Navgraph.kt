@@ -48,17 +48,17 @@ object Routes {
 @Composable
 fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
     NavHost(
-        navController     = navController,
-        startDestination  = Routes.SPLASH,
-        enterTransition   = { EnterTransition.None },
-        exitTransition    = { ExitTransition.None },
+        navController      = navController,
+        startDestination   = Routes.SPLASH,
+        enterTransition    = { EnterTransition.None },
+        exitTransition     = { ExitTransition.None },
         popEnterTransition = { EnterTransition.None },
         popExitTransition  = { ExitTransition.None }
     ) {
         // ── Splash ────────────────────────────────────────────────────
         composable(Routes.SPLASH) {
-            SplashScreen {
-                navController.navigate(Routes.CHOICE) {
+            SplashScreen { destination ->
+                navController.navigate(destination) {
                     popUpTo(Routes.SPLASH) { inclusive = true }
                 }
             }
@@ -75,7 +75,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
 
         navigation(
             startDestination = Routes.SIGNUP_RES,
-            route = Routes.RESIDENT_AUTH_GRAPH
+            route             = Routes.RESIDENT_AUTH_GRAPH
         ) {
             composable(Routes.SIGNUP_RES) { entry ->
                 val parentEntry = remember(entry) {
@@ -93,10 +93,11 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                 val registerViewModel: RegisterViewModel = viewModel(parentEntry)
 
                 OtpScreen(
-                    email = registerViewModel.registeredEmail,
+                    email     = registerViewModel.registeredEmail,
+                    role      = "resident",
                     onConfirm = {
                         navController.navigate(Routes.RES_FORM_1) {
-                            popUpTo(Routes.RESIDENT_AUTH_GRAPH) { inclusive = true }
+                            popUpTo(Routes.SPLASH) { inclusive = true }
                         }
                     }
                 )
@@ -138,7 +139,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
 
         navigation(
             startDestination = Routes.SIGNUP_HELP,
-            route = Routes.HELPER_AUTH_GRAPH
+            route             = Routes.HELPER_AUTH_GRAPH
         ) {
             composable(Routes.SIGNUP_HELP) { entry ->
                 val parentEntry = remember(entry) {
@@ -156,39 +157,41 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                 val registerViewModel: RegisterViewModel = viewModel(parentEntry)
 
                 OtpScreen(
-                    email = registerViewModel.registeredEmail,
+                    email     = registerViewModel.registeredEmail,
+                    role      = "helper",
                     onConfirm = {
                         navController.navigate(Routes.HELP_FORM_1) {
-                            popUpTo(Routes.HELPER_AUTH_GRAPH) { inclusive = true }
+                            popUpTo(Routes.SPLASH) { inclusive = true }
                         }
                     }
                 )
             }
+        }
 
-            // ── Helper Login ──
-            composable(Routes.LOGIN_HELP) {
-                LoginScreen(navController, role = "helper")
-            }
+        // ── Helper Login ──
+        composable(Routes.LOGIN_HELP) {
+            LoginScreen(navController, role = "helper")
+        }
 
-            composable(Routes.HELP_FORM_1) {
-                HelpFormIdentityScreen { navController.navigate(Routes.HELP_FORM_2) }
-            }
-            composable(Routes.HELP_FORM_2) {
-                HelpFormServicesScreen { navController.navigate(Routes.HELP_FORM_3) }
-            }
-            composable(Routes.HELP_FORM_3) {
-                HelpFormSkillsScreen { navController.navigate(Routes.HELP_FORM_4) }
-            }
-            composable(Routes.HELP_FORM_4) {
-                HelpFormAvailabilityScreen {
-                    navController.navigate(Routes.HOME_HELP) {
-                        popUpTo(Routes.CHOICE) { inclusive = false }
-                    }
+        composable(Routes.HELP_FORM_1) {
+            HelpFormIdentityScreen { navController.navigate(Routes.HELP_FORM_2) }
+        }
+        composable(Routes.HELP_FORM_2) {
+            HelpFormServicesScreen { navController.navigate(Routes.HELP_FORM_3) }
+        }
+        composable(Routes.HELP_FORM_3) {
+            HelpFormSkillsScreen { navController.navigate(Routes.HELP_FORM_4) }
+        }
+        composable(Routes.HELP_FORM_4) {
+            HelpFormAvailabilityScreen {
+                navController.navigate(Routes.HOME_HELP) {
+                    popUpTo(Routes.CHOICE) { inclusive = false }
                 }
             }
-
-            composable(Routes.HOME_HELP) {
-                // TODO: HelperHomeScreen()
-            }
         }
-    }}
+
+        composable(Routes.HOME_HELP) {
+            // TODO: HelperHomeScreen()
+        }
+    }
+}

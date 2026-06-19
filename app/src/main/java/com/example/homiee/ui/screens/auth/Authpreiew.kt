@@ -70,6 +70,7 @@ fun OtpScreenPreview() {
     HomieeTheme {
         OtpScreen(
             email = "test@example.com",
+            role = "resident",
             onConfirm = {}
         )
     }

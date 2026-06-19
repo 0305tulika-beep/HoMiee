@@ -35,7 +35,7 @@ class OtpViewModel(application: Application) : AndroidViewModel(application) {
     private val _resendState = MutableStateFlow(ResendUiState())
     val resendState: StateFlow<ResendUiState> = _resendState
 
-    fun verifyOtp(email: String, otp: String) {
+    fun verifyOtp(email: String, otp: String, role: String) {   // ← role param added
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
@@ -43,10 +43,9 @@ class OtpViewModel(application: Application) : AndroidViewModel(application) {
 
             when (result) {
                 is ApiResult.Success -> {
-                    // Save tokens so user is logged in after registration
                     val tokens = result.data.data?.tokens
                     if (tokens != null) {
-                        tokenManager.saveTokens(tokens.access, tokens.refresh)
+                        tokenManager.saveTokens(tokens.access, tokens.refresh, role)   // ← role passed
                     }
                     _uiState.value = _uiState.value.copy(isLoading = false, isSuccess = true)
                 }

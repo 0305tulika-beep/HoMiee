@@ -8,8 +8,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -30,27 +33,38 @@ import com.example.homiee.viewmodel.OtpViewModel
 
 @Composable
 fun OtpScreen(
-    email: String,                                // ← NEW: which email this OTP belongs to
+    email: String,
+    role: String,
     onConfirm: () -> Unit,
-    viewModel: OtpViewModel = viewModel()          // ← NEW: creates/reuses the ViewModel
+    viewModel: OtpViewModel = viewModel()
 ) {
     var otpValue by remember { mutableStateOf("") }
 
-    // ── NEW: observe both verify and resend states ──
     val uiState by viewModel.uiState.collectAsState()
     val resendState by viewModel.resendState.collectAsState()
 
-    // ── NEW: when OTP verification succeeds, move to the next screen ──
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+        keyboardController?.show()
+    }
+
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
             onConfirm()
             viewModel.resetState()
         }
     }
+
     HideSystemBars()
+
+    // ── Outermost Box — NOT affected by systemBarsPadding, so bgw.png
+    // can truly stretch edge-to-edge horizontally ──
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // ── Background image (the green header — bg3.png) ──
+        // Green header image (unchanged)
         Image(
             painter            = painterResource(id = R.drawable.bg3),
             contentDescription = null,
@@ -60,106 +74,105 @@ fun OtpScreen(
                 .height(240.dp)
         )
 
-        Column(modifier = Modifier
-            .padding(systemBarsPadding())
-            .fillMaxSize()) {
+        // ── bgw.png card — placed directly in the outer Box, full width,
+        // same vertical position/height as before (170.dp from top) ──
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()                 // ← guarantees full screen width
+                .fillMaxHeight()
+                .padding(top = 170.dp)           // ← keeps the same vertical position
+        ) {
+            Image(
+                painter            = painterResource(id = R.drawable.bgw),
+                contentDescription = null,
+                contentScale       = ContentScale.FillBounds,
+                modifier           = Modifier.fillMaxSize()   // fills this full-width Box completely
+            )
 
-            // Push the white card down so the green header peeks out above it
-            Spacer(modifier = Modifier.height(170.dp))
-
-            // ── White curved card image (bgw.png) ──
-            Box(
+            // Content sits on top of bgw.png — system bar padding applied
+            // ONLY here, so it doesn't shrink the image itself
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .padding(systemBarsPadding())
+                    .padding(horizontal = 32.dp, vertical = 48.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Image(
-                    painter            = painterResource(id = R.drawable.bgw),
-                    contentDescription = null,
-                    contentScale       = ContentScale.FillBounds,
-                    modifier           = Modifier.fillMaxSize()
+                Text(
+                    text       = "Enter Security Pin",
+                    fontWeight = FontWeight.Bold,
+                    fontSize   = 18.sp,
+                    color      = TextPrimary
                 )
 
-                // Content sits on top of the bgw.png image
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 32.dp, vertical = 48.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Spacer(Modifier.height(32.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.clickable {
+                        focusRequester.requestFocus()
+                        keyboardController?.show()
+                    }
                 ) {
+                    repeat(6) { index ->
+                        OtpBox(digit = otpValue.getOrNull(index)?.toString() ?: "")
+                    }
+                }
+
+                OutlinedTextField(
+                    value           = otpValue,
+                    onValueChange   = { if (it.length <= 6) otpValue = it },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                    modifier        = Modifier
+                        .size(1.dp)
+                        .focusRequester(focusRequester),
+                    colors          = OutlinedTextFieldDefaults.colors(
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedBorderColor   = Color.Transparent
+                    )
+                )
+
+                if (uiState.errorMessage != null) {
+                    Spacer(Modifier.height(12.dp))
                     Text(
-                        text       = "Enter Security Pin",
+                        text     = uiState.errorMessage ?: "",
+                        color    = Color(0xFFD32F2F),
+                        fontSize = 13.sp
+                    )
+                }
+
+                Spacer(Modifier.height(40.dp))
+
+                HomieeButton(
+                    text     = if (uiState.isLoading) "Verifying..." else "Confirm",
+                    enabled  = otpValue.length == 6 && !uiState.isLoading,
+                    onClick  = {
+                        viewModel.verifyOtp(email = email, otp = otpValue, role = role)
+                    },
+                    modifier = Modifier.fillMaxWidth(0.65f)
+                )
+
+                Spacer(Modifier.height(20.dp))
+
+                Row {
+                    Text(
+                        text = if (resendState.isLoading) "Resending... " else "Didn't receive yet? ",
+                        color = TextMuted,
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        text       = "Resend it",
+                        color      = GreenMid,
                         fontWeight = FontWeight.Bold,
-                        fontSize   = 18.sp,
-                        color      = TextPrimary
-                    )
-
-                    Spacer(Modifier.height(32.dp))
-
-                    // OTP boxes (visual only)
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        repeat(6) { index ->
-                            OtpBox(digit = otpValue.getOrNull(index)?.toString() ?: "")
+                        fontSize   = 14.sp,
+                        modifier   = Modifier.clickable {
+                            viewModel.resendOtp(email = email)
                         }
-                    }
-
-                    // Hidden TextField driving OTP input
-                    OutlinedTextField(
-                        value           = otpValue,
-                        onValueChange   = { if (it.length <= 6) otpValue = it },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                        modifier        = Modifier.size(1.dp), // invisible, just captures focus
-                        colors          = OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = Color.Transparent,
-                            focusedBorderColor   = Color.Transparent
-                        )
                     )
-
-                    // ── NEW: show error message if verification failed ──
-                    if (uiState.errorMessage != null) {
-                        Spacer(Modifier.height(12.dp))
-                        Text(
-                            text     = uiState.errorMessage ?: "",
-                            color    = Color(0xFFD32F2F),
-                            fontSize = 13.sp
-                        )
-                    }
-
-                    Spacer(Modifier.height(40.dp))
-
-                    HomieeButton(
-                        text     = if (uiState.isLoading) "Verifying..." else "Confirm",
-                        enabled  = otpValue.length == 6 && !uiState.isLoading,  // ← NEW
-                        onClick  = {
-                            // ── NEW: call the ViewModel instead of navigating directly ──
-                            viewModel.verifyOtp(email = email, otp = otpValue)
-                        },
-                        modifier = Modifier.fillMaxWidth(0.65f)
-                    )
-
-                    Spacer(Modifier.height(20.dp))
-
-                    Row {
-                        Text(
-                            text = if (resendState.isLoading) "Resending... " else "Didn't receive yet? ",
-                            color = TextMuted,
-                            fontSize = 14.sp
-                        )
-                        Text(
-                            text       = "Resend it",
-                            color      = GreenMid,
-                            fontWeight = FontWeight.Bold,
-                            fontSize   = 14.sp,
-                            modifier   = Modifier.clickable {
-                                // ── NEW: call the ViewModel's resend function ──
-                                viewModel.resendOtp(email = email)
-                            }
-                        )
-                    }
                 }
             }
         }
 
-        // ── "Verify Your Number" title sits on top of bg3.png ──
         Text(
             text       = "Verify Your Number",
             style      = MaterialTheme.typography.titleLarge,

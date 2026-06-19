@@ -25,7 +25,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState
 
-    fun login(identifier: String, password: String) {
+    fun login(identifier: String, password: String, role: String) {
         if (identifier.isBlank() || password.isBlank()) {
             _uiState.value = _uiState.value.copy(
                 errorMessage = "Please enter both username/email and password."
@@ -42,7 +42,11 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                 is ApiResult.Success -> {
                     val tokens = result.data.data?.tokens
                     if (tokens != null) {
-                        tokenManager.saveTokens(tokens.access, tokens.refresh)
+                        tokenManager.saveTokens(
+                            access = tokens.access,
+                            refresh = tokens.refresh,
+                            role = role
+                        )
                         _uiState.value = _uiState.value.copy(isLoading = false, isSuccess = true)
                     } else {
                         _uiState.value = _uiState.value.copy(

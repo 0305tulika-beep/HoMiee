@@ -14,6 +14,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -22,6 +23,8 @@ import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.example.homiee.R
+import com.example.homiee.data.local.TokenManager
+import com.example.homiee.navigation.Routes
 import com.example.homiee.ui.theme.GreenDark
 import com.example.homiee.ui.theme.GreenLight
 import com.example.homiee.ui.theme.GreenMid
@@ -29,8 +32,10 @@ import com.example.homiee.ui.theme.White
 
 
 @Composable
-fun SplashScreen(onFinished: () -> Unit) {
+fun SplashScreen(onFinished: (String) -> Unit) {   // ← CHANGED: now passes the destination route
     val view = LocalView.current
+    val context = LocalContext.current
+    val tokenManager = remember { TokenManager(context) }   // ← NEW
 
     // Logo: pops in with overshoot (scale bounces past 1f then settles)
     val logoScale = remember { Animatable(0.3f) }
@@ -76,10 +81,20 @@ fun SplashScreen(onFinished: () -> Unit) {
         textOffsetY.animateTo(0f, animationSpec = tween(durationMillis = 350))
     }
 
-    // Auto-navigate after a shorter delay
+    // ── CHANGED: after the delay, check TokenManager and decide where to go ──
     LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(1600)
-        onFinished()
+
+        val token = tokenManager.getAccessToken()
+        val role  = tokenManager.getRole()
+
+        val destination = if (token != null && role != null) {
+            if (role == "helper") Routes.HELP_FORM_1 else Routes.RES_FORM_1
+        } else {
+            Routes.CHOICE
+        }
+
+        onFinished(destination)
     }
 
     Box(

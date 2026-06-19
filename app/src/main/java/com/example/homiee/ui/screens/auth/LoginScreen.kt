@@ -140,7 +140,7 @@ fun LoginScreen(
                 text    = if (uiState.isLoading) "Logging In..." else "Log In",
                 enabled = !uiState.isLoading,
                 onClick = {
-                    viewModel.login(identifier = username, password = password)
+                    viewModel.login(identifier = username, password = password, role = role)
                 }
             )
 
