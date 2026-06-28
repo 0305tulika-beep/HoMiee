@@ -10,9 +10,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.homiee.ui.components.NavTab
 import com.example.homiee.ui.screens.Residentflow.BookingsScreen
+import com.example.homiee.ui.screens.Residentflow.MyReviewsScreen
+import com.example.homiee.ui.screens.Residentflow.ProfileScreen
 import com.example.homiee.ui.screens.Residentflow.ResidentHomeScreen
 import com.example.homiee.ui.screens.Residentflow.SearchScreen
+import com.example.homiee.ui.screens.Residentflow.SettingsScreen
 import com.example.homiee.ui.screens.auth.*
 import com.example.homiee.ui.screens.resident.*
 import com.example.homiee.viewmodel.RegisterViewModel
@@ -33,11 +37,15 @@ object Routes {
     const val RES_FORM_5 = "res_form_photo"
 
     // Main resident screens
-    const val HOME_RES = "home_resident"
-    const val SEARCH   = "search"
-    const val BOOKINGS = "bookings"
-    const val MESSAGES = "messages"
-    const val ACCOUNT  = "account"
+    const val HOME_RES   = "home_resident"
+    const val SEARCH     = "search"
+    const val BOOKINGS   = "bookings"
+    const val MESSAGES   = "messages"
+    const val ACCOUNT    = "account"
+
+    // Sub screens (no bottom nav, back returns to profile)
+    const val SETTINGS   = "settings"
+    const val MY_REVIEWS = "my_reviews"
 
     fun otpRoute(email: String): String {
         val encoded = URLEncoder.encode(email, "UTF-8")
@@ -45,7 +53,14 @@ object Routes {
     }
 }
 
-// Shared nav helper — all main screens use this same lambda pattern
+fun NavTab.toRoute() = when (this) {
+    NavTab.HOME     -> Routes.HOME_RES
+    NavTab.SEARCH   -> Routes.SEARCH
+    NavTab.BOOKINGS -> Routes.BOOKINGS
+    NavTab.ACCOUNT  -> Routes.ACCOUNT
+    NavTab.MESSAGE -> TODO()
+}
+
 private fun NavHostController.navigateMain(route: String) {
     navigate(route) {
         popUpTo(Routes.HOME_RES) { saveState = true }
@@ -65,7 +80,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         popExitTransition  = { ExitTransition.None }
     ) {
 
-        // ── Splash ──────────────────────────────────────────────────────────
+        // ── Splash ──
         composable(Routes.SPLASH) {
             SplashScreen { destination ->
                 navController.navigate(destination) {
@@ -74,7 +89,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             }
         }
 
-        // ── Signup ──────────────────────────────────────────────────────────
+        // ── Signup ──
         composable(Routes.SIGNUP_ROUTE) {
             val registerViewModel: RegisterViewModel = viewModel()
             SignUpScreen(
@@ -86,7 +101,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             )
         }
 
-        // ── OTP ─────────────────────────────────────────────────────────────
+        // ── OTP ──
         composable(
             route     = Routes.OTP_ROUTE,
             arguments = listOf(navArgument("email") { type = NavType.StringType })
@@ -103,7 +118,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             )
         }
 
-        // ── Login ────────────────────────────────────────────────────────────
+        // ── Login ──
         composable(Routes.LOGIN_ROUTE) {
             LoginScreen(
                 navController  = navController,
@@ -115,7 +130,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             )
         }
 
-        // ── Resident Forms ───────────────────────────────────────────────────
+        // ── Resident Forms ──
         composable(Routes.RES_FORM_1) { ResFormAddressScreen  { navController.navigate(Routes.RES_FORM_2) } }
         composable(Routes.RES_FORM_2) { ResFormServicesScreen { navController.navigate(Routes.RES_FORM_3) } }
         composable(Routes.RES_FORM_3) { ResFormScheduleScreen { navController.navigate(Routes.RES_FORM_4) } }
@@ -128,37 +143,53 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             }
         }
 
-        // ── Resident Home ── (FLOOR) ─────────────────────────────────────────
+        // ── Resident Home ── (FLOOR)
         composable(Routes.HOME_RES) {
             ResidentHomeScreen(
                 onNavItemClick = { navController.navigateMain(it) }
             )
         }
 
-        // ── Search ───────────────────────────────────────────────────────────
+        // ── Search ──
         composable(Routes.SEARCH) {
             SearchScreen(
-                onViewProfile  = { /* TODO: navController.navigate(Routes.helperProfile(it)) */ },
-                onBook         = { /* TODO: navController.navigate(Routes.booking(it)) */ },
+                onViewProfile  = { },
+                onBook         = { },
                 onNavItemClick = { navController.navigateMain(it) }
             )
         }
 
-        // ── Bookings ─────────────────────────────────────────────────────────
+        // ── Bookings ──
         composable(Routes.BOOKINGS) {
             BookingsScreen(
                 onNavItemClick = { navController.navigateMain(it) }
             )
         }
 
-        // ── Messages (placeholder) ───────────────────────────────────────────
-        composable(Routes.MESSAGES) {
-            // TODO: MessagesScreen(onNavItemClick = { navController.navigateMain(it) })
+        // ── Messages placeholder ──
+        composable(Routes.MESSAGES) { }
+
+        // ── Account / Profile ── (bottom nav screen)
+        composable(Routes.ACCOUNT) {
+            ProfileScreen(
+                onNavItemClick   = { navController.navigateMain(it) },
+                onSettingsClick  = { navController.navigate(Routes.SETTINGS) },
+                onMyReviewsClick = { navController.navigate(Routes.MY_REVIEWS) }
+            )
         }
 
-        // ── Account (placeholder) ────────────────────────────────────────────
-        composable(Routes.ACCOUNT) {
-            // TODO: AccountScreen(onNavItemClick = { navController.navigateMain(it) })
+        // ── Settings ── (no bottom nav, back → profile)
+        composable(Routes.SETTINGS) {
+            SettingsScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // ── My Reviews ── (no bottom nav, back → profile)
+        composable(Routes.MY_REVIEWS) {
+            MyReviewsScreen(
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }

@@ -7,7 +7,7 @@ import com.example.homiee.ui.theme.HomieeTheme
 @Preview(showBackground = true, showSystemUi = true, name = "Resident Home")
 @Composable
 fun ResidentHomePreview() {
-    HomieeTheme { ResidentHomeScreen() }
+    HomieeTheme { ResidentHomeScreen(onNavItemClick = {}) }
 }
 
 @Preview(showBackground = true, showSystemUi = true, name = "Search Screen")
@@ -25,7 +25,29 @@ fun SearchScreenPreview() {
 @Preview(showBackground = true, showSystemUi = true, name = "Bookings Screen")
 @Composable
 fun BookingsScreenPreview() {
+    HomieeTheme { BookingsScreen(onNavItemClick = {}) }
+}
+
+@Preview(showBackground = true, showSystemUi = true, name = "Profile Screen")
+@Composable
+fun ProfileScreenPreview() {
     HomieeTheme {
-        BookingsScreen(onNavItemClick = {})
+        ProfileScreen(
+            onNavItemClick   = {},
+            onSettingsClick  = {},
+            onMyReviewsClick = {}
+        )
     }
+}
+
+@Preview(showBackground = true, showSystemUi = true, name = "Settings Screen")
+@Composable
+fun SettingsScreenPreview() {
+    HomieeTheme { SettingsScreen(onBack = {}) }
+}
+
+@Preview(showBackground = true, showSystemUi = true, name = "My Reviews Screen")
+@Composable
+fun MyReviewsScreenPreview() {
+    HomieeTheme { MyReviewsScreen(onBack = {}) }
 }
