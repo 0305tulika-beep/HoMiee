@@ -42,6 +42,7 @@ fun BottomNavBar(
             NavBarItem(R.drawable.nv1, NavTab.HOME,     selectedTab, onTabSelected)
             NavBarItem(R.drawable.nv2, NavTab.SEARCH,   selectedTab, onTabSelected)
             NavBarItem(R.drawable.nv3, NavTab.BOOKINGS, selectedTab, onTabSelected)
+            NavBarItem(R.drawable.nv4, NavTab.MESSAGE,  selectedTab, onTabSelected)
             NavBarItem(R.drawable.nv5, NavTab.ACCOUNT,  selectedTab, onTabSelected)
         }
     }

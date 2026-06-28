@@ -25,7 +25,13 @@ fun SearchScreenPreview() {
 @Preview(showBackground = true, showSystemUi = true, name = "Bookings Screen")
 @Composable
 fun BookingsScreenPreview() {
-    HomieeTheme { BookingsScreen(onNavItemClick = {}) }
+    HomieeTheme {
+        BookingsScreen(
+            bookings       = emptyList(),
+            onNavItemClick = {},
+            onDetailsClick = {}
+        )
+    }
 }
 
 @Preview(showBackground = true, showSystemUi = true, name = "Profile Screen")
@@ -60,6 +66,49 @@ fun HelperProfileScreenPreview() {
             helperId  = "test_001",
             onBookNow = {},
             onBack    = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true, name = "New Booking")
+@Composable
+fun NewBookingScreenPreview() {
+    HomieeTheme {
+        NewBookingScreen(
+            helperName         = "Ramesh Kumar",
+            helperService      = "House Cleaning",
+            helperRating       = 4.9f,
+            onBookingConfirmed = {},
+            onBack             = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true, name = "Booking Confirmation")
+@Composable
+fun BookingConfirmationScreenPreview() {
+    HomieeTheme {
+        BookingConfirmationScreen(
+            bookingId   = "hsdgfsgd",
+            helperName  = "Ramesh Kumar",
+            bookingDate = "Jun 12, 2026",
+            bookingTime = "10:00 AM",
+            onTimeout   = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true, name = "Booking Details")
+@Composable
+fun BookingDetailsScreenPreview() {
+    HomieeTheme {
+        BookingDetailsScreen(
+            bookingId   = "dfgfjhadg",
+            helperName  = "Ramesh Kumar",
+            service     = "Cleaning",
+            bookingDate = "Jun 12, 2026",
+            bookingTime = "10:00 AM",
+            onBack      = {}
         )
     }
 }

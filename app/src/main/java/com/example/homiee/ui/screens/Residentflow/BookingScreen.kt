@@ -1,5 +1,6 @@
 package com.example.homiee.ui.screens.Residentflow
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -9,6 +10,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,17 +30,14 @@ import com.example.homiee.navigation.Routes
 import com.example.homiee.ui.components.BottomNavBar
 import com.example.homiee.ui.components.NavTab
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
+import com.example.homiee.ui.theme.GreenDark
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 private val GreenPrimary  = Color(0xFF1A5C3A)
-private val GreenLight    = Color(0xFFE8F5EE)
-private val RedSOS        = Color(0xFFD32F2F)
 private val TextPrimary   = Color(0xFF1A1A1A)
 private val TextSecondary = Color(0xFF7A7A7A)
 private val StarColor     = Color(0xFFF4B400)
 private val CardBg        = Color.White
-private val ActiveBadge   = Color(0xFFE8F5EE)
-private val ActiveText    = Color(0xFF1A5C3A)
 
 // ── Data ───────────────────────────────────────────────────────────────────────
 enum class BookingTab { UPCOMING, ACTIVE, COMPLETED }
@@ -48,24 +48,33 @@ data class BookingItem(
     val service: String,
     val rating: Float,
     val status: BookingTab,
+    val isPending: Boolean = false,
+    val bookingDate: String = "",
+    val bookingTime: String = "",
     val initials: String = helperName.take(2).uppercase()
 )
 
 private val MOCK_BOOKINGS = listOf(
-    BookingItem("b001", "Ramesh Kumar", "Cleaning",    4.9f, BookingTab.ACTIVE),
-    BookingItem("b002", "Ramesh Kumar", "Cleaning",    4.9f, BookingTab.ACTIVE),
-    BookingItem("b003", "Sunita Devi",  "Cooking",     4.8f, BookingTab.UPCOMING),
-    BookingItem("b004", "Meena Verma",  "Laundry",     4.7f, BookingTab.COMPLETED),
+    BookingItem("b001", "Ramesh Kumar", "Cleaning", 4.9f, BookingTab.ACTIVE),
+    BookingItem("b002", "Ramesh Kumar", "Cleaning", 4.9f, BookingTab.ACTIVE),
+    BookingItem("b003", "Sunita Devi",  "Cooking",  4.8f, BookingTab.UPCOMING,
+        isPending = true,  bookingDate = "Jun 15, 2026", bookingTime = "10:00 AM"),
+    BookingItem("b004", "Kavita Singh", "Laundry",  4.6f, BookingTab.UPCOMING,
+        isPending = false, bookingDate = "Jun 16, 2026", bookingTime = "2:00 PM"),
+    BookingItem("b005", "Meena Verma",  "Laundry",  4.7f, BookingTab.COMPLETED),
 )
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
 @Composable
 fun BookingsScreen(
-    onNavItemClick: (String) -> Unit = {}
+    bookings: List<BookingItem>,
+    onNavItemClick: (String) -> Unit = {},
+    onDetailsClick: (String) -> Unit = {},
+    initialTab: BookingTab = BookingTab.UPCOMING
 ) {
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = false)
 
-    var selectedTab by remember { mutableStateOf(BookingTab.ACTIVE) }
+    var selectedTab by remember { mutableStateOf(initialTab) }
 
     val filteredBookings = remember(selectedTab) {
         MOCK_BOOKINGS.filter { it.status == selectedTab }
@@ -92,7 +101,6 @@ fun BookingsScreen(
 
         Box(modifier = Modifier.fillMaxSize()) {
 
-            // bg.png full screen background
             Image(
                 painter            = painterResource(R.drawable.bg),
                 contentDescription = null,
@@ -107,7 +115,7 @@ fun BookingsScreen(
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
 
-                // ── Header ──────────────────────────────────────────────────
+                // ── Header ───────────────────────────────────────────────────
                 item {
                     Text(
                         text       = "MY BOOKINGS",
@@ -130,8 +138,7 @@ fun BookingsScreen(
                     ) {
                         BookingTab.values().forEach { tab ->
                             BookingTabChip(
-                                label      = tab.name.lowercase()
-                                    .replaceFirstChar { it.uppercase() },
+                                label      = tab.name.lowercase().replaceFirstChar { it.uppercase() },
                                 isSelected = selectedTab == tab,
                                 onClick    = { selectedTab = tab },
                                 modifier   = Modifier.weight(1f)
@@ -141,13 +148,22 @@ fun BookingsScreen(
                     Spacer(Modifier.height(16.dp))
                 }
 
-                // ── Booking cards ────────────────────────────────────────────
+                // ── Cards ────────────────────────────────────────────────────
                 items(filteredBookings, key = { it.id }) { booking ->
-                    BookingCard(
-                        booking  = booking,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                    )
+                    if (booking.isPending) {
+                        PendingBookingCard(
+                            booking  = booking,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 5.dp)
+                        )
+                    } else {
+                        BookingCard(
+                            booking        = booking,
+                            onDetailsClick = onDetailsClick,
+                            modifier       = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                        )
+                    }
                 }
+
 
                 // ── Empty state ──────────────────────────────────────────────
                 if (filteredBookings.isEmpty()) {
@@ -197,10 +213,83 @@ private fun BookingTabChip(
     }
 }
 
-// ── Booking card ───────────────────────────────────────────────────────────────
+// ── Pending booking card (narrow, amber) ───────────────────────────────────────
+@Composable
+private fun PendingBookingCard(
+    booking: BookingItem,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier  = modifier.fillMaxWidth(),
+        shape     = RoundedCornerShape(12.dp),
+        colors    = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier              = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier          = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier         = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFF57F17)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text       = booking.initials,
+                        color      = Color.White,
+                        fontSize   = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
+                Column {
+                    Text(
+                        text       = booking.helperName,
+                        fontSize   = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color      = TextPrimary
+                    )
+                    Text(
+                        text     = "${booking.service} · ${booking.bookingDate} · ${booking.bookingTime}",
+                        fontSize = 11.sp,
+                        color    = TextSecondary
+                    )
+                }
+            }
+
+            Spacer(Modifier.width(8.dp))
+
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Color(0xFFF57F17))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text       = "Pending",
+                    color      = Color.White,
+                    fontSize   = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+// ── Full booking card ──────────────────────────────────────────────────────────
 @Composable
 private fun BookingCard(
     booking: BookingItem,
+    onDetailsClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -277,9 +366,7 @@ private fun BookingCard(
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text       = booking.status.name
-                            .lowercase()
-                            .replaceFirstChar { it.uppercase() },
+                        text       = booking.status.name.lowercase().replaceFirstChar { it.uppercase() },
                         color      = badgeTextColor,
                         fontSize   = 12.sp,
                         fontWeight = FontWeight.SemiBold
@@ -291,55 +378,113 @@ private fun BookingCard(
             HorizontalDivider(color = Color(0xFFF0F0F0), thickness = 0.5.dp)
             Spacer(Modifier.height(14.dp))
 
-            // ── Button changes per tab ───────────────────────────────────────
-            when (booking.status) {
-
-                BookingTab.ACTIVE -> Button(
-                    onClick  = { /* TODO: SOS */ },
-                    shape    = RoundedCornerShape(10.dp),
-                    colors   = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFD32F2F)
-                    ),
-                    modifier = Modifier.fillMaxWidth().height(44.dp)
+            // ── 3-button row ─────────────────────────────────────────────────
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick        = { },
+                    shape          = RoundedCornerShape(10.dp),
+                    border         = BorderStroke(1.5.dp, GreenPrimary),
+                    colors         = ButtonDefaults.outlinedButtonColors(contentColor = GreenPrimary),
+                    modifier       = Modifier.weight(1f).height(44.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp)
                 ) {
-                    Text(
-                        "Emergency SOS",
-                        color      = Color.White,
-                        fontSize   = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("Chat", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = GreenDark)
                 }
 
-                BookingTab.UPCOMING -> Button(
-                    onClick  = { /* TODO: cancel booking */ },
-                    shape    = RoundedCornerShape(10.dp),
-                    colors   = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF7A7A7A)
-                    ),
-                    modifier = Modifier.fillMaxWidth().height(44.dp)
+                OutlinedButton(
+                    onClick        = { onDetailsClick(booking.id)},
+                    shape          = RoundedCornerShape(10.dp),
+                    border         = BorderStroke(1.5.dp, GreenPrimary),
+                    colors         = ButtonDefaults.outlinedButtonColors(contentColor = GreenPrimary),
+                    modifier       = Modifier.weight(1f).height(44.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp)
                 ) {
-                    Text(
-                        "Cancel Booking",
-                        color      = Color.White,
-                        fontSize   = 14.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                    Text("Details", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = GreenDark)
                 }
 
-                BookingTab.COMPLETED -> Button(
-                    onClick  = { /* TODO: review */ },
-                    shape    = RoundedCornerShape(10.dp),
-                    colors   = ButtonDefaults.buttonColors(
-                        containerColor = GreenPrimary
-                    ),
-                    modifier = Modifier.fillMaxWidth().height(44.dp)
+                when (booking.status) {
+                    BookingTab.ACTIVE -> Button(
+                        onClick        = { },
+                        shape          = RoundedCornerShape(10.dp),
+                        colors         = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                        modifier       = Modifier.weight(1f).height(44.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp)
+                    ) {
+                        Text("SOS", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    BookingTab.UPCOMING -> Button(
+                        onClick        = { },
+                        shape          = RoundedCornerShape(10.dp),
+                        colors         = ButtonDefaults.buttonColors(containerColor = Color(0xFF7A7A7A)),
+                        modifier       = Modifier.weight(1f).height(44.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp)
+                    ) {
+                        Text("Cancel", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    }
+
+                    BookingTab.COMPLETED -> Button(
+                        onClick        = { },
+                        shape          = RoundedCornerShape(10.dp),
+                        colors         = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
+                        modifier       = Modifier.weight(1f).height(44.dp),
+                        contentPadding = PaddingValues(horizontal = 4.dp)
+                    ) {
+                        Text("Review", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    }
+                }
+            }
+
+            // ── Live activity banner — Active only ───────────────────────────
+            if (booking.status == BookingTab.ACTIVE) {
+                Spacer(Modifier.height(12.dp))
+                HorizontalDivider(color = Color(0xFFF0F0F0), thickness = 0.5.dp)
+                Spacer(Modifier.height(12.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0xFFE8F5EE))
+                        .clickable { }
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
                 ) {
-                    Text(
-                        "Leave a Review",
-                        color      = Color.White,
-                        fontSize   = 14.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                    Row(
+                        verticalAlignment     = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier              = Modifier.fillMaxWidth()
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(GreenPrimary)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text       = "Helper is currently active",
+                                    fontSize   = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color      = Color(0xFF1A5C3A)
+                                )
+                                Text(
+                                    text     = "Tap to track activity",
+                                    fontSize = 11.sp,
+                                    color    = Color(0xFF2E7D55)
+                                )
+                            }
+                        }
+                        Icon(
+                            imageVector        = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint               = GreenPrimary,
+                            modifier           = Modifier.size(16.dp)
+                        )
+                    }
                 }
             }
         }

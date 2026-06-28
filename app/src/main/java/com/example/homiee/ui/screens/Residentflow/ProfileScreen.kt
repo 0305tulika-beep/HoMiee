@@ -82,7 +82,7 @@ fun ProfileScreen(
                 ) {
                     Text(
                         text       = "PROFILE",
-                        fontSize   = 20.sp,
+                        fontSize   = 25.sp,
                         fontWeight = FontWeight.Bold,
                         color      = White,
                         modifier   = Modifier.align(Alignment.CenterStart)

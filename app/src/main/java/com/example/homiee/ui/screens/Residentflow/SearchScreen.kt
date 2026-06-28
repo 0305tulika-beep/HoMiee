@@ -348,8 +348,8 @@ private fun SearchHelperCard(
                 contentDescription = "Book",
                 contentScale       = ContentScale.Fit,
                 modifier           = Modifier
-                    .height(36.dp)
-                    .width(90.dp)
+                    .height(30.dp)
+                    .width(80.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .clickable { onBook() }
             )

@@ -37,11 +37,10 @@ import com.example.homiee.ui.theme.TextPrimary
 import com.example.homiee.ui.theme.White
 
 @Composable
-@Composable
 fun ResidentHomeScreen(
     onNavItemClick: (String) -> Unit = {},
     onBookClick: (String) -> Unit = {}    // ← ADD THIS LINE
-) { {
+) {
     val context = LocalContext.current
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = true)
 
@@ -312,8 +311,8 @@ private fun HelperCard(name: String, service: String, rating: String) {
                 contentDescription = "Book",
                 contentScale       = ContentScale.Fit,
                 modifier           = Modifier
-                    .width(120.dp)
-                    .height(36.dp)
+                    .width(100.dp)
+                    .height(30.dp)
             )
         }
     }

@@ -302,25 +302,41 @@ fun HelperProfileScreen(
                 }
             }
         }
-
-        // ── Book Now button ──────────────────────────────────────────────
-        Button(
-            onClick  = { onBookNow(helperId) },
-            shape    = RoundedCornerShape(14.dp),
-            colors   = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
-            modifier = Modifier
+        Row(
+            modifier              = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
-                .padding(bottom = 24.dp)
-                .width(200.dp)
-                .height(48.dp)
+                .padding(bottom = 24.dp, start = 16.dp, end = 16.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)
         ) {
-            Text(
-                text       = "Book Now",
-                color      = Color.White,
-                fontSize   = 15.sp,
-                fontWeight = FontWeight.Bold
-            )
+            // Chat button
+            OutlinedButton(
+                onClick  = { /* TODO: chat */ },
+                shape    = RoundedCornerShape(14.dp),
+                border   = androidx.compose.foundation.BorderStroke(1.5.dp, GreenPrimary),
+                colors   = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Color.White,
+                    contentColor   = GreenPrimary
+                ),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp)
+            ) {
+                Text("Chat", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = GreenPrimary)
+            }
+
+            // Book Now button
+            Button(
+                onClick  = { onBookNow(helperId) },
+                shape    = RoundedCornerShape(14.dp),
+                colors   = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp)
+            ) {
+                Text("Book Now", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            }
         }
     }
 }

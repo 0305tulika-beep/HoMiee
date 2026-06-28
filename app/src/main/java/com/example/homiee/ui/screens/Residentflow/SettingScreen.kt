@@ -60,7 +60,7 @@ fun SettingsScreen(
                 }
                 Text(
                     text       = "SETTINGS",
-                    fontSize   = 20.sp,
+                    fontSize   = 25.sp,
                     fontWeight = FontWeight.Bold,
                     color      = White
                 )

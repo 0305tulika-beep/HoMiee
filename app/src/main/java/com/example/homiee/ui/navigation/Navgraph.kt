@@ -3,6 +3,10 @@ package com.example.homiee.navigation
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -14,6 +18,8 @@ import com.example.homiee.ui.components.NavTab
 import com.example.homiee.ui.screens.Residentflow.*
 import com.example.homiee.ui.screens.auth.*
 import com.example.homiee.ui.screens.resident.*
+import com.example.homiee.viewmodel.BookingViewModel
+import com.example.homiee.viewmodel.BookingViewModelFactory
 import com.example.homiee.viewmodel.RegisterViewModel
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -43,7 +49,21 @@ object Routes {
     const val MY_REVIEWS     = "my_reviews"
     const val HELPER_PROFILE = "helper_profile/{helperId}"
 
+    // ── Booking flow ──
+    const val NEW_BOOKING        = "new_booking/{helperName}/{service}/{rating}"
+    const val BOOKING_CONFIRMED  = "booking_confirmed/{bookingId}"
+    const val BOOKING_DETAILS    = "booking_details/{bookingId}"
+
     fun helperProfileRoute(helperId: String) = "helper_profile/$helperId"
+
+    fun newBookingRoute(helperName: String, service: String, rating: Float): String {
+        val encodedName = URLEncoder.encode(helperName, "UTF-8")
+        val encodedService = URLEncoder.encode(service, "UTF-8")
+        return "new_booking/$encodedName/$encodedService/$rating"
+    }
+
+    fun bookingConfirmedRoute(bookingId: String) = "booking_confirmed/$bookingId"
+    fun bookingDetailsRoute(bookingId: String) = "booking_details/$bookingId"
 
     fun otpRoute(email: String): String {
         val encoded = URLEncoder.encode(email, "UTF-8")
@@ -69,6 +89,12 @@ private fun NavHostController.navigateMain(route: String) {
 
 @Composable
 fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
+
+    val context = LocalContext.current
+    val bookingViewModel: BookingViewModel = viewModel(
+        factory = BookingViewModelFactory(context)
+    )
+
     NavHost(
         navController      = navController,
         startDestination   = Routes.SPLASH,
@@ -142,6 +168,24 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
 
         // ── Main tabs ────────────────────────────────────────────────────────
         composable(Routes.HOME_RES) {
+            // ── Check on Home load whether a confirmation popup is owed
+            // (covers "app was closed while booking was pending, helper confirmed
+            // while app was killed, popup should show next time app opens") ──
+            LaunchedEffect(Unit) {
+                bookingViewModel.checkPendingConfirmation()
+            }
+            val showConfirmation by bookingViewModel.showConfirmation.collectAsState()
+            val lastBooking by bookingViewModel.lastCreatedBooking.collectAsState()
+
+            LaunchedEffect(showConfirmation) {
+                if (showConfirmation && lastBooking != null) {
+                    navController.navigate(Routes.bookingConfirmedRoute(lastBooking!!.id)) {
+                        // Never backstacked — this nav happens on top of Home,
+                        // and the Confirmation screen itself uses popUpTo on timeout (see below)
+                    }
+                }
+            }
+
             ResidentHomeScreen(
                 onNavItemClick = { navController.navigateMain(it) },
                 onBookClick = { helperId: String ->
@@ -163,7 +207,14 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         }
 
         composable(Routes.BOOKINGS) {
-            BookingsScreen(onNavItemClick = { navController.navigateMain(it) })
+            val bookings by bookingViewModel.bookings.collectAsState()
+            BookingsScreen(
+                bookings       = bookings,
+                onNavItemClick = { navController.navigateMain(it) },
+                onDetailsClick = { bookingId ->
+                    navController.navigate(Routes.bookingDetailsRoute(bookingId))
+                }
+            )
         }
 
         composable(Routes.MESSAGES) { /* TODO: MessagesScreen */ }
@@ -201,10 +252,80 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             HelperProfileScreen(
                 helperId  = helperId,
                 onBookNow = { id ->
-                    // TODO: navigate to booking confirmation
-                    // navController.navigate(Routes.bookingConfirmation(id))
+                    navController.navigate(Routes.newBookingRoute("Ramesh Kumar", "Cleaning", 4.9f))
                 },
                 onBack    = { navController.popBackStack() }
+            )
+        }
+
+        // ── New Booking ── opened from "Book Now" on Helper Profile ──────────
+        composable(
+            route     = Routes.NEW_BOOKING,
+            arguments = listOf(
+                navArgument("helperName") { type = NavType.StringType },
+                navArgument("service")    { type = NavType.StringType },
+                navArgument("rating")     { type = NavType.FloatType }
+            )
+        ) { backStackEntry ->
+            val helperName = URLDecoder.decode(backStackEntry.arguments?.getString("helperName") ?: "", "UTF-8")
+            val service    = URLDecoder.decode(backStackEntry.arguments?.getString("service") ?: "", "UTF-8")
+            val rating      = backStackEntry.arguments?.getFloat("rating") ?: 0f
+
+            NewBookingScreen(
+                helperName         = helperName,
+                helperService      = service,
+                helperRating       = rating,
+                onBookingConfirmed = { bookingId ->
+                    // Booking shows "Pending" on the Bookings page; go straight there.
+                    // No Confirmation popup yet — that happens later when "helper accepts" fires.
+                    navController.navigate(Routes.BOOKINGS) {
+                        popUpTo(Routes.HOME_RES) { inclusive = false }
+                    }
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // ── Booking Confirmation ── auto-dismiss, never backstacked ──────────
+        composable(
+            route     = Routes.BOOKING_CONFIRMED,
+            arguments = listOf(navArgument("bookingId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
+            val booking = bookingViewModel.getBookingById(bookingId)
+
+            BookingConfirmationScreen(
+                bookingId   = bookingId,
+                helperName  = booking?.helperName ?: "Helper",
+                bookingDate = booking?.bookingDate ?: "",
+                bookingTime = booking?.bookingTime ?: "",
+                onTimeout   = {
+                    bookingViewModel.dismissConfirmation()
+                    navController.navigate(Routes.bookingDetailsRoute(bookingId)) {
+                        // This screen itself is removed from the stack so back-press
+                        // from Details skips straight past it, and it can never be
+                        // revisited or re-triggered by pressing back.
+                        popUpTo(Routes.BOOKING_CONFIRMED) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // ── Booking Details ── opened from Confirmation timeout OR Bookings "Details" ──
+        composable(
+            route     = Routes.BOOKING_DETAILS,
+            arguments = listOf(navArgument("bookingId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
+            val booking = bookingViewModel.getBookingById(bookingId)
+
+            BookingDetailsScreen(
+                bookingId   = bookingId,
+                helperName  = booking?.helperName ?: "Helper",
+                service     = booking?.service ?: "",
+                bookingDate = booking?.bookingDate ?: "",
+                bookingTime = booking?.bookingTime ?: "",
+                onBack      = { navController.popBackStack() }
             )
         }
     }
