@@ -51,3 +51,15 @@ fun SettingsScreenPreview() {
 fun MyReviewsScreenPreview() {
     HomieeTheme { MyReviewsScreen(onBack = {}) }
 }
+
+@Preview(showBackground = true, showSystemUi = true, name = "Helper Profile Screen")
+@Composable
+fun HelperProfileScreenPreview() {
+    HomieeTheme {
+        HelperProfileScreen(
+            helperId  = "test_001",
+            onBookNow = {},
+            onBack    = {}
+        )
+    }
+}

@@ -1,5 +1,6 @@
 package com.example.homiee.ui.screens.Residentflow
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,7 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.homiee.R
-import com.example.homiee.navigation.toRoute
+import com.example.homiee.navigation.Routes
 import com.example.homiee.ui.components.BottomNavBar
 import com.example.homiee.ui.components.NavTab
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
@@ -32,7 +33,7 @@ import com.example.homiee.ui.theme.White
 
 @Composable
 fun ProfileScreen(
-    onNavItemClick:   (String) -> Unit,
+    onNavItemClick:   (String) -> Unit = {},
     onSettingsClick:  () -> Unit = {},
     onMyReviewsClick: () -> Unit = {}
 ) {
@@ -42,19 +43,23 @@ fun ProfileScreen(
         bottomBar = {
             BottomNavBar(
                 selectedTab   = NavTab.ACCOUNT,
-                onTabSelected = { onNavItemClick(it.toRoute()) }
+                onTabSelected = { tab ->
+                    val route = when (tab) {
+                        NavTab.HOME     -> Routes.HOME_RES
+                        NavTab.SEARCH   -> Routes.SEARCH
+                        NavTab.BOOKINGS -> Routes.BOOKINGS
+                        NavTab.MESSAGE  -> Routes.MESSAGES
+                        NavTab.ACCOUNT  -> Routes.ACCOUNT
+                    }
+                    onNavItemClick(route)
+                }
             )
         },
         containerColor = Color.Transparent
     ) { innerPadding ->
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
 
-            // ── Background ──
             Image(
                 painter            = painterResource(id = R.drawable.bg),
                 contentDescription = null,
@@ -62,9 +67,13 @@ fun ProfileScreen(
                 modifier           = Modifier.fillMaxSize()
             )
 
-            Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
 
-                // ── Header ──
+                // ── Header ──────────────────────────────────────────────────
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -88,7 +97,7 @@ fun ProfileScreen(
                     )
                 }
 
-                // ── Scrollable body ──
+                // ── Scrollable body ──────────────────────────────────────────
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -97,11 +106,12 @@ fun ProfileScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
 
-                    // ── Profile card ──
+                    // ── Profile card ─────────────────────────────────────────
                     Card(
-                        shape    = RoundedCornerShape(16.dp),
-                        colors   = CardDefaults.cardColors(containerColor = Color.White),
-                        modifier = Modifier
+                        shape     = RoundedCornerShape(16.dp),
+                        colors    = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                        modifier  = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 16.dp)
                     ) {
@@ -126,58 +136,54 @@ fun ProfileScreen(
                             }
                             Spacer(Modifier.height(10.dp))
                             Text("Priya Sharma",   fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextPrimary)
-                            Text("+91 9999999999", fontSize   = 13.sp, color = TextMuted)
+                            Text("+91 9999999999", fontSize = 13.sp, color = TextMuted)
                             Spacer(Modifier.height(12.dp))
                             OutlinedButton(
-                                onClick = {},
-                                shape   = RoundedCornerShape(8.dp),
-                                border  = androidx.compose.foundation.BorderStroke(1.dp, GreenDark),
-                                colors  = ButtonDefaults.outlinedButtonColors(contentColor = GreenDark)
+                                onClick  = {},
+                                shape    = RoundedCornerShape(8.dp),
+                                border   = BorderStroke(1.dp, GreenDark),
+                                colors   = ButtonDefaults.outlinedButtonColors(contentColor = GreenDark)
                             ) {
                                 Text("Edit Profile", color = GreenDark, fontSize = 13.sp)
                             }
                         }
                     }
 
-                    // ── Personal Details ──
+                    // ── Personal Details ─────────────────────────────────────
                     SectionTitle("PERSONAL DETAILS")
                     Card(
-                        shape    = RoundedCornerShape(12.dp),
-                        colors   = CardDefaults.cardColors(containerColor = Color.White),
-                        modifier = Modifier
+                        shape     = RoundedCornerShape(12.dp),
+                        colors    = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                        modifier  = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 16.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Row(
-                                modifier              = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                ProfileDetailItem(label = "NAME",  value = "Priya Sharma")
-                                ProfileDetailItem(label = "PHONE", value = "+91 9999999999")
-                            }
-                            Spacer(Modifier.height(12.dp))
-                            Row(
-                                modifier              = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                ProfileDetailItem(label = "EMAIL",   value = "blabla@gmail.com")
-                                ProfileDetailItem(label = "ADDRESS", value = "hehehehehe")
-                            }
+                            ProfileDetailItem(label = "NAME",    value = "Priya Sharma")
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color(0xFFF0F0F0))
+                            ProfileDetailItem(label = "PHONE",   value = "+91 9999999999")
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color(0xFFF0F0F0))
+                            ProfileDetailItem(label = "EMAIL",   value = "blabla@gmail.com")
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color(0xFFF0F0F0))
+                            ProfileDetailItem(label = "ADDRESS", value = "hehehehehe")
                         }
                     }
 
-                    // ── Trusted Contacts ──
+                    // ── Trusted Contacts ─────────────────────────────────────
                     SectionTitle("TRUSTED CONTACTS")
                     Card(
-                        shape    = RoundedCornerShape(12.dp),
-                        colors   = CardDefaults.cardColors(containerColor = Color.White),
-                        modifier = Modifier
+                        shape     = RoundedCornerShape(12.dp),
+                        colors    = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                        modifier  = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 16.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             TrustedContactItem(name = "Sunita Sharma", relation = "Mother", phone = "+91 xxxxxxxxxx")
+                            Spacer(Modifier.height(8.dp))
+                            HorizontalDivider(color = Color(0xFFF0F0F0))
                             Spacer(Modifier.height(8.dp))
                             TrustedContactItem(name = "Sunita Sharma", relation = "Mother", phone = "+91 xxxxxxxxxx")
                             Spacer(Modifier.height(12.dp))
@@ -192,12 +198,13 @@ fun ProfileScreen(
                         }
                     }
 
-                    // ── My Reviews ──
+                    // ── My Reviews ───────────────────────────────────────────
                     SectionTitle("MY REVIEWS")
                     Card(
-                        shape    = RoundedCornerShape(12.dp),
-                        colors   = CardDefaults.cardColors(containerColor = Color.White),
-                        modifier = Modifier
+                        shape     = RoundedCornerShape(12.dp),
+                        colors    = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                        modifier  = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 16.dp)
                             .clickable { onMyReviewsClick() }
@@ -219,14 +226,17 @@ fun ProfileScreen(
     }
 }
 
+// ── Sub-composables ────────────────────────────────────────────────────────────
+
 @Composable
 private fun SectionTitle(text: String) {
     Text(
-        text       = text,
-        fontSize   = 13.sp,
-        fontWeight = FontWeight.Bold,
-        color      = GreenDark,
-        modifier   = Modifier
+        text          = text,
+        fontSize      = 18.sp,
+        fontWeight    = FontWeight.Bold,
+        color         = GreenDark,
+        letterSpacing = 0.8.sp,
+        modifier      = Modifier
             .fillMaxWidth()
             .padding(bottom = 8.dp)
     )
@@ -234,8 +244,12 @@ private fun SectionTitle(text: String) {
 
 @Composable
 private fun ProfileDetailItem(label: String, value: String) {
-    Column {
-        Text(label, fontSize = 10.sp, color = TextMuted)
+    Row(
+        modifier              = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment     = Alignment.CenterVertically
+    ) {
+        Text(label, fontSize = 11.sp, color = TextMuted, letterSpacing = 0.5.sp)
         Text(value, fontSize = 13.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
     }
 }

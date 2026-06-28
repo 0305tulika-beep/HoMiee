@@ -37,9 +37,11 @@ import com.example.homiee.ui.theme.TextPrimary
 import com.example.homiee.ui.theme.White
 
 @Composable
+@Composable
 fun ResidentHomeScreen(
-    onNavItemClick: (String) -> Unit = {}
-) {
+    onNavItemClick: (String) -> Unit = {},
+    onBookClick: (String) -> Unit = {}    // ← ADD THIS LINE
+) { {
     val context = LocalContext.current
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = true)
 

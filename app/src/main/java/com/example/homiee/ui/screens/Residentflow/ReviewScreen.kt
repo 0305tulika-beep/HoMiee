@@ -99,6 +99,7 @@ private fun ReviewCard(review: Review) {
     Card(
         shape    = RoundedCornerShape(12.dp),
         colors   = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(14.dp)) {

@@ -27,7 +27,8 @@ import com.example.homiee.ui.theme.White
 
 @Composable
 fun SettingsScreen(
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = true)
 
@@ -82,6 +83,7 @@ fun SettingsScreen(
                     Card(
                         shape    = RoundedCornerShape(16.dp),
                         colors   = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 16.dp)

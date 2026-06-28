@@ -1,20 +1,26 @@
 package com.example.homiee.ui.components
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.Image
 import com.example.homiee.R
 
 enum class NavTab { HOME, SEARCH, BOOKINGS, MESSAGE, ACCOUNT }
+
+private val GreenSelected   = Color(0xFF1A5C3A)
+private val GreyUnselected  = Color(0xFF7A7A7A)
 
 @Composable
 fun BottomNavBar(
@@ -24,19 +30,12 @@ fun BottomNavBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .wrapContentHeight()  // ← grows to fit content, not fixed 80dp
+            .wrapContentHeight()
     ) {
-//        Image(
-//            painter      = painterResource(id = R.drawable.nvb),
-//            contentDescription = null,
-//            contentScale = ContentScale.FillBounds,
-//            modifier     = Modifier.matchParentSize()  // ← stretches bg to match Box size
-//        )
-
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 12.dp),  // ← no systemBarsPadding()
+                .padding(horizontal = 8.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment     = Alignment.CenterVertically
         ) {
@@ -59,20 +58,21 @@ private fun NavBarItem(
         painter            = painterResource(id = iconRes),
         contentDescription = tab.name,
         contentScale       = ContentScale.Fit,
+        colorFilter        = ColorFilter.tint(
+            if (tab == selectedTab) GreenSelected else GreyUnselected
+        ),
         modifier           = Modifier
-            .size(52.dp)          // ← slightly bigger now that height isn't capped
+            .size(52.dp)
             .clickable { onTabSelected(tab) }
     )
 }
+
 @androidx.compose.ui.tooling.preview.Preview(showBackground = true, name = "Bottom Nav Bar")
 @Composable
 fun BottomNavBarPreview() {
-    var selected by androidx.compose.runtime.remember {
-        androidx.compose.runtime.mutableStateOf(NavTab.HOME)
-    }
-
+    var selected by remember { mutableStateOf(NavTab.HOME) }
     BottomNavBar(
-        selectedTab = selected,
-        onTabSelected = { selected = it }
+        selectedTab    = selected,
+        onTabSelected  = { selected = it }
     )
 }
