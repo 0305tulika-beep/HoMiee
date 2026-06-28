@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -16,7 +17,6 @@ import androidx.navigation.NavController
 import com.example.homiee.navigation.Routes
 import com.example.homiee.ui.components.GradientTextField
 import com.example.homiee.ui.components.HomieeButton
-import com.example.homiee.ui.components.gradientBackground
 import com.example.homiee.ui.theme.GreenLight
 import com.example.homiee.ui.theme.TextPrimary
 import com.example.homiee.ui.theme.White
@@ -27,35 +27,33 @@ import com.example.homiee.R
 import com.example.homiee.ui.components.HideSystemBars
 import com.example.homiee.ui.components.systemBarsPadding
 import com.example.homiee.viewmodel.LoginViewModel
+import com.example.homiee.viewmodel.LoginViewModelFactory
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun LoginScreen(
     navController: NavController,
-    role: String,                              // ← NEW: "resident" or "helper", passed from Navgraph
-    viewModel: LoginViewModel = viewModel()
+    onLoginSuccess: () -> Unit,
+    viewModel: LoginViewModel = viewModel(
+        factory = LoginViewModelFactory(LocalContext.current)
+    )
 ) {
-    var username   by remember { mutableStateOf("") }
+    var email      by remember { mutableStateOf("") }
     var password   by remember { mutableStateOf("") }
     var rememberMe by remember { mutableStateOf(false) }
 
     val uiState by viewModel.uiState.collectAsState()
 
-    // Login success → navigate based on which flow (resident/helper) we're already in
+    // Login success → always goes to Resident Home (resident-only app)
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
-            val destination = if (role == "helper") Routes.HOME_HELP else Routes.HOME_RES
-            navController.navigate(destination) {
-                popUpTo(Routes.CHOICE) { inclusive = false }
-            }
+            onLoginSuccess()
             viewModel.resetState()
         }
     }
 
-    HideSystemBars()
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
+    HideSystemBars(lightIcons = true)
+    Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.bg3),
             contentDescription = null,
@@ -82,9 +80,10 @@ fun LoginScreen(
             Spacer(Modifier.height(32.dp))
 
             GradientTextField(
-                value         = username,
-                onValueChange = { username = it },
-                placeholder   = "Username, Email or Mobile"
+                value         = email,
+                onValueChange = { email = it },
+                placeholder   = "Email",
+                keyboardType  = KeyboardType.Email
             )
 
             Spacer(Modifier.height(12.dp))
@@ -98,7 +97,6 @@ fun LoginScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            // Remember Me + Forgotten password row
             Row(
                 modifier              = Modifier.fillMaxWidth(),
                 verticalAlignment     = Alignment.CenterVertically,
@@ -124,7 +122,6 @@ fun LoginScreen(
                 )
             }
 
-            // Show error message if login failed
             if (uiState.errorMessage != null) {
                 Spacer(Modifier.height(8.dp))
                 Text(
@@ -140,13 +137,12 @@ fun LoginScreen(
                 text    = if (uiState.isLoading) "Logging In..." else "Log In",
                 enabled = !uiState.isLoading,
                 onClick = {
-                    viewModel.login(identifier = username, password = password, role = role)
+                    viewModel.login(email = email, password = password)
                 }
             )
 
             Spacer(Modifier.height(20.dp))
 
-            // OR divider
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Divider(modifier = Modifier.weight(1f), color = White.copy(alpha = 0.4f))
                 Text("  OR  ", color = White.copy(alpha = 0.7f), fontSize = 13.sp)
@@ -155,7 +151,6 @@ fun LoginScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            // Google Sign-In button
             OutlinedButton(
                 onClick  = { /* TODO: Google sign-in */ },
                 shape    = RoundedCornerShape(12.dp),
@@ -165,10 +160,10 @@ fun LoginScreen(
                     .height(52.dp)
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.img),
+                    painter            = painterResource(id = R.drawable.img),
                     contentDescription = null,
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(20.dp)
+                    tint               = Color.Unspecified,
+                    modifier           = Modifier.size(20.dp)
                 )
                 Spacer(Modifier.width(10.dp))
                 Text("Sign In with Google", color = TextPrimary, fontWeight = FontWeight.Medium)
@@ -176,7 +171,6 @@ fun LoginScreen(
 
             Spacer(Modifier.height(32.dp))
 
-            // Sign Up link
             Row(
                 modifier              = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
@@ -192,7 +186,7 @@ fun LoginScreen(
                     fontSize   = 13.sp,
                     fontWeight = FontWeight.Bold,
                     modifier   = Modifier
-                        .clickable { navController.navigate(Routes.CHOICE) }
+                        .clickable { navController.navigate(Routes.SIGNUP_ROUTE) }
                         .padding(start = 2.dp)
                 )
             }

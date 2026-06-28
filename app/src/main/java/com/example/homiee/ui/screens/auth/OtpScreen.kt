@@ -12,6 +12,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -30,13 +31,15 @@ import com.example.homiee.ui.theme.TextMuted
 import com.example.homiee.ui.theme.TextPrimary
 import com.example.homiee.ui.theme.White
 import com.example.homiee.viewmodel.OtpViewModel
+import com.example.homiee.viewmodel.OtpViewModelFactory
 
 @Composable
 fun OtpScreen(
     email: String,
-    role: String,
     onConfirm: () -> Unit,
-    viewModel: OtpViewModel = viewModel()
+    viewModel: OtpViewModel = viewModel(
+        factory = OtpViewModelFactory(LocalContext.current)
+    )
 ) {
     var otpValue by remember { mutableStateOf("") }
 
@@ -58,13 +61,10 @@ fun OtpScreen(
         }
     }
 
-    HideSystemBars()
+    HideSystemBars(lightIcons = true)
 
-    // ── Outermost Box — NOT affected by systemBarsPadding, so bgw.png
-    // can truly stretch edge-to-edge horizontally ──
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // Green header image (unchanged)
         Image(
             painter            = painterResource(id = R.drawable.bg3),
             contentDescription = null,
@@ -74,23 +74,19 @@ fun OtpScreen(
                 .height(240.dp)
         )
 
-        // ── bgw.png card — placed directly in the outer Box, full width,
-        // same vertical position/height as before (170.dp from top) ──
         Box(
             modifier = Modifier
-                .fillMaxWidth()                 // ← guarantees full screen width
+                .fillMaxWidth()
                 .fillMaxHeight()
-                .padding(top = 170.dp)           // ← keeps the same vertical position
+                .padding(top = 170.dp)
         ) {
             Image(
                 painter            = painterResource(id = R.drawable.bgw),
                 contentDescription = null,
                 contentScale       = ContentScale.FillBounds,
-                modifier           = Modifier.fillMaxSize()   // fills this full-width Box completely
+                modifier           = Modifier.fillMaxSize()
             )
 
-            // Content sits on top of bgw.png — system bar padding applied
-            // ONLY here, so it doesn't shrink the image itself
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -108,7 +104,7 @@ fun OtpScreen(
                 Spacer(Modifier.height(32.dp))
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.clickable {
                         focusRequester.requestFocus()
                         keyboardController?.show()
@@ -147,7 +143,7 @@ fun OtpScreen(
                     text     = if (uiState.isLoading) "Verifying..." else "Confirm",
                     enabled  = otpValue.length == 6 && !uiState.isLoading,
                     onClick  = {
-                        viewModel.verifyOtp(email = email, otp = otpValue, role = role)
+                        viewModel.verifyOtp(email = email, otp = otpValue)   // ← role removed
                     },
                     modifier = Modifier.fillMaxWidth(0.65f)
                 )

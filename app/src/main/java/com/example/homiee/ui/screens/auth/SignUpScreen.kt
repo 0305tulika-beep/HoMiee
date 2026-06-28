@@ -26,10 +26,11 @@ import com.example.homiee.ui.theme.White
 import com.example.homiee.viewmodel.RegisterViewModel
 
 @Composable
-fun SignUpResidentScreen(
+fun SignUpScreen(
     navController: NavController,
-    viewModel: RegisterViewModel = viewModel()
-) {
+    viewModel: RegisterViewModel = viewModel(),
+    onSignedUp: (String) -> Unit = {}
+)  {
     var firstName   by remember { mutableStateOf("") }
     var lastName    by remember { mutableStateOf("") }
     var email       by remember { mutableStateOf("") }
@@ -43,12 +44,12 @@ fun SignUpResidentScreen(
 
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
-            navController.navigate(Routes.OTP_RES)
+            navController.navigate(Routes.OTP_ROUTE)
             viewModel.resetState()
         }
     }
 
-    HideSystemBars()
+    HideSystemBars(lightIcons = true)
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter            = painterResource(id = R.drawable.bg3),
@@ -65,7 +66,7 @@ fun SignUpResidentScreen(
             verticalArrangement = Arrangement.Center
         ) {
             Text("Create Account", fontSize = 34.sp, fontWeight = FontWeight.Bold, color = White)
-            Text("Join HoMiee as Resident", color = White.copy(alpha = 0.85f), fontSize = 15.sp)
+            Text("Join HoMiee", color = White.copy(alpha = 0.85f), fontSize = 15.sp)
 
             Spacer(Modifier.height(28.dp))
 
@@ -163,7 +164,7 @@ fun SignUpResidentScreen(
                     color      = White,
                     fontWeight = FontWeight.Bold,
                     fontSize   = 13.sp,
-                    modifier   = Modifier.clickable { navController.navigate(Routes.LOGIN_RES) }
+                    modifier   = Modifier.clickable { navController.navigate(Routes.LOGIN_ROUTE) }
                 )
             }
             Spacer(Modifier.height(24.dp))

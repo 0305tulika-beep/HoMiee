@@ -1,7 +1,7 @@
 package com.example.homiee.data.model
 
 data class LoginRequest(
-    val identifier: String,
+    val identifier: String,   // UI only collects email now, field name unchanged
     val password: String
 )
 
@@ -22,32 +22,35 @@ data class UserData(
     val lname: String,
     val email: String,
     val mobile: String,
-    val username: String
+    val username: String,
+    val role: String? = null   // ← NEW: returned on login so app knows which Home to open
 )
 
 data class TokenData(
     val access: String,
     val refresh: String
 )
+
 data class ApiErrorResponse(
     val detail: String? = null,
     val message: String? = null
 )
 
-// For parsing 400 validation errors: { "status": "error", "message": "...", "errors": { "field": ["detail"] } }
 data class LoginErrorResponse(
     val status: String?,
     val message: String?,
-    val errors: Map<String, List<String>>?)
+    val errors: Map<String, List<String>>?
+)
 
-    data class RegisterRequest(
-val fname:     String,
-val lname:     String,
-val email:     String,
-val mobile:    String,
-val username:  String,
-val password:  String,
-val password2: String
+// ── Register — role REMOVED, no longer collected at signup ──
+data class RegisterRequest(
+    val fname:     String,
+    val lname:     String,
+    val email:     String,
+    val mobile:    String,
+    val username:  String,
+    val password:  String,
+    val password2: String
 )
 
 data class RegisterResponse(
@@ -62,7 +65,7 @@ data class RegisterData(
     val otp_expires_in: String
 )
 
-// ── Verify OTP ────────────────────────────────────────────
+// ── Verify OTP ──
 data class VerifyOtpRequest(
     val identifier: String,
     val otp:        String
@@ -71,10 +74,10 @@ data class VerifyOtpRequest(
 data class VerifyOtpResponse(
     val status:  String,
     val message: String,
-    val data:    LoginData?   // same shape as login — user + tokens
+    val data:    LoginData?
 )
 
-// ── Resend OTP ────────────────────────────────────────────
+// ── Resend OTP ──
 data class ResendOtpRequest(
     val identifier: String
 )
@@ -88,4 +91,14 @@ data class ResendOtpResponse(
 data class ResendOtpData(
     val identifier:     String,
     val otp_expires_in: String
+)
+
+// ── Set Role — PLACEHOLDER, update path/shape once backend ships it ──
+data class SetRoleRequest(
+    val role: String
+)
+
+data class SetRoleResponse(
+    val status:  String,
+    val message: String
 )

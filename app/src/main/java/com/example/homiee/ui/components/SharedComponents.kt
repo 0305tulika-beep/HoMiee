@@ -1,7 +1,4 @@
-// ============================================================
-// FILE: ui/components/SharedComponents.kt
-// Reusable Composables used across all HoMiee screens
-// ============================================================
+
 
 package com.example.homiee.ui.components
 
@@ -27,37 +24,19 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.example.homiee.ui.theme.*
 
-// ── Gradient Background ───────────────────────────────────
-/**
- * The teal-green radial gradient used on auth/splash screens.
- * Usage: Box(modifier = Modifier.gradientBackground()) { ... }
- */
-fun Modifier.gradientBackground() = this.background(
-    brush = Brush.radialGradient(
-        colors = listOf(GreenGrad1, GreenGrad2, GreenDark),
-        center = Offset(300f, 400f),
-        radius = 1200f
-    )
-)
-
-// ── Primary Button ────────────────────────────────────────
-/**
- * Dark green pill button used for primary actions (Log In, Sign Up, Confirm…)
- */
 @Composable
 fun HomieeButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    containerColor: Color = GreenDark          // ← add this
+    containerColor: Color = GreenDark
 ) {
     Button(
         onClick  = onClick,
@@ -76,10 +55,7 @@ fun HomieeButton(
     }
 }
 
-// ── Outlined Input Field (on gradient / dark bg) ──────────
-/**
- * Semi-transparent frosted input — used on Login, Sign Up screens.
- */
+//text field
 @Composable
 fun GradientTextField(
     value: String,
@@ -125,12 +101,8 @@ fun GradientTextField(
     )
 }
 
-// ── Card Input Field (on white card bg) ───────────────────
-/**
- * Tinted input field used inside white cards (profile forms).
- */
 @Composable
-fun HideSystemBars() {
+fun HideSystemBars(lightIcons: Boolean) {
     val view = LocalView.current
     DisposableEffect(Unit) {
         val window = (view.context as android.app.Activity).window
@@ -143,6 +115,27 @@ fun HideSystemBars() {
         // Light icons since your background is dark/green
         controller.isAppearanceLightStatusBars = false
         controller.isAppearanceLightNavigationBars = false
+
+        onDispose { }
+    }
+}
+@Composable
+fun TransparentStatusBarWhiteNavBar(lightStatusBarIcons: Boolean = true) {
+    val view = LocalView.current
+    DisposableEffect(Unit) {
+        val window = (view.context as android.app.Activity).window
+        val controller = WindowInsetsControllerCompat(window, view)
+
+        // Let content draw behind both system bars
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        // Status bar: transparent, icon color depends on what's behind it
+        window.statusBarColor = android.graphics.Color.TRANSPARENT
+        controller.isAppearanceLightStatusBars = !lightStatusBarIcons
+
+        // Nav bar: solid white, matching BottomNavBar's nvb.png background
+        window.navigationBarColor = android.graphics.Color.WHITE
+        controller.isAppearanceLightNavigationBars = true // dark icons on white bg
 
         onDispose { }
     }
@@ -189,11 +182,7 @@ fun CardTextField(
     }
 }
 
-// ── Selectable Chip ───────────────────────────────────────
-/**
- * Toggle chip for services / time slots / languages / days.
- * selected = true → filled teal; false → outlined.
- */
+
 @Composable
 fun systemBarsPadding(): PaddingValues {
     return WindowInsets.systemBars.asPaddingValues()
@@ -222,11 +211,7 @@ fun SelectableChip(
     }
 }
 
-// ── Step Progress Bar ─────────────────────────────────────
-/**
- * Horizontal step indicator shown at the top of multi-step forms.
- * currentStep is 1-based.
- */
+
 @Composable
 fun StepProgressBar(
     totalSteps: Int,
@@ -250,10 +235,7 @@ fun StepProgressBar(
     }
 }
 
-// ── Outlined Upload / Action Button ──────────────────────
-/**
- * Teal-bordered outlined button (Upload Aadhaar, Use GPS, etc.)
- */
+
 @Composable
 fun OutlinedActionButton(
     text: String,
@@ -278,11 +260,7 @@ fun OutlinedActionButton(
     }
 }
 
-// ── OTP Box ───────────────────────────────────────────────
-/**
- * Single circular OTP digit box.
- * Tip: Use 6 of these in a Row for the full OTP entry.
- */
+
 @Composable
 fun OtpBox(
     digit: String,
@@ -303,10 +281,7 @@ fun OtpBox(
     }
 }
 
-// ── White Card Container ──────────────────────────────────
-/**
- * The white rounded card that overlays the green header on form screens.
- */
+
 @Composable
 fun FormCard(
     modifier: Modifier = Modifier,
@@ -325,7 +300,7 @@ fun FormCard(
     }
 }
 
-// ── Section Label ────────────────────────────────────────
+
 @Composable
 fun SectionLabel(text: String) {
     Text(

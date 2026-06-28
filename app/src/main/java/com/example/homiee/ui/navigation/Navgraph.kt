@@ -3,48 +3,57 @@ package com.example.homiee.navigation
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.example.homiee.ui.screens.Residentflow.BookingsScreen
+import com.example.homiee.ui.screens.Residentflow.ResidentHomeScreen
+import com.example.homiee.ui.screens.Residentflow.SearchScreen
 import com.example.homiee.ui.screens.auth.*
 import com.example.homiee.ui.screens.resident.*
-import com.example.homiee.ui.screens.helper.*
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.homiee.viewmodel.RegisterViewModel
+import java.net.URLDecoder
+import java.net.URLEncoder
 
-// ── Route Constants ───────────────────────────────────────
 object Routes {
-    const val SPLASH         = "splash"
-    const val CHOICE         = "choice"
+    const val SPLASH       = "splash"
+    const val SIGNUP_ROUTE = "signup"
+    const val LOGIN_ROUTE  = "login"
+    const val OTP_ROUTE    = "otp/{email}"
 
-    // Resident
-    const val RESIDENT_AUTH_GRAPH = "resident_auth_graph"
-    const val SIGNUP_RES     = "signup_resident"
-    const val LOGIN_RES      = "login_resident"
-    const val OTP_RES        = "otp_resident"
-    const val RES_FORM_1     = "res_form_address"
-    const val RES_FORM_2     = "res_form_services"
-    const val RES_FORM_3     = "res_form_schedule"
-    const val RES_FORM_4     = "res_form_identity"
-    const val RES_FORM_5     = "res_form_photo"
-    const val HOME_RES       = "home_resident"
+    // Resident forms
+    const val RES_FORM_1 = "res_form_address"
+    const val RES_FORM_2 = "res_form_services"
+    const val RES_FORM_3 = "res_form_schedule"
+    const val RES_FORM_4 = "res_form_identity"
+    const val RES_FORM_5 = "res_form_photo"
 
-    // Helper
-    const val HELPER_AUTH_GRAPH = "helper_auth_graph"
-    const val SIGNUP_HELP    = "signup_helper"
-    const val LOGIN_HELP     = "login_helper"
-    const val OTP_HELP       = "otp_helper"
-    const val HELP_FORM_1    = "help_form_identity"
-    const val HELP_FORM_2    = "help_form_services"
-    const val HELP_FORM_3    = "help_form_skills"
-    const val HELP_FORM_4    = "help_form_availability"
-    const val HOME_HELP      = "home_helper"          // placeholder
+    // Main resident screens
+    const val HOME_RES = "home_resident"
+    const val SEARCH   = "search"
+    const val BOOKINGS = "bookings"
+    const val MESSAGES = "messages"
+    const val ACCOUNT  = "account"
+
+    fun otpRoute(email: String): String {
+        val encoded = URLEncoder.encode(email, "UTF-8")
+        return "otp/$encoded"
+    }
 }
 
-// ── Nav Graph ─────────────────────────────────────────────
+// Shared nav helper — all main screens use this same lambda pattern
+private fun NavHostController.navigateMain(route: String) {
+    navigate(route) {
+        popUpTo(Routes.HOME_RES) { saveState = true }
+        launchSingleTop = true
+        restoreState    = true
+    }
+}
+
 @Composable
 fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
     NavHost(
@@ -55,7 +64,8 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         popEnterTransition = { EnterTransition.None },
         popExitTransition  = { ExitTransition.None }
     ) {
-        // ── Splash ────────────────────────────────────────────────────
+
+        // ── Splash ──────────────────────────────────────────────────────────
         composable(Routes.SPLASH) {
             SplashScreen { destination ->
                 navController.navigate(destination) {
@@ -64,134 +74,91 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             }
         }
 
-        // ── Choice (Resident / Helper) ────────────────────────────────
-        composable(Routes.CHOICE) {
-            ChoiceScreen(navController)
+        // ── Signup ──────────────────────────────────────────────────────────
+        composable(Routes.SIGNUP_ROUTE) {
+            val registerViewModel: RegisterViewModel = viewModel()
+            SignUpScreen(
+                navController = navController,
+                viewModel     = registerViewModel,
+                onSignedUp    = { email ->
+                    navController.navigate(Routes.otpRoute(email))
+                }
+            )
         }
 
-        // ═══════════════════════════════════════════════════════════════
-        // RESIDENT FLOW
-        // ═══════════════════════════════════════════════════════════════
-
-        navigation(
-            startDestination = Routes.SIGNUP_RES,
-            route             = Routes.RESIDENT_AUTH_GRAPH
-        ) {
-            composable(Routes.SIGNUP_RES) { entry ->
-                val parentEntry = remember(entry) {
-                    navController.getBackStackEntry(Routes.RESIDENT_AUTH_GRAPH)
-                }
-                val registerViewModel: RegisterViewModel = viewModel(parentEntry)
-
-                SignUpResidentScreen(navController, registerViewModel)
-            }
-
-            composable(Routes.OTP_RES) { entry ->
-                val parentEntry = remember(entry) {
-                    navController.getBackStackEntry(Routes.RESIDENT_AUTH_GRAPH)
-                }
-                val registerViewModel: RegisterViewModel = viewModel(parentEntry)
-
-                OtpScreen(
-                    email     = registerViewModel.registeredEmail,
-                    role      = "resident",
-                    onConfirm = {
-                        navController.navigate(Routes.RES_FORM_1) {
-                            popUpTo(Routes.SPLASH) { inclusive = true }
-                        }
+        // ── OTP ─────────────────────────────────────────────────────────────
+        composable(
+            route     = Routes.OTP_ROUTE,
+            arguments = listOf(navArgument("email") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val encodedEmail = backStackEntry.arguments?.getString("email") ?: ""
+            val email        = URLDecoder.decode(encodedEmail, "UTF-8")
+            OtpScreen(
+                email     = email,
+                onConfirm = {
+                    navController.navigate(Routes.RES_FORM_1) {
+                        popUpTo(Routes.SIGNUP_ROUTE) { inclusive = true }
                     }
-                )
-            }
+                }
+            )
         }
 
-        // ── Resident Login ──
-        composable(Routes.LOGIN_RES) {
-            LoginScreen(navController, role = "resident")
+        // ── Login ────────────────────────────────────────────────────────────
+        composable(Routes.LOGIN_ROUTE) {
+            LoginScreen(
+                navController  = navController,
+                onLoginSuccess = {
+                    navController.navigate(Routes.HOME_RES) {
+                        popUpTo(Routes.LOGIN_ROUTE) { inclusive = true }
+                    }
+                }
+            )
         }
 
-        composable(Routes.RES_FORM_1) {
-            ResFormAddressScreen { navController.navigate(Routes.RES_FORM_2) }
-        }
-        composable(Routes.RES_FORM_2) {
-            ResFormServicesScreen { navController.navigate(Routes.RES_FORM_3) }
-        }
-        composable(Routes.RES_FORM_3) {
-            ResFormScheduleScreen { navController.navigate(Routes.RES_FORM_4) }
-        }
-        composable(Routes.RES_FORM_4) {
-            ResFormIdentityScreen { navController.navigate(Routes.RES_FORM_5) }
-        }
+        // ── Resident Forms ───────────────────────────────────────────────────
+        composable(Routes.RES_FORM_1) { ResFormAddressScreen  { navController.navigate(Routes.RES_FORM_2) } }
+        composable(Routes.RES_FORM_2) { ResFormServicesScreen { navController.navigate(Routes.RES_FORM_3) } }
+        composable(Routes.RES_FORM_3) { ResFormScheduleScreen { navController.navigate(Routes.RES_FORM_4) } }
+        composable(Routes.RES_FORM_4) { ResFormIdentityScreen { navController.navigate(Routes.RES_FORM_5) } }
         composable(Routes.RES_FORM_5) {
             ResFormPhotoScreen {
                 navController.navigate(Routes.HOME_RES) {
-                    popUpTo(Routes.CHOICE) { inclusive = false }
+                    popUpTo(Routes.RES_FORM_1) { inclusive = true }
                 }
             }
         }
 
+        // ── Resident Home ── (FLOOR) ─────────────────────────────────────────
         composable(Routes.HOME_RES) {
-            // TODO: ResidentHomeScreen()
+            ResidentHomeScreen(
+                onNavItemClick = { navController.navigateMain(it) }
+            )
         }
 
-        // ═══════════════════════════════════════════════════════════════
-        // HELPER FLOW
-        // ═══════════════════════════════════════════════════════════════
-
-        navigation(
-            startDestination = Routes.SIGNUP_HELP,
-            route             = Routes.HELPER_AUTH_GRAPH
-        ) {
-            composable(Routes.SIGNUP_HELP) { entry ->
-                val parentEntry = remember(entry) {
-                    navController.getBackStackEntry(Routes.HELPER_AUTH_GRAPH)
-                }
-                val registerViewModel: RegisterViewModel = viewModel(parentEntry)
-
-                SignUpHelperScreen(navController, registerViewModel)
-            }
-
-            composable(Routes.OTP_HELP) { entry ->
-                val parentEntry = remember(entry) {
-                    navController.getBackStackEntry(Routes.HELPER_AUTH_GRAPH)
-                }
-                val registerViewModel: RegisterViewModel = viewModel(parentEntry)
-
-                OtpScreen(
-                    email     = registerViewModel.registeredEmail,
-                    role      = "helper",
-                    onConfirm = {
-                        navController.navigate(Routes.HELP_FORM_1) {
-                            popUpTo(Routes.SPLASH) { inclusive = true }
-                        }
-                    }
-                )
-            }
+        // ── Search ───────────────────────────────────────────────────────────
+        composable(Routes.SEARCH) {
+            SearchScreen(
+                onViewProfile  = { /* TODO: navController.navigate(Routes.helperProfile(it)) */ },
+                onBook         = { /* TODO: navController.navigate(Routes.booking(it)) */ },
+                onNavItemClick = { navController.navigateMain(it) }
+            )
         }
 
-        // ── Helper Login ──
-        composable(Routes.LOGIN_HELP) {
-            LoginScreen(navController, role = "helper")
+        // ── Bookings ─────────────────────────────────────────────────────────
+        composable(Routes.BOOKINGS) {
+            BookingsScreen(
+                onNavItemClick = { navController.navigateMain(it) }
+            )
         }
 
-        composable(Routes.HELP_FORM_1) {
-            HelpFormIdentityScreen { navController.navigate(Routes.HELP_FORM_2) }
-        }
-        composable(Routes.HELP_FORM_2) {
-            HelpFormServicesScreen { navController.navigate(Routes.HELP_FORM_3) }
-        }
-        composable(Routes.HELP_FORM_3) {
-            HelpFormSkillsScreen { navController.navigate(Routes.HELP_FORM_4) }
-        }
-        composable(Routes.HELP_FORM_4) {
-            HelpFormAvailabilityScreen {
-                navController.navigate(Routes.HOME_HELP) {
-                    popUpTo(Routes.CHOICE) { inclusive = false }
-                }
-            }
+        // ── Messages (placeholder) ───────────────────────────────────────────
+        composable(Routes.MESSAGES) {
+            // TODO: MessagesScreen(onNavItemClick = { navController.navigateMain(it) })
         }
 
-        composable(Routes.HOME_HELP) {
-            // TODO: HelperHomeScreen()
+        // ── Account (placeholder) ────────────────────────────────────────────
+        composable(Routes.ACCOUNT) {
+            // TODO: AccountScreen(onNavItemClick = { navController.navigateMain(it) })
         }
     }
 }

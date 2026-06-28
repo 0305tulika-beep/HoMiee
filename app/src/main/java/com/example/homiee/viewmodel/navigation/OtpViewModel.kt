@@ -1,7 +1,7 @@
 package com.example.homiee.viewmodel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.homiee.data.local.TokenManager
 import com.example.homiee.data.model.ResendOtpRequest
@@ -24,10 +24,9 @@ data class ResendUiState(
     val errorMessage: String? = null
 )
 
-class OtpViewModel(application: Application) : AndroidViewModel(application) {
+class OtpViewModel(private val tokenManager: TokenManager) : ViewModel() {
 
-    private val repository   = AuthRepository()
-    private val tokenManager = TokenManager(application.applicationContext)
+    private val repository = AuthRepository()
 
     private val _uiState = MutableStateFlow(OtpUiState())
     val uiState: StateFlow<OtpUiState> = _uiState
@@ -35,7 +34,7 @@ class OtpViewModel(application: Application) : AndroidViewModel(application) {
     private val _resendState = MutableStateFlow(ResendUiState())
     val resendState: StateFlow<ResendUiState> = _resendState
 
-    fun verifyOtp(email: String, otp: String, role: String) {   // ← role param added
+    fun verifyOtp(email: String, otp: String) {   // ← role param removed
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
@@ -45,7 +44,8 @@ class OtpViewModel(application: Application) : AndroidViewModel(application) {
                 is ApiResult.Success -> {
                     val tokens = result.data.data?.tokens
                     if (tokens != null) {
-                        tokenManager.saveTokens(tokens.access, tokens.refresh, role)   // ← role passed
+                        tokenManager.saveTokens(tokens.access, tokens.refresh)
+                        // role NOT saved here — Choice screen sets it after this
                     }
                     _uiState.value = _uiState.value.copy(isLoading = false, isSuccess = true)
                 }
@@ -83,7 +83,16 @@ class OtpViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun resetState() {
-        _uiState.value   = OtpUiState()
+        _uiState.value     = OtpUiState()
         _resendState.value = ResendUiState()
+    }
+}
+
+class OtpViewModelFactory(
+    private val context: android.content.Context
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        @Suppress("UNCHECKED_CAST")
+        return OtpViewModel(TokenManager(context.applicationContext)) as T
     }
 }

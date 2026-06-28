@@ -14,23 +14,22 @@ class AuthRepository {
 
     private val api = RetrofitClient.authApi
 
-    // ── Login ──────────────────────────────────────────────
     suspend fun login(request: LoginRequest): ApiResult<LoginResponse> =
         safeApiCall(isLoginCall = true) { api.login(request) }
 
-    // ── Register ───────────────────────────────────────────
     suspend fun register(request: RegisterRequest): ApiResult<RegisterResponse> =
         safeApiCall { api.register(request) }
 
-    // ── Verify OTP ─────────────────────────────────────────
     suspend fun verifyOtp(request: VerifyOtpRequest): ApiResult<VerifyOtpResponse> =
         safeApiCall { api.verifyOtp(request) }
 
-    // ── Resend OTP ─────────────────────────────────────────
     suspend fun resendOtp(request: ResendOtpRequest): ApiResult<ResendOtpResponse> =
         safeApiCall { api.resendOtp(request) }
 
-    // ── Shared error-handling ──────────────────────────────
+    // ── PLACEHOLDER — wire to real endpoint once backend ships it ──
+    suspend fun setRole(request: SetRoleRequest): ApiResult<SetRoleResponse> =
+        safeApiCall { api.setRole(request) }
+
     private suspend fun <T> safeApiCall(
         isLoginCall: Boolean = false,
         call: suspend () -> Response<T>
@@ -41,17 +40,15 @@ class AuthRepository {
                 val body = response.body()
                 if (body != null) ApiResult.Success(body)
                 else ApiResult.Error("Something went wrong. Please try again.")
-             } else {
-            val errorBody = response.errorBody()?.string()
-            android.util.Log.e("API_ERROR", "HTTP ${response.code()} - Body: $errorBody")
-            val errorMessage = parseErrorMessage(errorBody, response.code(), isLoginCall)
-            ApiResult.Error(errorMessage)
-        }
-        }  catch (e: Exception) {
-        // Network failure (no internet, server down, timeout, etc.)
-        android.util.Log.e("API_ERROR", "Exception: ${e.javaClass.simpleName} - ${e.message}", e)
-        ApiResult.Error("Unable to connect. Please check your internet connection.")
-    }
+            } else {
+                val errorBody = response.errorBody()?.string()
+                android.util.Log.e("API_ERROR", "HTTP ${response.code()} - Body: $errorBody")
+                val errorMessage = parseErrorMessage(errorBody, response.code(), isLoginCall)
+                ApiResult.Error(errorMessage)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("API_ERROR", "Exception: ${e.javaClass.simpleName} - ${e.message}", e)
+            ApiResult.Error("Unable to connect. Please check your internet connection.")
         }
     }
 
@@ -75,7 +72,7 @@ class AuthRepository {
 
     private fun toFriendlyMessage(raw: String, code: Int): String = when {
         raw.contains("identifier", ignoreCase = true) ->
-            "Please check your username, email, or mobile number."
+            "Please check your email address."
         raw.contains("password", ignoreCase = true) && code == 400 ->
             "Incorrect password. Please try again."
         else -> raw
@@ -83,8 +80,10 @@ class AuthRepository {
 
     private fun genericMessageFor(code: Int): String = when (code) {
         400 -> "Please check your details and try again."
-        401 -> "Incorrect username or password."
+        401 -> "Incorrect email or password."
         409 -> "Email, mobile, or username is already taken."
         429 -> "Too many attempts. Please try again later."
+        500 -> "This email or mobile number may already be registered. Please try different details."
         else -> "Something went wrong. Please try again."
     }
+}

@@ -25,53 +25,40 @@ import androidx.core.view.WindowInsetsControllerCompat
 import com.example.homiee.R
 import com.example.homiee.data.local.TokenManager
 import com.example.homiee.navigation.Routes
-import com.example.homiee.ui.theme.GreenDark
-import com.example.homiee.ui.theme.GreenLight
-import com.example.homiee.ui.theme.GreenMid
 import com.example.homiee.ui.theme.White
 
-
 @Composable
-fun SplashScreen(onFinished: (String) -> Unit) {   // ← CHANGED: now passes the destination route
+fun SplashScreen(onFinished: (String) -> Unit) {
     val view = LocalView.current
     val context = LocalContext.current
-    val tokenManager = remember { TokenManager(context) }   // ← NEW
+    val tokenManager = remember { TokenManager(context) }
 
-    // Logo: pops in with overshoot (scale bounces past 1f then settles)
-    val logoScale = remember { Animatable(0.3f) }
-    val logoAlpha = remember { Animatable(0f) }
-
-    // Text: slides up from below + fades in, slightly after the logo
+    val logoScale  = remember { Animatable(0.3f) }
+    val logoAlpha  = remember { Animatable(0f) }
     val textOffsetY = remember { Animatable(40f) }
-    val textAlpha = remember { Animatable(0f) }
+    val textAlpha  = remember { Animatable(0f) }
 
-    // Hide system bars while Splash is visible, restore them on exit
     DisposableEffect(Unit) {
         val window = (view.context as android.app.Activity).window
         val controller = WindowInsetsControllerCompat(window, view)
         controller.hide(WindowInsetsCompat.Type.systemBars())
-
-
         onDispose {
             controller.show(WindowInsetsCompat.Type.systemBars())
         }
     }
 
-    // Logo pop animation — spring gives the "pop" overshoot feel
     LaunchedEffect(Unit) {
         logoAlpha.animateTo(1f, animationSpec = tween(durationMillis = 300))
     }
     LaunchedEffect(Unit) {
         logoScale.animateTo(
-            targetValue = 1f,
+            targetValue   = 1f,
             animationSpec = spring(
                 dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessLow
+                stiffness    = Spring.StiffnessLow
             )
         )
     }
-
-    // Text slides up + fades in, starting ~150ms after the logo begins
     LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(350)
         textAlpha.animateTo(1f, animationSpec = tween(durationMillis = 300))
@@ -81,17 +68,21 @@ fun SplashScreen(onFinished: (String) -> Unit) {   // ← CHANGED: now passes th
         textOffsetY.animateTo(0f, animationSpec = tween(durationMillis = 350))
     }
 
-    // ── CHANGED: after the delay, check TokenManager and decide where to go ──
+    // ── Decide where to go after splash ──
     LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(1600)
 
-        val token = tokenManager.getAccessToken()
-        val role  = tokenManager.getRole()
+        val destination = when {
+            // No token → new user, send to Signup
+            tokenManager.getAccessToken() == null -> Routes.SIGNUP_ROUTE
 
-        val destination = if (token != null && role != null) {
-            if (role == "helper") Routes.HELP_FORM_1 else Routes.RES_FORM_1
-        } else {
-            Routes.CHOICE
+            // Token exists but forms not done → resume exact form step
+            !tokenManager.areFormsCompleted() -> {
+                tokenManager.getCurrentStep() ?: Routes.RES_FORM_1
+            }
+
+            // Token + forms complete → go straight to Resident Home
+            else -> Routes.HOME_RES
         }
 
         onFinished(destination)
@@ -99,19 +90,19 @@ fun SplashScreen(onFinished: (String) -> Unit) {   // ← CHANGED: now passes th
 
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier.fillMaxSize()
+        modifier         = Modifier.fillMaxSize()
     ) {
         Image(
-            painter = painterResource(id = R.drawable.bg4),
+            painter            = painterResource(id = R.drawable.bg4),
             contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
+            contentScale       = ContentScale.Crop,
+            modifier           = Modifier.fillMaxSize()
         )
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Image(
                 painter            = painterResource(id = R.drawable.logo),
                 contentDescription = "HoMiee Logo",
-                modifier = Modifier
+                modifier           = Modifier
                     .size(100.dp)
                     .scale(logoScale.value)
                     .graphicsLayer { alpha = logoAlpha.value }
@@ -119,8 +110,8 @@ fun SplashScreen(onFinished: (String) -> Unit) {   // ← CHANGED: now passes th
             Spacer(Modifier.height(16.dp))
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.graphicsLayer {
-                    alpha = textAlpha.value
+                modifier            = Modifier.graphicsLayer {
+                    alpha        = textAlpha.value
                     translationY = textOffsetY.value
                 }
             ) {

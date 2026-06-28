@@ -1,7 +1,6 @@
 package com.example.homiee.viewmodel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.homiee.data.model.RegisterRequest
 import com.example.homiee.data.repository.ApiResult
@@ -16,16 +15,21 @@ data class RegisterUiState(
     val errorMessage: String? = null
 )
 
-class RegisterViewModel(application: Application) : AndroidViewModel(application) {
+class RegisterViewModel : ViewModel() {
 
     private val repository = AuthRepository()
 
     private val _uiState = MutableStateFlow(RegisterUiState())
     val uiState: StateFlow<RegisterUiState> = _uiState
 
-    // Stored after successful register so OtpScreen can read it
     var registeredEmail: String = ""
         private set
+
+    // Kept so OtpScreen → back → Signup can restore fields if you wire that up later
+    var firstNameValue: String = ""
+    var lastNameValue:  String = ""
+    var mobileValue:    String = ""
+    var usernameValue:  String = ""
 
     fun register(
         firstName: String,
@@ -36,7 +40,6 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
         password:  String,
         password2: String
     ) {
-        // Basic local validation
         if (firstName.isBlank() || lastName.isBlank() || email.isBlank() ||
             mobile.isBlank() || username.isBlank() || password.isBlank()) {
             _uiState.value = _uiState.value.copy(
@@ -50,6 +53,11 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
             )
             return
         }
+
+        firstNameValue = firstName
+        lastNameValue  = lastName
+        mobileValue    = mobile
+        usernameValue  = username
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
@@ -68,7 +76,7 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
 
             when (result) {
                 is ApiResult.Success -> {
-                    registeredEmail = email   // save for OTP screen
+                    registeredEmail = email
                     _uiState.value = _uiState.value.copy(isLoading = false, isSuccess = true)
                 }
                 is ApiResult.Error -> {

@@ -14,8 +14,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.homiee.R
+import com.example.homiee.ui.components.HideSystemBars
 import com.example.homiee.ui.components.HomieeButton
 import com.example.homiee.ui.components.StepProgressBar
+import com.example.homiee.ui.components.systemBarsPadding
 import com.example.homiee.ui.theme.White
 
 /**
@@ -34,6 +36,8 @@ fun ResFormShell(
     nextLabel: String = "Next",
     content: @Composable ColumnScope.() -> Unit
 ) {
+    HideSystemBars(lightIcons = true)
+    systemBarsPadding()
     Box(modifier = Modifier.fillMaxSize()) {
 
         // ── Full-screen background image (bg3.png) ──────────────────
@@ -70,6 +74,7 @@ fun ResFormShell(
                     }
                     Spacer(Modifier.height(24.dp))
                     HomieeButton(text = nextLabel, onClick = onNext)
+                    Spacer(Modifier.height(32.dp))
                 }
             }
         }
@@ -78,6 +83,7 @@ fun ResFormShell(
         Column(
             modifier = Modifier
                 .align(Alignment.TopStart)
+                .padding(systemBarsPadding())
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
