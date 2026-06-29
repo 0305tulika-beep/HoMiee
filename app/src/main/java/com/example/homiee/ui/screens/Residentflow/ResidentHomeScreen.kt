@@ -38,8 +38,11 @@ import com.example.homiee.ui.theme.White
 
 @Composable
 fun ResidentHomeScreen(
-    onNavItemClick: (String) -> Unit = {},
-    onBookClick: (String) -> Unit = {}    // ← ADD THIS LINE
+    recentActivities: List<BookingItem> = emptyList(),   // ← NEW: real bookings, fed from NavGraph
+    onNavItemClick:   (String) -> Unit = {},
+    onBookClick:      (String) -> Unit = {},
+    onCategoryClick:  (String) -> Unit = {},
+    onActivityClick:  (String) -> Unit = {}               // ← NEW: tap an activity card → its details
 ) {
     val context = LocalContext.current
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = true)
@@ -52,9 +55,9 @@ fun ResidentHomeScreen(
                     val route = when (tab) {
                         NavTab.HOME     -> Routes.HOME_RES
                         NavTab.SEARCH   -> Routes.SEARCH
-                        NavTab.BOOKINGS -> "bookings"
-                        NavTab.MESSAGE  -> "messages"
-                        NavTab.ACCOUNT  -> "account"
+                        NavTab.BOOKINGS -> Routes.BOOKINGS
+                        NavTab.MESSAGE  -> Routes.MESSAGES
+                        NavTab.ACCOUNT  -> Routes.ACCOUNT
                     }
                     onNavItemClick(route)
                 }
@@ -65,7 +68,6 @@ fun ResidentHomeScreen(
 
         Box(modifier = Modifier.fillMaxSize()) {
 
-            // Full-screen background
             Image(
                 painter            = painterResource(id = R.drawable.bg),
                 contentDescription = null,
@@ -76,7 +78,7 @@ fun ResidentHomeScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)   // respects bottom nav height
+                    .padding(innerPadding)
             ) {
 
                 // ── Green header: greeting + profile icon ──────────────────
@@ -137,10 +139,34 @@ fun ResidentHomeScreen(
                                 modifier              = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceAround
                             ) {
-                                Image(painter = painterResource(id = R.drawable.img_3), contentDescription = "Cleaning",    modifier = Modifier.width(56.dp))
-                                Image(painter = painterResource(id = R.drawable.img_4), contentDescription = "Cooking",     modifier = Modifier.width(56.dp))
-                                Image(painter = painterResource(id = R.drawable.img_5), contentDescription = "Laundry",     modifier = Modifier.width(56.dp))
-                                Image(painter = painterResource(id = R.drawable.img_6), contentDescription = "Babysitting", modifier = Modifier.width(56.dp))
+                                Image(
+                                    painter            = painterResource(id = R.drawable.img_3),
+                                    contentDescription = "Cleaning",
+                                    modifier           = Modifier
+                                        .width(56.dp)
+                                        .clickable { onCategoryClick("Cleaning") }
+                                )
+                                Image(
+                                    painter            = painterResource(id = R.drawable.img_4),
+                                    contentDescription = "Cooking",
+                                    modifier           = Modifier
+                                        .width(56.dp)
+                                        .clickable { onCategoryClick("Cooking") }
+                                )
+                                Image(
+                                    painter            = painterResource(id = R.drawable.img_5),
+                                    contentDescription = "Laundry",
+                                    modifier           = Modifier
+                                        .width(56.dp)
+                                        .clickable { onCategoryClick("Laundry") }
+                                )
+                                Image(
+                                    painter            = painterResource(id = R.drawable.img_6),
+                                    contentDescription = "Babysitting",
+                                    modifier           = Modifier
+                                        .width(56.dp)
+                                        .clickable { onCategoryClick("Babysitting") }
+                                )
                             }
                         }
                     }
@@ -170,7 +196,7 @@ fun ResidentHomeScreen(
 
                     Spacer(Modifier.height(20.dp))
 
-                    // ── Recent Activity ──
+                    // ── Recent Activity — now sourced from real bookings ──
                     Text(
                         text       = "RECENT ACTIVITY",
                         fontSize   = 20.sp,
@@ -179,17 +205,33 @@ fun ResidentHomeScreen(
                     )
                     Spacer(Modifier.height(10.dp))
 
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        ActivityCard(
-                            title     = "Cleaning: Ramesh Kumar",
-                            subtitle  = "Tomorrow, 10AM",
-                            statusRes = R.drawable.btn_up
+                    val recentToShow = recentActivities
+                        .filter { it.status == BookingTab.ACTIVE || it.status == BookingTab.UPCOMING }
+                        .take(2)   // show at most 2 on Home; full list lives on Bookings screen
+
+                    if (recentToShow.isEmpty()) {
+                        Text(
+                            text     = "No recent activity yet",
+                            fontSize = 13.sp,
+                            color    = TextMuted
                         )
-                        ActivityCard(
-                            title     = "Cooking: Sunita Devi",
-                            subtitle  = "In Progress, Started 9:05AM",
-                            statusRes = R.drawable.btn_ac
-                        )
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            recentToShow.forEach { booking ->
+                                ActivityCard(
+                                    title     = "${booking.service}: ${booking.helperName}",
+                                    subtitle  = if (booking.status == BookingTab.ACTIVE)
+                                        "In Progress"
+                                    else
+                                        "${booking.bookingDate}, ${booking.bookingTime}",
+                                    statusRes = if (booking.status == BookingTab.ACTIVE)
+                                        R.drawable.btn_ac
+                                    else
+                                        R.drawable.btn_up,
+                                    onClick   = { onActivityClick(booking.id) }
+                                )
+                            }
+                        }
                     }
 
                     Spacer(Modifier.height(20.dp))
@@ -226,11 +268,17 @@ fun ResidentHomeScreen(
 }
 
 @Composable
-private fun ActivityCard(title: String, subtitle: String, statusRes: Int) {
+private fun ActivityCard(
+    title: String,
+    subtitle: String,
+    statusRes: Int,
+    onClick: () -> Unit = {}
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(60.dp)
+            .clickable { onClick() }
     ) {
         Image(
             painter            = painterResource(id = R.drawable.box3),

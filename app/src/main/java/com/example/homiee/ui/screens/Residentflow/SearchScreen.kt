@@ -76,6 +76,7 @@ private val TEST_HELPERS = listOf(
 // ── Screen ─────────────────────────────────────────────────────────────────────
 @Composable
 fun SearchScreen(
+    initialFilter: String = "All",                  // ← NEW: lets Home open Search pre-filtered
     onViewProfile: (String) -> Unit = {},
     onBook: (String) -> Unit = {},
     onNavItemClick: (String) -> Unit = {}
@@ -84,7 +85,7 @@ fun SearchScreen(
 
     var searchQuery    by remember { mutableStateOf("") }
     var selectedSort   by remember { mutableStateOf(SortOption.NEAREST) }
-    var selectedFilter by remember { mutableStateOf("All") }
+    var selectedFilter by remember { mutableStateOf(initialFilter) }   // ← starts pre-filtered
 
     val displayedHelpers = remember(searchQuery, selectedSort, selectedFilter) {
         TEST_HELPERS
@@ -113,9 +114,9 @@ fun SearchScreen(
                     val route = when (tab) {
                         NavTab.HOME     -> Routes.HOME_RES
                         NavTab.SEARCH   -> Routes.SEARCH
-                        NavTab.BOOKINGS -> "bookings"
-                        NavTab.MESSAGE  -> "messages"
-                        NavTab.ACCOUNT  -> "account"
+                        NavTab.BOOKINGS -> Routes.BOOKINGS
+                        NavTab.MESSAGE  -> Routes.MESSAGES
+                        NavTab.ACCOUNT  -> Routes.ACCOUNT
                     }
                     onNavItemClick(route)
                 }
@@ -124,7 +125,6 @@ fun SearchScreen(
         containerColor = Color.Transparent
     ) { innerPadding ->
 
-        // bg.png is the full-screen background
         Box(modifier = Modifier.fillMaxSize()) {
 
             Image(
@@ -141,7 +141,7 @@ fun SearchScreen(
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
 
-                // ── Green header + search bar (not scrollable) ───────────────
+                // ── Green header + search bar ─────────────────────────────
                 item {
                     Box(
                         modifier = Modifier
@@ -303,12 +303,10 @@ private fun SearchHelperCard(
                 .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar
             HelperInitialsAvatar(initials = helper.initials, photoUrl = helper.photoUrl)
 
             Spacer(Modifier.width(12.dp))
 
-            // Info
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text       = helper.name,
@@ -342,7 +340,6 @@ private fun SearchHelperCard(
 
             Spacer(Modifier.width(10.dp))
 
-            // btn_book.png — the image itself is the button, text is baked into the PNG
             Image(
                 painter            = painterResource(R.drawable.btn_book),
                 contentDescription = "Book",
@@ -411,5 +408,3 @@ private fun FilterChipItem(label: String, isSelected: Boolean, onClick: () -> Un
         )
     }
 }
-
-

@@ -40,6 +40,7 @@ object Routes {
     // Main tabs
     const val HOME_RES = "home_resident"
     const val SEARCH   = "search"
+    const val SEARCH_FILTERED = "search/{category}"
     const val BOOKINGS = "bookings"
     const val MESSAGES = "messages"
     const val ACCOUNT  = "account"
@@ -60,6 +61,11 @@ object Routes {
     // Activity & Feedback
     const val ACTIVITY = "activity/{bookingId}/{helperName}"
     const val FEEDBACK = "feedback/{bookingId}/{helperName}"
+
+    fun searchFilteredRoute(category: String): String {
+        val encoded = URLEncoder.encode(category, "UTF-8")
+        return "search/$encoded"
+    }
 
     fun activityRoute(bookingId: String, helperName: String): String {
         val encodedName = URLEncoder.encode(helperName, "UTF-8")
@@ -193,6 +199,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             LaunchedEffect(Unit) { bookingViewModel.checkPendingConfirmation() }
             val showConfirmation by bookingViewModel.showConfirmation.collectAsState()
             val lastBooking      by bookingViewModel.lastCreatedBooking.collectAsState()
+            val bookings         by bookingViewModel.bookings.collectAsState()   // ← NEW
 
             LaunchedEffect(showConfirmation) {
                 if (showConfirmation && lastBooking != null) {
@@ -201,9 +208,16 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             }
 
             ResidentHomeScreen(
-                onNavItemClick = { navController.navigateMain(it) },
-                onBookClick    = { helperId ->
+                recentActivities = bookings,                                    // ← NEW
+                onNavItemClick    = { navController.navigateMain(it) },
+                onBookClick       = { helperId ->
                     navController.navigate(Routes.helperProfileRoute(helperId))
+                },
+                onCategoryClick   = { category ->                               // ← NEW
+                    navController.navigate(Routes.searchFilteredRoute(category))
+                },
+                onActivityClick   = { bookingId ->                               // ← NEW
+                    navController.navigate(Routes.bookingDetailsRoute(bookingId))
                 }
             )
         }
@@ -211,6 +225,21 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         // ── Search ───────────────────────────────────────────────────────────
         composable(Routes.SEARCH) {
             SearchScreen(
+                onViewProfile  = { navController.navigate(Routes.helperProfileRoute(it)) },
+                onBook         = { navController.navigate(Routes.helperProfileRoute(it)) },
+                onNavItemClick = { navController.navigateMain(it) }
+            )
+        }
+
+        composable(
+            route     = Routes.SEARCH_FILTERED,
+            arguments = listOf(navArgument("category") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val category = URLDecoder.decode(
+                backStackEntry.arguments?.getString("category") ?: "All", "UTF-8"
+            )
+            SearchScreen(
+                initialFilter  = category,
                 onViewProfile  = { navController.navigate(Routes.helperProfileRoute(it)) },
                 onBook         = { navController.navigate(Routes.helperProfileRoute(it)) },
                 onNavItemClick = { navController.navigateMain(it) }

@@ -6,7 +6,14 @@ import com.example.homiee.ui.theme.HomieeTheme
 
 @Preview(showBackground = true, showSystemUi = true, name = "Resident Home")
 @Composable fun ResidentHomePreview() {
-    HomieeTheme { ResidentHomeScreen(onNavItemClick = {}) }
+    HomieeTheme {
+        ResidentHomeScreen(
+            recentActivities = emptyList(),
+            onNavItemClick   = {},
+            onCategoryClick  = {},
+            onActivityClick  = {}
+        )
+    }
 }
 
 @Preview(showBackground = true, showSystemUi = true, name = "Search Screen")
