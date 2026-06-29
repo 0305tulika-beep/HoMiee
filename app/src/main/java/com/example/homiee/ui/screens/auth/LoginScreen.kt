@@ -33,8 +33,9 @@ import androidx.compose.ui.platform.LocalContext
 @Composable
 fun LoginScreen(
     navController: NavController,
-    onLoginSuccess: () -> Unit,
-    viewModel: LoginViewModel = viewModel(
+    onLoginSuccess: (String) -> Unit,
+    onForgotPassword: () -> Unit = {},
+            viewModel: LoginViewModel = viewModel(
         factory = LoginViewModelFactory(LocalContext.current)
     )
 ) {
@@ -47,7 +48,7 @@ fun LoginScreen(
     // Login success → always goes to Resident Home (resident-only app)
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
-            onLoginSuccess()
+            onLoginSuccess(email)
             viewModel.resetState()
         }
     }
@@ -118,7 +119,7 @@ fun LoginScreen(
                     text     = "Forgotten password?",
                     color    = White.copy(alpha = 0.8f),
                     fontSize = 13.sp,
-                    modifier = Modifier.clickable { /* TODO: forgot password */ }
+                    modifier = Modifier.clickable { onForgotPassword() }
                 )
             }
 

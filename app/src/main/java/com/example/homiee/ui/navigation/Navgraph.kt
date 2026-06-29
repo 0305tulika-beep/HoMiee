@@ -1,5 +1,7 @@
 package com.example.homiee.navigation
 
+import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
@@ -25,16 +27,18 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 
 object Routes {
-    const val SPLASH       = "splash"
-    const val SIGNUP_ROUTE = "signup"
-    const val LOGIN_ROUTE  = "login"
-    const val OTP_ROUTE    = "otp/{email}"
+    const val SPLASH             = "splash"
+    const val SIGNUP_ROUTE       = "signup"
+    const val LOGIN_ROUTE        = "login"
+    const val OTP_ROUTE          = "otp/{email}/{flow}"   // flow = "login" | "signup"
+    const val FORGOT_PASSWORD    = "forgot_password"
+    const val TERMS_AND_CONDITIONS = "terms_and_conditions"
 
-    // Resident forms — 4 steps total
-    const val RES_FORM_1 = "res_form_address"     // Step 1 — Address
-    const val RES_FORM_2 = "res_form_emergency"   // Step 2 — Emergency Contact
-    const val RES_FORM_3 = "res_form_identity"    // Step 3 — Identity Verification
-    const val RES_FORM_4 = "res_form_photo"       // Step 4 — Photo
+    // Resident forms — 4 steps
+    const val RES_FORM_1 = "res_form_address"
+    const val RES_FORM_2 = "res_form_emergency"
+    const val RES_FORM_3 = "res_form_identity"
+    const val RES_FORM_4 = "res_form_photo"
 
     // Main tabs
     const val HOME_RES        = "home_resident"
@@ -44,7 +48,7 @@ object Routes {
     const val MESSAGES        = "messages"
     const val ACCOUNT         = "account"
 
-    // Sub-screens (no bottom nav)
+    // Sub-screens
     const val SETTINGS       = "settings"
     const val MY_REVIEWS     = "my_reviews"
     const val HELPER_PROFILE = "helper_profile/{helperId}"
@@ -54,47 +58,39 @@ object Routes {
     const val BOOKING_CONFIRMED = "booking_confirmed/{bookingId}"
     const val BOOKING_DETAILS   = "booking_details/{bookingId}"
 
-    // Chat
-    const val CHAT = "chat/{threadId}/{helperName}/{service}"
-
-    // Activity & Feedback
+    // Chat / Activity / Feedback
+    const val CHAT     = "chat/{threadId}/{helperName}/{service}"
     const val ACTIVITY = "activity/{bookingId}/{helperName}"
     const val FEEDBACK = "feedback/{bookingId}/{helperName}"
 
+    fun otpRoute(email: String, flow: String): String {
+        val encoded = URLEncoder.encode(email, "UTF-8")
+        return "otp/$encoded/$flow"
+    }
     fun searchFilteredRoute(category: String): String {
         val encoded = URLEncoder.encode(category, "UTF-8")
         return "search/$encoded"
     }
-
     fun activityRoute(bookingId: String, helperName: String): String {
         val encodedName = URLEncoder.encode(helperName, "UTF-8")
         return "activity/$bookingId/$encodedName"
     }
-
     fun feedbackRoute(bookingId: String, helperName: String): String {
         val encodedName = URLEncoder.encode(helperName, "UTF-8")
         return "feedback/$bookingId/$encodedName"
     }
-
     fun helperProfileRoute(helperId: String)     = "helper_profile/$helperId"
     fun bookingConfirmedRoute(bookingId: String) = "booking_confirmed/$bookingId"
     fun bookingDetailsRoute(bookingId: String)   = "booking_details/$bookingId"
-
     fun chatRoute(threadId: String, helperName: String, service: String): String {
         val encodedName    = URLEncoder.encode(helperName, "UTF-8")
         val encodedService = URLEncoder.encode(service,    "UTF-8")
         return "chat/$threadId/$encodedName/$encodedService"
     }
-
     fun newBookingRoute(helperName: String, service: String, rating: Float): String {
         val encodedName    = URLEncoder.encode(helperName, "UTF-8")
         val encodedService = URLEncoder.encode(service,    "UTF-8")
         return "new_booking/$encodedName/$encodedService/$rating"
-    }
-
-    fun otpRoute(email: String): String {
-        val encoded = URLEncoder.encode(email, "UTF-8")
-        return "otp/$encoded"
     }
 }
 
@@ -140,57 +136,109 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             }
         }
 
+        // ── Login ────────────────────────────────────────────────────────────
+        // Back → close app
+        composable(Routes.LOGIN_ROUTE) {
+            BackHandler { (context as? Activity)?.finish() }
+            LoginScreen(
+                navController    = navController,
+                onLoginSuccess   = { email ->
+                    navController.navigate(Routes.otpRoute(email, "login")) {
+                        popUpTo(Routes.LOGIN_ROUTE) { inclusive = false }
+                    }
+                },
+                onForgotPassword = {
+                    navController.navigate(Routes.FORGOT_PASSWORD)
+                }
+            )
+        }
+
+        // ── Forgot Password ───────────────────────────────────────────────────
+        // Back → Login (normal popBackStack)
+        composable(Routes.FORGOT_PASSWORD) {
+            ForgotPasswordScreen(
+                onBack     = { navController.popBackStack() },
+                onContinue = { _ ->
+                    // TODO: call reset-password API; then navigate accordingly
+                    navController.popBackStack()
+                }
+            )
+        }
+
         // ── Signup ──────────────────────────────────────────────────────────
         composable(Routes.SIGNUP_ROUTE) {
             val registerViewModel: RegisterViewModel = viewModel()
             SignUpScreen(
                 navController = navController,
                 viewModel     = registerViewModel,
-                onSignedUp    = { email -> navController.navigate(Routes.otpRoute(email)) }
+                onSignedUp    = { email ->
+                    navController.navigate(Routes.otpRoute(email, "signup")) {
+                        popUpTo(Routes.SIGNUP_ROUTE) { inclusive = false }
+                    }
+                }
             )
         }
 
         // ── OTP ─────────────────────────────────────────────────────────────
+        // login  → HOME  (clear all auth)
+        // signup → TERMS (clear otp from stack)
         composable(
             route     = Routes.OTP_ROUTE,
-            arguments = listOf(navArgument("email") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("email") { type = NavType.StringType },
+                navArgument("flow")  { type = NavType.StringType }
+            )
         ) { backStackEntry ->
             val email = URLDecoder.decode(
                 backStackEntry.arguments?.getString("email") ?: "", "UTF-8"
             )
+            val flow = backStackEntry.arguments?.getString("flow") ?: "login"
+
             OtpScreen(
                 email     = email,
                 onConfirm = {
+                    if (flow == "login") {
+                        navController.navigate(Routes.HOME_RES) {
+                            popUpTo(Routes.LOGIN_ROUTE) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Routes.TERMS_AND_CONDITIONS) {
+                            popUpTo(Routes.OTP_ROUTE) { inclusive = true }
+                        }
+                    }
+                }
+            )
+        }
+
+        // ── Terms & Conditions ────────────────────────────────────────────────
+        // Back → close app; Agree → RES_FORM_1 (clear all signup screens)
+        composable(Routes.TERMS_AND_CONDITIONS) {
+            TermsAndConditionsScreen(
+                onAgree = {
                     navController.navigate(Routes.RES_FORM_1) {
                         popUpTo(Routes.SIGNUP_ROUTE) { inclusive = true }
                     }
-                }
+                },
+                onClose = { (context as? Activity)?.finish() }
             )
         }
 
-        // ── Login ────────────────────────────────────────────────────────────
-        composable(Routes.LOGIN_ROUTE) {
-            LoginScreen(
-                navController  = navController,
-                onLoginSuccess = {
-                    navController.navigate(Routes.HOME_RES) {
-                        popUpTo(Routes.LOGIN_ROUTE) { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        // ── Resident Forms (4 steps) ─────────────────────────────────────────
+        // ── Resident Forms ───────────────────────────────────────────────────
+        // Back from any form step → close app
         composable(Routes.RES_FORM_1) {
+            BackHandler { (context as? Activity)?.finish() }
             ResFormAddressScreen { navController.navigate(Routes.RES_FORM_2) }
         }
         composable(Routes.RES_FORM_2) {
+            BackHandler { (context as? Activity)?.finish() }
             ResFormEmergencyScreen { navController.navigate(Routes.RES_FORM_3) }
         }
         composable(Routes.RES_FORM_3) {
+            BackHandler { (context as? Activity)?.finish() }
             ResFormIdentityScreen { navController.navigate(Routes.RES_FORM_4) }
         }
         composable(Routes.RES_FORM_4) {
+            BackHandler { (context as? Activity)?.finish() }
             ResFormPhotoScreen {
                 navController.navigate(Routes.HOME_RES) {
                     popUpTo(Routes.RES_FORM_1) { inclusive = true }
@@ -199,7 +247,10 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         }
 
         // ── Home ─────────────────────────────────────────────────────────────
+        // Back → close app
         composable(Routes.HOME_RES) {
+            BackHandler { (context as? Activity)?.finish() }
+
             LaunchedEffect(Unit) { bookingViewModel.checkPendingConfirmation() }
             val showConfirmation by bookingViewModel.showConfirmation.collectAsState()
             val lastBooking      by bookingViewModel.lastCreatedBooking.collectAsState()
@@ -226,7 +277,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             )
         }
 
-        // ── Search ───────────────────────────────────────────────────────────
+        // ── Search (unfiltered) ───────────────────────────────────────────────
         composable(Routes.SEARCH) {
             SearchScreen(
                 onViewProfile  = { navController.navigate(Routes.helperProfileRoute(it)) },
@@ -235,6 +286,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             )
         }
 
+        // ── Search (pre-filtered from category tap) ───────────────────────────
         composable(
             route     = Routes.SEARCH_FILTERED,
             arguments = listOf(navArgument("category") { type = NavType.StringType })

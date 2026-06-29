@@ -1,4 +1,3 @@
-
 package com.example.homiee.ui.screens.auth
 
 import androidx.compose.runtime.Composable
@@ -6,7 +5,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
 import com.example.homiee.ui.theme.HomieeTheme
 
-// ── 1. Splash ──────────────────────────────────────────────
+// ── 1. Splash ────────────────────────────────────────────────────────────────
 @Preview(showBackground = true, name = "Splash Screen")
 @Composable
 fun SplashScreenPreview() {
@@ -15,20 +14,32 @@ fun SplashScreenPreview() {
     }
 }
 
-// ── 2. Login ───────────────────────────────────────────────
+// ── 2. Login ──────────────────────────────────────────────────────────────────
 @Preview(showBackground = true, name = "Login Screen")
 @Composable
 fun LoginScreenPreview() {
     HomieeTheme {
         LoginScreen(
-            navController  = rememberNavController(),
-            onLoginSuccess = {}
+            navController    = rememberNavController(),
+            onLoginSuccess   = {},
+            onForgotPassword = {}
         )
     }
 }
 
+// ── 3. Forgot Password ────────────────────────────────────────────────────────
+@Preview(showBackground = true, name = "Forgot Password Screen")
+@Composable
+fun ForgotPasswordScreenPreview() {
+    HomieeTheme {
+        ForgotPasswordScreen(
+            onBack     = {},
+            onContinue = {}
+        )
+    }
+}
 
-// ── 4. Sign Up ─────────────────────────────────────────────
+// ── 4. Sign Up ────────────────────────────────────────────────────────────────
 @Preview(showBackground = true, name = "Sign Up")
 @Composable
 fun SignUpScreenPreview() {
@@ -37,14 +48,26 @@ fun SignUpScreenPreview() {
     }
 }
 
-// ── 5. OTP ─────────────────────────────────────────────────
+// ── 5. OTP ────────────────────────────────────────────────────────────────────
 @Preview(showBackground = true, name = "OTP Screen")
 @Composable
 fun OtpScreenPreview() {
     HomieeTheme {
         OtpScreen(
-            email = "test@example.com",
+            email     = "test@example.com",
             onConfirm = {}
+        )
+    }
+}
+
+// ── 6. Terms & Conditions ─────────────────────────────────────────────────────
+@Preview(showBackground = true, name = "Terms & Conditions")
+@Composable
+fun TermsAndConditionsScreenPreview() {
+    HomieeTheme {
+        TermsAndConditionsScreen(
+            onAgree = {},
+            onClose = {}
         )
     }
 }
