@@ -24,36 +24,36 @@ import com.example.homiee.ui.theme.TextMuted
 
 @Composable
 fun ResFormPhotoScreen(onFinish: () -> Unit) {
-ResFormShell(title = "Profile Photo", step = 5, onNext = onFinish, nextLabel = "Finish") {
-Box(
-contentAlignment = Alignment.Center,
-modifier = Modifier
-.fillMaxWidth()
-.padding(vertical = 40.dp)
-) {
-Column(horizontalAlignment = Alignment.CenterHorizontally) {
-Box(
-contentAlignment = Alignment.Center,
-modifier = Modifier
-.size(120.dp)
-.clip(CircleShape)
-.background(GreenTint)
-.border(2.dp, GreenLight, CircleShape)
-.clickable { /* TODO: launch image picker */ }
-) {
-Icon(
-Icons.Default.CameraAlt,
-contentDescription = null,
-tint     = GreenDark,
-modifier = Modifier.size(40.dp)
-)
-}
+    ResFormShell(title = "Profile Photo", step = 4, onNext = onFinish, nextLabel = "Finish") {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 40.dp)
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape)
+                        .background(GreenTint)
+                        .border(2.dp, GreenLight, CircleShape)
+                        .clickable { /* TODO: launch image picker */ }
+                ) {
+                    Icon(
+                        Icons.Default.CameraAlt,
+                        contentDescription = null,
+                        tint     = GreenDark,
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
 
-Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(16.dp))
 
-Text("Tap To Upload", color = GreenMid, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-Text("JPG or PNG, up to 5MB", color = TextMuted, fontSize = 13.sp)
-}
-}
-}
+                Text("Tap To Upload", color = GreenMid, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                Text("JPG or PNG, up to 5MB", color = TextMuted, fontSize = 13.sp)
+            }
+        }
+    }
 }

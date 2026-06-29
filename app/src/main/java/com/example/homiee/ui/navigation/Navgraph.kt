@@ -30,20 +30,19 @@ object Routes {
     const val LOGIN_ROUTE  = "login"
     const val OTP_ROUTE    = "otp/{email}"
 
-    // Resident forms
-    const val RES_FORM_1 = "res_form_address"
-    const val RES_FORM_2 = "res_form_services"
-    const val RES_FORM_3 = "res_form_schedule"
-    const val RES_FORM_4 = "res_form_identity"
-    const val RES_FORM_5 = "res_form_photo"
+    // Resident forms — 4 steps total
+    const val RES_FORM_1 = "res_form_address"     // Step 1 — Address
+    const val RES_FORM_2 = "res_form_emergency"   // Step 2 — Emergency Contact
+    const val RES_FORM_3 = "res_form_identity"    // Step 3 — Identity Verification
+    const val RES_FORM_4 = "res_form_photo"       // Step 4 — Photo
 
     // Main tabs
-    const val HOME_RES = "home_resident"
-    const val SEARCH   = "search"
+    const val HOME_RES        = "home_resident"
+    const val SEARCH          = "search"
     const val SEARCH_FILTERED = "search/{category}"
-    const val BOOKINGS = "bookings"
-    const val MESSAGES = "messages"
-    const val ACCOUNT  = "account"
+    const val BOOKINGS        = "bookings"
+    const val MESSAGES        = "messages"
+    const val ACCOUNT         = "account"
 
     // Sub-screens (no bottom nav)
     const val SETTINGS       = "settings"
@@ -181,12 +180,17 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             )
         }
 
-        // ── Resident Forms ───────────────────────────────────────────────────
-        composable(Routes.RES_FORM_1) { ResFormAddressScreen  { navController.navigate(Routes.RES_FORM_2) } }
-        composable(Routes.RES_FORM_2) { ResFormServicesScreen { navController.navigate(Routes.RES_FORM_3) } }
-        composable(Routes.RES_FORM_3) { ResFormScheduleScreen { navController.navigate(Routes.RES_FORM_4) } }
-        composable(Routes.RES_FORM_4) { ResFormIdentityScreen { navController.navigate(Routes.RES_FORM_5) } }
-        composable(Routes.RES_FORM_5) {
+        // ── Resident Forms (4 steps) ─────────────────────────────────────────
+        composable(Routes.RES_FORM_1) {
+            ResFormAddressScreen { navController.navigate(Routes.RES_FORM_2) }
+        }
+        composable(Routes.RES_FORM_2) {
+            ResFormEmergencyScreen { navController.navigate(Routes.RES_FORM_3) }
+        }
+        composable(Routes.RES_FORM_3) {
+            ResFormIdentityScreen { navController.navigate(Routes.RES_FORM_4) }
+        }
+        composable(Routes.RES_FORM_4) {
             ResFormPhotoScreen {
                 navController.navigate(Routes.HOME_RES) {
                     popUpTo(Routes.RES_FORM_1) { inclusive = true }
@@ -199,7 +203,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             LaunchedEffect(Unit) { bookingViewModel.checkPendingConfirmation() }
             val showConfirmation by bookingViewModel.showConfirmation.collectAsState()
             val lastBooking      by bookingViewModel.lastCreatedBooking.collectAsState()
-            val bookings         by bookingViewModel.bookings.collectAsState()   // ← NEW
+            val bookings         by bookingViewModel.bookings.collectAsState()
 
             LaunchedEffect(showConfirmation) {
                 if (showConfirmation && lastBooking != null) {
@@ -208,15 +212,15 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             }
 
             ResidentHomeScreen(
-                recentActivities = bookings,                                    // ← NEW
-                onNavItemClick    = { navController.navigateMain(it) },
-                onBookClick       = { helperId ->
+                recentActivities = bookings,
+                onNavItemClick   = { navController.navigateMain(it) },
+                onBookClick      = { helperId ->
                     navController.navigate(Routes.helperProfileRoute(helperId))
                 },
-                onCategoryClick   = { category ->                               // ← NEW
+                onCategoryClick  = { category ->
                     navController.navigate(Routes.searchFilteredRoute(category))
                 },
-                onActivityClick   = { bookingId ->                               // ← NEW
+                onActivityClick  = { bookingId ->
                     navController.navigate(Routes.bookingDetailsRoute(bookingId))
                 }
             )

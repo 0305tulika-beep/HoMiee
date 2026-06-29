@@ -21,7 +21,7 @@ import com.example.homiee.ui.components.systemBarsPadding
 import com.example.homiee.ui.theme.White
 
 /**
- * Shared layout wrapper used by ALL 5 resident form screens.
+ * Shared layout wrapper used by ALL 4 resident form screens.
  *
  *  - bg3.png fills the entire screen as the background
  *  - bgw.png is layered on top, lower down, acting as the white card
@@ -31,7 +31,7 @@ import com.example.homiee.ui.theme.White
 fun ResFormShell(
     title: String,
     step: Int,
-    totalSteps: Int = 5,
+    totalSteps: Int = 4,
     onNext: () -> Unit,
     nextLabel: String = "Next",
     content: @Composable ColumnScope.() -> Unit
