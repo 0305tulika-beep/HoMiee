@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
 import androidx.compose.foundation.border
+import com.example.homiee.ui.theme.GreenDark
 
 private val GreenPrimary  = Color(0xFF1A5C3A)
 private val GreenLight    = Color(0xFFE8F5EE)
@@ -27,16 +28,15 @@ private val CardBg        = Color.White
 
 @Composable
 fun BookingDetailsScreen(
-    bookingId: String,
-    helperName: String,
-    service: String,
-    bookingDate: String,
-    bookingTime: String,
-    durationHours: String = "2 hours",
-    motherContact: String = "+91 xxxxxxxxxx",
-    onChat: () -> Unit = {},
-    onCancel: () -> Unit = {},
-    onBack: () -> Unit
+    bookingId:     String,
+    helperName:    String,
+    service:       String,
+    bookingDate:   String,
+    bookingTime:   String,
+    durationHours: String  = "2 hours",
+    onChat:        () -> Unit = {},
+    onCancel:      () -> Unit = {},
+    onBack:        () -> Unit
 ) {
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = false)
 
@@ -48,7 +48,7 @@ fun BookingDetailsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(GreenPrimary)
+                    .background(GreenDark)
                     .statusBarsPadding()
                     .padding(horizontal = 20.dp, vertical = 16.dp)
             ) {
@@ -75,7 +75,7 @@ fun BookingDetailsScreen(
                     }
                 }
             }
-
+            Spacer(Modifier.height(100.dp))
             androidx.compose.foundation.lazy.LazyColumn(
                 modifier       = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp)
@@ -90,72 +90,6 @@ fun BookingDetailsScreen(
                 }
 
                 item {
-                    DetailsSectionCard(title = "HELPER INFORMATION") {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier         = Modifier
-                                    .size(44.dp)
-                                    .clip(CircleShape)
-                                    .background(GreenPrimary),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    helperName.take(2).uppercase(),
-                                    color      = Color.White,
-                                    fontSize   = 14.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Spacer(Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(helperName, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
-                                Text("Mother $motherContact", fontSize = 12.sp, color = TextSecondary)
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(GreenLight)
-                                    .padding(horizontal = 10.dp, vertical = 4.dp)
-                            ) {
-                                Text("Verified", color = GreenPrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                }
-
-                item {
-                    DetailsSectionCard(title = "SAFETY") {
-                        OutlinedTextField(
-                            value         = "Trusted contact: Mother",
-                            onValueChange = {},
-                            readOnly      = true,
-                            modifier      = Modifier.fillMaxWidth(),
-                            shape         = RoundedCornerShape(10.dp),
-                            colors        = OutlinedTextFieldDefaults.colors(
-                                unfocusedBorderColor = Color(0xFFCCCCCC)
-                            )
-                        )
-                        Spacer(Modifier.height(10.dp))
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(Color.White)
-                                .border(
-                                    width = 1.dp,
-                                    color = Color(0xFFD32F2F),
-                                    shape = RoundedCornerShape(10.dp)
-                                )
-                                .clickable { }
-                                .padding(vertical = 12.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Emergency SOS", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        }
-                    }
-                }
-
-                item {
                     Spacer(Modifier.height(8.dp))
                     Row(
                         modifier              = Modifier
@@ -163,25 +97,48 @@ fun BookingDetailsScreen(
                             .padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        // ── Chat button — text color set explicitly ──
                         OutlinedButton(
                             onClick  = onChat,
                             shape    = RoundedCornerShape(12.dp),
                             border   = androidx.compose.foundation.BorderStroke(1.5.dp, GreenPrimary),
-                            colors   = ButtonDefaults.outlinedButtonColors(contentColor = GreenPrimary),
-                            modifier = Modifier.weight(1f).height(48.dp)
+                            colors   = ButtonDefaults.outlinedButtonColors(
+                                containerColor = Color.Transparent,
+                                contentColor   = GreenPrimary
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
                         ) {
-                            Text("Chat", fontWeight = FontWeight.Bold)
+                            Text(
+                                text       = "Chat",
+                                color      = GreenPrimary,
+                                fontWeight = FontWeight.Bold,
+                                fontSize   = 15.sp
+                            )
                         }
+
+                        // ── Cancel button — shortened text to fit ──
                         Button(
                             onClick  = onCancel,
                             shape    = RoundedCornerShape(12.dp),
-                            colors   = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
-                            modifier = Modifier.weight(1f).height(48.dp)
+                            colors   = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFD32F2F)
+                            ),
+                            contentPadding = PaddingValues(horizontal = 8.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
                         ) {
-                            Text("Cancel Booking", color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(
+                                text       = "Cancel",
+                                color      = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize   = 15.sp,
+                                maxLines   = 1
+                            )
                         }
                     }
-                    Spacer(Modifier.height(24.dp))
                 }
             }
         }

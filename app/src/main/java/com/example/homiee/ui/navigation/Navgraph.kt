@@ -49,21 +49,29 @@ object Routes {
     const val MY_REVIEWS     = "my_reviews"
     const val HELPER_PROFILE = "helper_profile/{helperId}"
 
-    // ── Booking flow ──
-    const val NEW_BOOKING        = "new_booking/{helperName}/{service}/{rating}"
-    const val BOOKING_CONFIRMED  = "booking_confirmed/{bookingId}"
-    const val BOOKING_DETAILS    = "booking_details/{bookingId}"
+    // Booking flow
+    const val NEW_BOOKING       = "new_booking/{helperName}/{service}/{rating}"
+    const val BOOKING_CONFIRMED = "booking_confirmed/{bookingId}"
+    const val BOOKING_DETAILS   = "booking_details/{bookingId}"
 
-    fun helperProfileRoute(helperId: String) = "helper_profile/$helperId"
+    // Chat
+    const val CHAT = "chat/{threadId}/{helperName}/{service}"
 
-    fun newBookingRoute(helperName: String, service: String, rating: Float): String {
-        val encodedName = URLEncoder.encode(helperName, "UTF-8")
-        val encodedService = URLEncoder.encode(service, "UTF-8")
-        return "new_booking/$encodedName/$encodedService/$rating"
+    fun helperProfileRoute(helperId: String)  = "helper_profile/$helperId"
+    fun bookingConfirmedRoute(bookingId: String) = "booking_confirmed/$bookingId"
+    fun bookingDetailsRoute(bookingId: String)   = "booking_details/$bookingId"
+
+    fun chatRoute(threadId: String, helperName: String, service: String): String {
+        val encodedName    = URLEncoder.encode(helperName, "UTF-8")
+        val encodedService = URLEncoder.encode(service,    "UTF-8")
+        return "chat/$threadId/$encodedName/$encodedService"
     }
 
-    fun bookingConfirmedRoute(bookingId: String) = "booking_confirmed/$bookingId"
-    fun bookingDetailsRoute(bookingId: String) = "booking_details/$bookingId"
+    fun newBookingRoute(helperName: String, service: String, rating: Float): String {
+        val encodedName    = URLEncoder.encode(helperName, "UTF-8")
+        val encodedService = URLEncoder.encode(service,    "UTF-8")
+        return "new_booking/$encodedName/$encodedService/$rating"
+    }
 
     fun otpRoute(email: String): String {
         val encoded = URLEncoder.encode(email, "UTF-8")
@@ -75,8 +83,8 @@ fun NavTab.toRoute() = when (this) {
     NavTab.HOME     -> Routes.HOME_RES
     NavTab.SEARCH   -> Routes.SEARCH
     NavTab.BOOKINGS -> Routes.BOOKINGS
-    NavTab.ACCOUNT  -> Routes.ACCOUNT
     NavTab.MESSAGE  -> Routes.MESSAGES
+    NavTab.ACCOUNT  -> Routes.ACCOUNT
 }
 
 private fun NavHostController.navigateMain(route: String) {
@@ -166,46 +174,36 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             }
         }
 
-        // ── Main tabs ────────────────────────────────────────────────────────
+        // ── Home ─────────────────────────────────────────────────────────────
         composable(Routes.HOME_RES) {
-            // ── Check on Home load whether a confirmation popup is owed
-            // (covers "app was closed while booking was pending, helper confirmed
-            // while app was killed, popup should show next time app opens") ──
-            LaunchedEffect(Unit) {
-                bookingViewModel.checkPendingConfirmation()
-            }
+            LaunchedEffect(Unit) { bookingViewModel.checkPendingConfirmation() }
             val showConfirmation by bookingViewModel.showConfirmation.collectAsState()
-            val lastBooking by bookingViewModel.lastCreatedBooking.collectAsState()
+            val lastBooking      by bookingViewModel.lastCreatedBooking.collectAsState()
 
             LaunchedEffect(showConfirmation) {
                 if (showConfirmation && lastBooking != null) {
-                    navController.navigate(Routes.bookingConfirmedRoute(lastBooking!!.id)) {
-                        // Never backstacked — this nav happens on top of Home,
-                        // and the Confirmation screen itself uses popUpTo on timeout (see below)
-                    }
+                    navController.navigate(Routes.bookingConfirmedRoute(lastBooking!!.id))
                 }
             }
 
             ResidentHomeScreen(
                 onNavItemClick = { navController.navigateMain(it) },
-                onBookClick = { helperId: String ->
+                onBookClick    = { helperId ->
                     navController.navigate(Routes.helperProfileRoute(helperId))
                 }
             )
         }
 
+        // ── Search ───────────────────────────────────────────────────────────
         composable(Routes.SEARCH) {
             SearchScreen(
-                onViewProfile  = { helperId ->
-                    navController.navigate(Routes.helperProfileRoute(helperId))
-                },
-                onBook         = { helperId ->
-                    navController.navigate(Routes.helperProfileRoute(helperId))
-                },
+                onViewProfile  = { navController.navigate(Routes.helperProfileRoute(it)) },
+                onBook         = { navController.navigate(Routes.helperProfileRoute(it)) },
                 onNavItemClick = { navController.navigateMain(it) }
             )
         }
 
+        // ── Bookings ─────────────────────────────────────────────────────────
         composable(Routes.BOOKINGS) {
             val bookings by bookingViewModel.bookings.collectAsState()
             BookingsScreen(
@@ -213,12 +211,29 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                 onNavItemClick = { navController.navigateMain(it) },
                 onDetailsClick = { bookingId ->
                     navController.navigate(Routes.bookingDetailsRoute(bookingId))
+                },
+                onChatClick    = { bookingId ->
+                    // Use bookingId as threadId, helper name from mock
+                    navController.navigate(
+                        Routes.chatRoute(bookingId, "Ramesh Kumar", "Cleaning")
+                    )
                 }
             )
         }
 
-        composable(Routes.MESSAGES) { /* TODO: MessagesScreen */ }
+        // ── Messages ─────────────────────────────────────────────────────────
+        composable(Routes.MESSAGES) {
+            MessagesScreen(
+                onNavItemClick = { navController.navigateMain(it) },
+                onThreadClick  = { threadId ->
+                    navController.navigate(
+                        Routes.chatRoute(threadId, "Ramesh Kumar", "Cleaning")
+                    )
+                }
+            )
+        }
 
+        // ── Account ──────────────────────────────────────────────────────────
         composable(Routes.ACCOUNT) {
             ProfileScreen(
                 onNavItemClick   = { navController.navigateMain(it) },
@@ -227,23 +242,17 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             )
         }
 
-        // ── Sub-screens (no bottom nav) ──────────────────────────────────────
+        // ── Settings ─────────────────────────────────────────────────────────
         composable(Routes.SETTINGS) {
-            SettingsScreen(
-                onBack   = { navController.popBackStack() },
-                onLogout = {
-                    navController.navigate(Routes.LOGIN_ROUTE) {
-                        popUpTo(Routes.HOME_RES) { inclusive = true }
-                    }
-                }
-            )
+            SettingsScreen(onBack = { navController.popBackStack() })
         }
 
+        // ── My Reviews ───────────────────────────────────────────────────────
         composable(Routes.MY_REVIEWS) {
             MyReviewsScreen(onBack = { navController.popBackStack() })
         }
 
-        // ── Helper Profile ── opened from BOOK on Home + Search ──────────────
+        // ── Helper Profile ────────────────────────────────────────────────────
         composable(
             route     = Routes.HELPER_PROFILE,
             arguments = listOf(navArgument("helperId") { type = NavType.StringType })
@@ -251,14 +260,17 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             val helperId = backStackEntry.arguments?.getString("helperId") ?: ""
             HelperProfileScreen(
                 helperId  = helperId,
-                onBookNow = { id ->
-                    navController.navigate(Routes.newBookingRoute("Ramesh Kumar", "Cleaning", 4.9f))
-                },
-                onBack    = { navController.popBackStack() }
+                onBookNow = { navController.navigate(Routes.newBookingRoute("Ramesh Kumar", "Cleaning", 4.9f)) },
+                onBack    = { navController.popBackStack() },
+                onChat    = {
+                    navController.navigate(
+                        Routes.chatRoute(helperId, "Ramesh Kumar", "Cleaning")
+                    )
+                }
             )
         }
 
-        // ── New Booking ── opened from "Book Now" on Helper Profile ──────────
+        // ── New Booking ───────────────────────────────────────────────────────
         composable(
             route     = Routes.NEW_BOOKING,
             arguments = listOf(
@@ -268,16 +280,14 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             )
         ) { backStackEntry ->
             val helperName = URLDecoder.decode(backStackEntry.arguments?.getString("helperName") ?: "", "UTF-8")
-            val service    = URLDecoder.decode(backStackEntry.arguments?.getString("service") ?: "", "UTF-8")
-            val rating      = backStackEntry.arguments?.getFloat("rating") ?: 0f
+            val service    = URLDecoder.decode(backStackEntry.arguments?.getString("service")    ?: "", "UTF-8")
+            val rating     = backStackEntry.arguments?.getFloat("rating") ?: 0f
 
             NewBookingScreen(
                 helperName         = helperName,
                 helperService      = service,
                 helperRating       = rating,
-                onBookingConfirmed = { bookingId ->
-                    // Booking shows "Pending" on the Bookings page; go straight there.
-                    // No Confirmation popup yet — that happens later when "helper accepts" fires.
+                onBookingConfirmed = {
                     navController.navigate(Routes.BOOKINGS) {
                         popUpTo(Routes.HOME_RES) { inclusive = false }
                     }
@@ -286,46 +296,72 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             )
         }
 
-        // ── Booking Confirmation ── auto-dismiss, never backstacked ──────────
+        // ── Booking Confirmed ─────────────────────────────────────────────────
         composable(
             route     = Routes.BOOKING_CONFIRMED,
             arguments = listOf(navArgument("bookingId") { type = NavType.StringType })
         ) { backStackEntry ->
             val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
-            val booking = bookingViewModel.getBookingById(bookingId)
+            val booking   = bookingViewModel.getBookingById(bookingId)
 
             BookingConfirmationScreen(
                 bookingId   = bookingId,
-                helperName  = booking?.helperName ?: "Helper",
+                helperName  = booking?.helperName  ?: "Helper",
                 bookingDate = booking?.bookingDate ?: "",
                 bookingTime = booking?.bookingTime ?: "",
                 onTimeout   = {
                     bookingViewModel.dismissConfirmation()
                     navController.navigate(Routes.bookingDetailsRoute(bookingId)) {
-                        // This screen itself is removed from the stack so back-press
-                        // from Details skips straight past it, and it can never be
-                        // revisited or re-triggered by pressing back.
                         popUpTo(Routes.BOOKING_CONFIRMED) { inclusive = true }
                     }
                 }
             )
         }
 
-        // ── Booking Details ── opened from Confirmation timeout OR Bookings "Details" ──
+        // ── Booking Details ───────────────────────────────────────────────────
         composable(
             route     = Routes.BOOKING_DETAILS,
             arguments = listOf(navArgument("bookingId") { type = NavType.StringType })
         ) { backStackEntry ->
             val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
-            val booking = bookingViewModel.getBookingById(bookingId)
+            val booking   = bookingViewModel.getBookingById(bookingId)
 
             BookingDetailsScreen(
                 bookingId   = bookingId,
-                helperName  = booking?.helperName ?: "Helper",
-                service     = booking?.service ?: "",
+                helperName  = booking?.helperName  ?: "Helper",
+                service     = booking?.service     ?: "",
                 bookingDate = booking?.bookingDate ?: "",
                 bookingTime = booking?.bookingTime ?: "",
-                onBack      = { navController.popBackStack() }
+                onChat      = {
+                    navController.navigate(
+                        Routes.chatRoute(bookingId, booking?.helperName ?: "Helper", booking?.service ?: "")
+                    )
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // ── Chat ──────────────────────────────────────────────────────────────
+        composable(
+            route     = Routes.CHAT,
+            arguments = listOf(
+                navArgument("threadId")   { type = NavType.StringType },
+                navArgument("helperName") { type = NavType.StringType },
+                navArgument("service")    { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val threadId   = backStackEntry.arguments?.getString("threadId")   ?: ""
+            val helperName = URLDecoder.decode(backStackEntry.arguments?.getString("helperName") ?: "", "UTF-8")
+            val service    = URLDecoder.decode(backStackEntry.arguments?.getString("service")    ?: "", "UTF-8")
+
+            ChatScreen(
+                threadId      = threadId,
+                helperName    = helperName,
+                service       = service,
+                onBack        = { navController.popBackStack() },
+                onViewBooking = {
+                    navController.navigate(Routes.bookingDetailsRoute(threadId))
+                }
             )
         }
     }

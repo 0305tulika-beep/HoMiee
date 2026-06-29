@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.homiee.R
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
+import com.example.homiee.ui.theme.GreenDark
 import com.example.homiee.viewmodel.BookingViewModel
 import com.example.homiee.viewmodel.BookingViewModelFactory
 
@@ -57,13 +58,6 @@ fun NewBookingScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
 
-        Image(
-            painter            = painterResource(R.drawable.bg),
-            contentDescription = null,
-            contentScale       = ContentScale.FillBounds,
-            modifier           = Modifier.fillMaxSize()
-        )
-
         LazyColumn(
             modifier       = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 24.dp)
@@ -72,7 +66,7 @@ fun NewBookingScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(GreenPrimary)
+                        .background(GreenDark)
                         .statusBarsPadding()
                         .padding(horizontal = 20.dp, vertical = 16.dp)
                 ) {

@@ -9,13 +9,12 @@ val Pink80 = Color(0xFFEFB8C8)
 val Purple40 = Color(0xFF6650a4)
 val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
+val GreenDarkk    = Color(0xFF1A5C3A)
 
 val GreenDark   = Color(0xFF1C5C4F)   // top bar / header bg
 val GreenMid    = Color(0xFF2E7D65)   // primary buttons
 val GreenLight  = Color(0xFF4CAF8E)   // selected chips / accents
 val GreenTint   = Color(0xFFD0EDE5)   // chip / field bg (light)
-val GreenGrad1  = Color(0xFF3A8C72)   // gradient start
-val GreenGrad2  = Color(0xFF9EC8B8)   // gradient end (warm)
 
 val White       = Color(0xFFFFFFFF)
 val OffWhite    = Color(0xFFF5F9F7)

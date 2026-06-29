@@ -66,9 +66,10 @@ private val MOCK_HELPER = object {
 
 @Composable
 fun HelperProfileScreen(
-    helperId: String = "",
+    helperId:  String  = "",
     onBookNow: (String) -> Unit = {},
-    onBack: () -> Unit = {}             // ← already existed, now actually used
+    onBack:    () -> Unit = {},
+    onChat:    () -> Unit = {}      // ← ADD THIS
 ) {
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = false)
 
@@ -312,7 +313,7 @@ fun HelperProfileScreen(
         ) {
             // Chat button
             OutlinedButton(
-                onClick  = { /* TODO: chat */ },
+                onClick = onChat,
                 shape    = RoundedCornerShape(14.dp),
                 border   = androidx.compose.foundation.BorderStroke(1.5.dp, GreenPrimary),
                 colors   = ButtonDefaults.outlinedButtonColors(

@@ -70,7 +70,8 @@ fun BookingsScreen(
     bookings: List<BookingItem>,
     onNavItemClick: (String) -> Unit = {},
     onDetailsClick: (String) -> Unit = {},
-    initialTab: BookingTab = BookingTab.UPCOMING
+    onChatClick:    (String) -> Unit = {},
+            initialTab: BookingTab = BookingTab.UPCOMING
 ) {
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = false)
 
@@ -159,6 +160,7 @@ fun BookingsScreen(
                         BookingCard(
                             booking        = booking,
                             onDetailsClick = onDetailsClick,
+                            onChatClick    = onChatClick,
                             modifier       = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                         )
                     }
@@ -288,9 +290,10 @@ private fun PendingBookingCard(
 // ── Full booking card ──────────────────────────────────────────────────────────
 @Composable
 private fun BookingCard(
-    booking: BookingItem,
+    booking:        BookingItem,
     onDetailsClick: (String) -> Unit = {},
-    modifier: Modifier = Modifier
+    onChatClick:    (String) -> Unit = {},
+    modifier:       Modifier = Modifier
 ) {
     Card(
         modifier  = modifier.fillMaxWidth(),
@@ -384,7 +387,7 @@ private fun BookingCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 OutlinedButton(
-                    onClick        = { },
+                    onClick        = { onChatClick(booking.id) },
                     shape          = RoundedCornerShape(10.dp),
                     border         = BorderStroke(1.5.dp, GreenPrimary),
                     colors         = ButtonDefaults.outlinedButtonColors(contentColor = GreenPrimary),
