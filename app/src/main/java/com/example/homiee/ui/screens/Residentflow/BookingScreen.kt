@@ -67,15 +67,16 @@ private val MOCK_BOOKINGS = listOf(
 // ── Screen ─────────────────────────────────────────────────────────────────────
 @Composable
 fun BookingsScreen(
-    bookings: List<BookingItem>,
-    onNavItemClick: (String) -> Unit = {},
-    onDetailsClick: (String) -> Unit = {},
-    onChatClick:    (String) -> Unit = {},
-            initialTab: BookingTab = BookingTab.UPCOMING
-) {
+    bookings:        List<BookingItem>,
+    onNavItemClick:  (String) -> Unit = {},
+    onDetailsClick:  (String) -> Unit = {},
+    onChatClick:     (String) -> Unit = {},
+    onActivityClick: (String) -> Unit = {},   // ← ADD
+    onReviewClick:   (String) -> Unit = {}    // ← ADD
+){
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = false)
 
-    var selectedTab by remember { mutableStateOf(initialTab) }
+    var selectedTab by remember { mutableStateOf(BookingTab.ACTIVE) }
 
     val filteredBookings = remember(selectedTab) {
         MOCK_BOOKINGS.filter { it.status == selectedTab }
@@ -158,10 +159,12 @@ fun BookingsScreen(
                         )
                     } else {
                         BookingCard(
-                            booking        = booking,
-                            onDetailsClick = onDetailsClick,
-                            onChatClick    = onChatClick,
-                            modifier       = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                            booking         = booking,
+                            onDetailsClick  = onDetailsClick,
+                            onChatClick     = onChatClick,
+                            onActivityClick = onActivityClick,   // ← ADD
+                            onReviewClick   = onReviewClick,     // ← ADD
+                            modifier        = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                         )
                     }
                 }
@@ -290,11 +293,13 @@ private fun PendingBookingCard(
 // ── Full booking card ──────────────────────────────────────────────────────────
 @Composable
 private fun BookingCard(
-    booking:        BookingItem,
-    onDetailsClick: (String) -> Unit = {},
-    onChatClick:    (String) -> Unit = {},
-    modifier:       Modifier = Modifier
-) {
+    booking:         BookingItem,
+    onDetailsClick:  (String) -> Unit = {},
+    onChatClick:     (String) -> Unit = {},
+    onActivityClick: (String) -> Unit = {},   // ← ADD
+    onReviewClick:   (String) -> Unit = {},   // ← ADD
+    modifier:        Modifier = Modifier
+){
     Card(
         modifier  = modifier.fillMaxWidth(),
         shape     = RoundedCornerShape(16.dp),
@@ -430,7 +435,7 @@ private fun BookingCard(
                     }
 
                     BookingTab.COMPLETED -> Button(
-                        onClick        = { },
+                        onClick        = {onReviewClick(booking.id) },
                         shape          = RoundedCornerShape(10.dp),
                         colors         = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
                         modifier       = Modifier.weight(1f).height(44.dp),
@@ -451,7 +456,7 @@ private fun BookingCard(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(10.dp))
                         .background(Color(0xFFE8F5EE))
-                        .clickable { }
+                        .clickable {onActivityClick(booking.id) }
                         .padding(horizontal = 14.dp, vertical = 10.dp)
                 ) {
                     Row(

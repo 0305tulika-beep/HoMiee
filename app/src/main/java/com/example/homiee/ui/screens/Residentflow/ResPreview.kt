@@ -11,23 +11,26 @@ import com.example.homiee.ui.theme.HomieeTheme
 
 @Preview(showBackground = true, showSystemUi = true, name = "Search Screen")
 @Composable fun SearchScreenPreview() {
-    HomieeTheme {
-        SearchScreen(onViewProfile = {}, onBook = {}, onNavItemClick = {})
-    }
+    HomieeTheme { SearchScreen(onViewProfile = {}, onBook = {}, onNavItemClick = {}) }
 }
 
 @Preview(showBackground = true, showSystemUi = true, name = "Bookings Screen")
 @Composable fun BookingsScreenPreview() {
     HomieeTheme {
-        BookingsScreen(bookings = emptyList(), onNavItemClick = {}, onDetailsClick = {}, onChatClick = {})
+        BookingsScreen(
+            bookings        = emptyList(),
+            onNavItemClick  = {},
+            onDetailsClick  = {},
+            onChatClick     = {},
+            onActivityClick = {},
+            onReviewClick   = {}
+        )
     }
 }
 
 @Preview(showBackground = true, showSystemUi = true, name = "Messages Screen")
 @Composable fun MessagesScreenPreview() {
-    HomieeTheme {
-        MessagesScreen(onNavItemClick = {}, onThreadClick = {})
-    }
+    HomieeTheme { MessagesScreen(onNavItemClick = {}, onThreadClick = {}) }
 }
 
 @Preview(showBackground = true, showSystemUi = true, name = "Chat Screen")
@@ -43,11 +46,34 @@ import com.example.homiee.ui.theme.HomieeTheme
     }
 }
 
+@Preview(showBackground = true, showSystemUi = true, name = "Activity Screen")
+@Composable fun ActivityScreenPreview() {
+    HomieeTheme {
+        ActivityScreen(
+            bookingId  = "b001",
+            helperName = "Ramesh Kumar",
+            onBack     = {},
+            onChat     = {},
+            onCall     = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true, name = "Feedback Screen")
+@Composable fun FeedbackScreenPreview() {
+    HomieeTheme {
+        FeedbackScreen(
+            helperName = "Ramesh Kumar",
+            bookingId  = "b001",
+            onBack     = {},
+            onSubmit   = {}
+        )
+    }
+}
+
 @Preview(showBackground = true, showSystemUi = true, name = "Profile Screen")
 @Composable fun ProfileScreenPreview() {
-    HomieeTheme {
-        ProfileScreen(onNavItemClick = {}, onSettingsClick = {}, onMyReviewsClick = {})
-    }
+    HomieeTheme { ProfileScreen(onNavItemClick = {}, onSettingsClick = {}, onMyReviewsClick = {}) }
 }
 
 @Preview(showBackground = true, showSystemUi = true, name = "Settings Screen")
@@ -62,9 +88,7 @@ import com.example.homiee.ui.theme.HomieeTheme
 
 @Preview(showBackground = true, showSystemUi = true, name = "Helper Profile Screen")
 @Composable fun HelperProfileScreenPreview() {
-    HomieeTheme {
-        HelperProfileScreen(helperId = "test_001", onBookNow = {}, onBack = {})
-    }
+    HomieeTheme { HelperProfileScreen(helperId = "test_001", onBookNow = {}, onBack = {}) }
 }
 
 @Preview(showBackground = true, showSystemUi = true, name = "New Booking")

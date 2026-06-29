@@ -57,7 +57,21 @@ object Routes {
     // Chat
     const val CHAT = "chat/{threadId}/{helperName}/{service}"
 
-    fun helperProfileRoute(helperId: String)  = "helper_profile/$helperId"
+    // Activity & Feedback
+    const val ACTIVITY = "activity/{bookingId}/{helperName}"
+    const val FEEDBACK = "feedback/{bookingId}/{helperName}"
+
+    fun activityRoute(bookingId: String, helperName: String): String {
+        val encodedName = URLEncoder.encode(helperName, "UTF-8")
+        return "activity/$bookingId/$encodedName"
+    }
+
+    fun feedbackRoute(bookingId: String, helperName: String): String {
+        val encodedName = URLEncoder.encode(helperName, "UTF-8")
+        return "feedback/$bookingId/$encodedName"
+    }
+
+    fun helperProfileRoute(helperId: String)     = "helper_profile/$helperId"
     fun bookingConfirmedRoute(bookingId: String) = "booking_confirmed/$bookingId"
     fun bookingDetailsRoute(bookingId: String)   = "booking_details/$bookingId"
 
@@ -207,16 +221,21 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         composable(Routes.BOOKINGS) {
             val bookings by bookingViewModel.bookings.collectAsState()
             BookingsScreen(
-                bookings       = bookings,
-                onNavItemClick = { navController.navigateMain(it) },
-                onDetailsClick = { bookingId ->
+                bookings        = bookings,
+                onNavItemClick  = { navController.navigateMain(it) },
+                onDetailsClick  = { bookingId ->
                     navController.navigate(Routes.bookingDetailsRoute(bookingId))
                 },
-                onChatClick    = { bookingId ->
-                    // Use bookingId as threadId, helper name from mock
+                onChatClick     = { bookingId ->
                     navController.navigate(
                         Routes.chatRoute(bookingId, "Ramesh Kumar", "Cleaning")
                     )
+                },
+                onActivityClick = { bookingId ->
+                    navController.navigate(Routes.activityRoute(bookingId, "Ramesh Kumar"))
+                },
+                onReviewClick   = { bookingId ->
+                    navController.navigate(Routes.feedbackRoute(bookingId, "Ramesh Kumar"))
                 }
             )
         }
@@ -362,6 +381,45 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                 onViewBooking = {
                     navController.navigate(Routes.bookingDetailsRoute(threadId))
                 }
+            )
+        }
+
+        // ── Activity ──────────────────────────────────────────────────────────
+        composable(
+            route     = Routes.ACTIVITY,
+            arguments = listOf(
+                navArgument("bookingId")  { type = NavType.StringType },
+                navArgument("helperName") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val bookingId  = backStackEntry.arguments?.getString("bookingId")  ?: ""
+            val helperName = URLDecoder.decode(backStackEntry.arguments?.getString("helperName") ?: "", "UTF-8")
+            ActivityScreen(
+                bookingId  = bookingId,
+                helperName = helperName,
+                onBack     = { navController.popBackStack() },
+                onChat     = {
+                    navController.navigate(Routes.chatRoute(bookingId, helperName, "Cleaning"))
+                },
+                onCall     = { /* TODO: dial intent */ }
+            )
+        }
+
+        // ── Feedback ──────────────────────────────────────────────────────────
+        composable(
+            route     = Routes.FEEDBACK,
+            arguments = listOf(
+                navArgument("bookingId")  { type = NavType.StringType },
+                navArgument("helperName") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val bookingId  = backStackEntry.arguments?.getString("bookingId")  ?: ""
+            val helperName = URLDecoder.decode(backStackEntry.arguments?.getString("helperName") ?: "", "UTF-8")
+            FeedbackScreen(
+                helperName = helperName,
+                bookingId  = bookingId,
+                onBack     = { navController.popBackStack() },
+                onSubmit   = { navController.popBackStack() }
             )
         }
     }
