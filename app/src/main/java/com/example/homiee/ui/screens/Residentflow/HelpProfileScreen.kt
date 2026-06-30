@@ -31,6 +31,7 @@ private val TextPrimary   = Color(0xFF1A1A1A)
 private val TextSecondary = Color(0xFF7A7A7A)
 private val StarColor     = Color(0xFFF4B400)
 private val CardBg        = Color.White
+private val ActiveDotColor = Color(0xFF2ECC71)
 
 data class HelperReview(
     val reviewerName: String,
@@ -45,6 +46,7 @@ private val MOCK_HELPER = object {
     val name              = "Ramesh Kumar"
     val distance          = "0.8 km away"
     val rating            = 4.9f
+    val isActive          = true
     val about             = "Experienced and trustworthy home helper with 5 years of experience working with families across Lucknow. Speaks Hindi and English. Background verified and highly rated."
     val services          = listOf(
         ServiceWithPrice("Cooking",  "₹250/hr"),
@@ -53,7 +55,8 @@ private val MOCK_HELPER = object {
     )
     val experience        = "5 years"
     val languages         = "Hindi, English"
-    val availability      = listOf("Morning", "Afternoon", "Evening")
+    val availabilityStart = "9:00 AM"
+    val availabilityEnd   = "6:00 PM"
     val phoneVerified     = true
     val idVerified        = true
     val backgroundChecked = true
@@ -137,27 +140,77 @@ fun HelperProfileScreen(
                         // Photo + name + distance + rating
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
-                                modifier         = Modifier
-                                    .size(72.dp)
-                                    .clip(CircleShape)
-                                    .background(GreenPrimary),
+                                modifier = Modifier.size(72.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Image(
-                                    painter            = painterResource(R.drawable.ic_profile_placeholder),
-                                    contentDescription = "Helper",
-                                    contentScale       = ContentScale.Crop,
-                                    modifier           = Modifier.fillMaxSize()
-                                )
+                                Box(
+                                    modifier         = Modifier
+                                        .size(72.dp)
+                                        .clip(CircleShape)
+                                        .background(GreenPrimary),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Image(
+                                        painter            = painterResource(R.drawable.ic_profile_placeholder),
+                                        contentDescription = "Helper",
+                                        contentScale       = ContentScale.Crop,
+                                        modifier           = Modifier.fillMaxSize()
+                                    )
+                                }
+
+                                if (MOCK_HELPER.isActive) {
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.BottomEnd)
+                                            .size(20.dp)
+                                            .clip(CircleShape)
+                                            .background(Color.White),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(13.dp)
+                                                .clip(CircleShape)
+                                                .background(ActiveDotColor)
+                                        )
+                                    }
+                                }
                             }
                             Spacer(Modifier.width(14.dp))
                             Column {
-                                Text(
-                                    text       = MOCK_HELPER.name,
-                                    fontSize   = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color      = TextPrimary
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text       = MOCK_HELPER.name,
+                                        fontSize   = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color      = TextPrimary
+                                    )
+                                    if (MOCK_HELPER.isActive) {
+                                        Spacer(Modifier.width(8.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(ActiveDotColor.copy(alpha = 0.12f))
+                                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(6.dp)
+                                                        .clip(CircleShape)
+                                                        .background(ActiveDotColor)
+                                                )
+                                                Spacer(Modifier.width(4.dp))
+                                                Text(
+                                                    "Active",
+                                                    fontSize   = 11.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color      = ActiveDotColor
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                                 Text(
                                     text     = MOCK_HELPER.distance,
                                     fontSize = 12.sp,
@@ -255,18 +308,20 @@ fun HelperProfileScreen(
             // ── Availability ─────────────────────────────────────────────
             item {
                 SectionCard(title = "AVAILABILITY") {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        MOCK_HELPER.availability.forEach { slot ->
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(GreenLight)
-                                    .border(1.dp, GreenPrimary, RoundedCornerShape(20.dp))
-                                    .padding(horizontal = 14.dp, vertical = 6.dp)
-                            ) {
-                                Text(slot, fontSize = 13.sp, color = GreenText, fontWeight = FontWeight.Medium)
-                            }
-                        }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(GreenLight)
+                            .border(1.dp, GreenPrimary, RoundedCornerShape(20.dp))
+                            .padding(horizontal = 14.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text       = "${MOCK_HELPER.availabilityStart} – ${MOCK_HELPER.availabilityEnd}",
+                            fontSize   = 13.sp,
+                            color      = GreenText,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
             }

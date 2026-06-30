@@ -1,32 +1,36 @@
 package com.example.homiee.ui.screens.auth
 
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MarkEmailRead
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.homiee.R
 import com.example.homiee.ui.components.HideSystemBars
 import com.example.homiee.ui.components.HomieeButton
 import com.example.homiee.ui.components.OtpBox
 import com.example.homiee.ui.components.systemBarsPadding
+import com.example.homiee.ui.theme.GreenDark
 import com.example.homiee.ui.theme.GreenMid
+import com.example.homiee.ui.theme.GreenTint
 import com.example.homiee.ui.theme.TextMuted
 import com.example.homiee.ui.theme.TextPrimary
 import com.example.homiee.ui.theme.White
@@ -61,123 +65,140 @@ fun OtpScreen(
         }
     }
 
-    HideSystemBars(lightIcons = true)
+    HideSystemBars(lightIcons = false)
 
-    Box(modifier = Modifier.fillMaxSize()) {
-
-        Image(
-            painter            = painterResource(id = R.drawable.bg3),
-            contentDescription = null,
-            contentScale       = ContentScale.Crop,
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(White)
+    ) {
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(240.dp)
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight()
-                .padding(top = 170.dp)
+                .fillMaxSize()
+                .padding(systemBarsPadding())
+                .padding(horizontal = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
-                painter            = painterResource(id = R.drawable.bgw),
-                contentDescription = null,
-                contentScale       = ContentScale.FillBounds,
-                modifier           = Modifier.fillMaxSize()
+
+            Spacer(Modifier.height(56.dp))
+
+            // Icon badge
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(CircleShape)
+                    .background(GreenTint),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector        = Icons.Filled.MarkEmailRead,
+                    contentDescription = null,
+                    tint               = GreenDark,
+                    modifier           = Modifier.size(34.dp)
+                )
+            }
+
+            Spacer(Modifier.height(28.dp))
+
+            Text(
+                text       = "Verify Your Email",
+                fontWeight = FontWeight.Bold,
+                fontSize   = 22.sp,
+                color      = TextPrimary,
+                textAlign  = TextAlign.Center
             )
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(systemBarsPadding())
-                    .padding(horizontal = 32.dp, vertical = 48.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text       = "Enter Security Pin",
-                    fontWeight = FontWeight.Bold,
-                    fontSize   = 18.sp,
-                    color      = TextPrimary
-                )
+            Spacer(Modifier.height(10.dp))
 
-                Spacer(Modifier.height(32.dp))
+            Text(
+                text      = "We've sent a 6-digit code to",
+                fontSize  = 14.sp,
+                color     = TextMuted,
+                textAlign = TextAlign.Center
+            )
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.clickable {
-                        focusRequester.requestFocus()
-                        keyboardController?.show()
-                    }
-                ) {
-                    repeat(6) { index ->
-                        OtpBox(digit = otpValue.getOrNull(index)?.toString() ?: "")
-                    }
+            Text(
+                text       = email,
+                fontSize   = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color      = TextPrimary,
+                textAlign  = TextAlign.Center
+            )
+
+            Spacer(Modifier.height(40.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.clickable {
+                    focusRequester.requestFocus()
+                    keyboardController?.show()
                 }
+            ) {
+                repeat(6) { index ->
+                    OtpBox(digit = otpValue.getOrNull(index)?.toString() ?: "")
+                }
+            }
 
-                OutlinedTextField(
-                    value           = otpValue,
-                    onValueChange   = { if (it.length <= 6) otpValue = it },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                    modifier        = Modifier
-                        .size(1.dp)
-                        .focusRequester(focusRequester),
-                    colors          = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedBorderColor   = Color.Transparent
-                    )
+            OutlinedTextField(
+                value           = otpValue,
+                onValueChange   = { if (it.length <= 6) otpValue = it },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                modifier        = Modifier
+                    .size(1.dp)
+                    .focusRequester(focusRequester),
+                colors          = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color.Transparent,
+                    focusedBorderColor   = Color.Transparent
                 )
+            )
 
-                if (uiState.errorMessage != null) {
-                    Spacer(Modifier.height(12.dp))
+            if (uiState.errorMessage != null) {
+                Spacer(Modifier.height(16.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFFDECEC))
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                ) {
                     Text(
                         text     = uiState.errorMessage ?: "",
                         color    = Color(0xFFD32F2F),
                         fontSize = 13.sp
                     )
                 }
-
-                Spacer(Modifier.height(40.dp))
-
-                HomieeButton(
-                    text     = if (uiState.isLoading) "Verifying..." else "Confirm",
-                    enabled  = otpValue.length == 6 && !uiState.isLoading,
-                    onClick  = {
-                        viewModel.verifyOtp(email = email, otp = otpValue)   // ← role removed
-                    },
-                    modifier = Modifier.fillMaxWidth(0.65f)
-                )
-
-                Spacer(Modifier.height(20.dp))
-
-                Row {
-                    Text(
-                        text = if (resendState.isLoading) "Resending... " else "Didn't receive yet? ",
-                        color = TextMuted,
-                        fontSize = 14.sp
-                    )
-                    Text(
-                        text       = "Resend it",
-                        color      = GreenMid,
-                        fontWeight = FontWeight.Bold,
-                        fontSize   = 14.sp,
-                        modifier   = Modifier.clickable {
-                            viewModel.resendOtp(email = email)
-                        }
-                    )
-                }
             }
-        }
 
-        Text(
-            text       = "Verify Your Number",
-            style      = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color      = White,
-            textAlign  = TextAlign.Center,
-            modifier   = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 70.dp)
-        )
+            Spacer(Modifier.height(36.dp))
+
+            HomieeButton(
+                text     = if (uiState.isLoading) "Verifying..." else "Confirm",
+                enabled  = otpValue.length == 6 && !uiState.isLoading,
+                onClick  = {
+                    viewModel.verifyOtp(email = email, otp = otpValue)
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text     = if (resendState.isLoading) "Resending... " else "Didn't receive a code? ",
+                    color    = TextMuted,
+                    fontSize = 14.sp
+                )
+                Text(
+                    text       = "Resend",
+                    color      = GreenMid,
+                    fontWeight = FontWeight.Bold,
+                    fontSize   = 14.sp,
+                    modifier   = Modifier.clickable {
+                        viewModel.resendOtp(email = email)
+                    }
+                )
+            }
+
+            Spacer(Modifier.height(24.dp))
+        }
     }
 }

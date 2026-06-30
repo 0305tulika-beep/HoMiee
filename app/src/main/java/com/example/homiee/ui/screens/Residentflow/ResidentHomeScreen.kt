@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -35,6 +36,9 @@ import com.example.homiee.ui.theme.GreenDark
 import com.example.homiee.ui.theme.TextMuted
 import com.example.homiee.ui.theme.TextPrimary
 import com.example.homiee.ui.theme.White
+
+// ── Active status colors ─────────────────────────────────────────────────────
+private val ActiveDotColor = Color(0xFF2ECC71)
 
 @Composable
 fun ResidentHomeScreen(
@@ -188,10 +192,10 @@ fun ResidentHomeScreen(
                             .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        HelperCard(name = "Ramesh Kumar", service = "Cleaning", rating = "4.9")
-                        HelperCard(name = "Sunita Devi",  service = "Cooking",  rating = "4.8")
-                        HelperCard(name = "Priya Singh",  service = "Laundry",  rating = "4.7")
-                        HelperCard(name = "Anita Rao",    service = "Laundry",  rating = "4.8")
+                        HelperCard(name = "Ramesh Kumar", service = "Cleaning", rating = "4.9", isActive = true)
+                        HelperCard(name = "Sunita Devi",  service = "Cooking",  rating = "4.8", isActive = false)
+                        HelperCard(name = "Priya Singh",  service = "Laundry",  rating = "4.7", isActive = true)
+                        HelperCard(name = "Anita Rao",    service = "Laundry",  rating = "4.8", isActive = false)
                     }
 
                     Spacer(Modifier.height(20.dp))
@@ -306,7 +310,12 @@ private fun ActivityCard(
 }
 
 @Composable
-private fun HelperCard(name: String, service: String, rating: String) {
+private fun HelperCard(
+    name: String,
+    service: String,
+    rating: String,
+    isActive: Boolean = true
+) {
     androidx.compose.material3.Card(
         modifier  = Modifier.width(170.dp),
         shape     = RoundedCornerShape(16.dp),
@@ -322,23 +331,49 @@ private fun HelperCard(name: String, service: String, rating: String) {
             verticalArrangement = Arrangement.Top
         ) {
             Box(
-                modifier         = Modifier
-                    .size(100.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF2E7D67)),
+                modifier = Modifier.size(100.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter            = painterResource(id = R.drawable.ic_profile_placeholder),
-                    contentDescription = "Profile",
-                    contentScale       = ContentScale.Crop,
-                    modifier           = Modifier.fillMaxSize()
-                )
+                Box(
+                    modifier         = Modifier
+                        .size(100.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF2E7D67)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter            = painterResource(id = R.drawable.ic_profile_placeholder),
+                        contentDescription = "Profile",
+                        contentScale       = ContentScale.Crop,
+                        modifier           = Modifier.fillMaxSize()
+                    )
+                }
+
+                if (isActive) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .size(22.dp)
+                            .clip(CircleShape)
+                            .background(Color.White),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(14.dp)
+                                .clip(CircleShape)
+                                .background(ActiveDotColor)
+                        )
+                    }
+                }
             }
 
             Spacer(Modifier.height(12.dp))
-            Text(name,    fontWeight = FontWeight.Bold, fontSize = 15.sp, color = TextPrimary)
-            Spacer(Modifier.height(2.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(name, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = TextPrimary)
+            }
+
+            Spacer(Modifier.height(4.dp))
             Text(service, fontSize = 13.sp, color = TextMuted)
             Spacer(Modifier.height(8.dp))
 

@@ -43,6 +43,7 @@ private val TextPrimary      = Color(0xFF1A1A1A)
 private val TextSecondary    = Color(0xFF7A7A7A)
 private val StarColor        = Color(0xFFF4B400)
 private val CardBg           = Color.White
+private val ActiveDotColor   = Color(0xFF2ECC71)
 
 // ── Data ───────────────────────────────────────────────────────────────────────
 data class HelperCard(
@@ -51,6 +52,7 @@ data class HelperCard(
     val service: String,
     val rating: Float,
     val photoUrl: String? = null,
+    val isActive: Boolean = true,
     val initials: String = name.take(2).uppercase()
 )
 
@@ -65,12 +67,12 @@ private val SERVICE_FILTERS = listOf(
 )
 
 private val TEST_HELPERS = listOf(
-    HelperCard("001", "Priya Sharma", "Cleaning",    4.9f),
-    HelperCard("002", "Sunita Devi",  "Cooking",     4.8f),
-    HelperCard("003", "Meena Verma",  "Laundry",     4.8f),
-    HelperCard("004", "Ramesh Kumar", "Babysitting", 4.7f),
-    HelperCard("005", "Kavita Singh", "Cooking",     4.6f),
-    HelperCard("006", "Anita Patel",  "Cleaning",    4.5f),
+    HelperCard("001", "Priya Sharma", "Cleaning",    4.9f, isActive = true),
+    HelperCard("002", "Sunita Devi",  "Cooking",     4.8f, isActive = false),
+    HelperCard("003", "Meena Verma",  "Laundry",     4.8f, isActive = true),
+    HelperCard("004", "Ramesh Kumar", "Babysitting", 4.7f, isActive = true),
+    HelperCard("005", "Kavita Singh", "Cooking",     4.6f, isActive = false),
+    HelperCard("006", "Anita Patel",  "Cleaning",    4.5f, isActive = true),
 )
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
@@ -303,19 +305,51 @@ private fun SearchHelperCard(
                 .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            HelperInitialsAvatar(initials = helper.initials, photoUrl = helper.photoUrl)
+            HelperInitialsAvatar(
+                initials = helper.initials,
+                photoUrl = helper.photoUrl,
+                isActive = helper.isActive
+            )
 
             Spacer(Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text       = helper.name,
-                    fontSize   = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color      = TextPrimary,
-                    maxLines   = 1,
-                    overflow   = TextOverflow.Ellipsis
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text       = helper.name,
+                        fontSize   = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color      = TextPrimary,
+                        maxLines   = 1,
+                        overflow   = TextOverflow.Ellipsis,
+                        modifier   = Modifier.weight(1f, fill = false)
+                    )
+                    if (helper.isActive) {
+                        Spacer(Modifier.width(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(ActiveDotColor.copy(alpha = 0.12f))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(ActiveDotColor)
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    "Active",
+                                    fontSize   = 10.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color      = ActiveDotColor
+                                )
+                            }
+                        }
+                    }
+                }
                 Text(
                     text     = helper.service,
                     fontSize = 13.sp,
@@ -356,30 +390,53 @@ private fun SearchHelperCard(
 
 // ── Avatar ─────────────────────────────────────────────────────────────────────
 @Composable
-private fun HelperInitialsAvatar(initials: String, photoUrl: String?) {
-    if (photoUrl != null) {
-        AsyncImage(
-            model              = photoUrl,
-            contentDescription = initials,
-            contentScale       = ContentScale.Crop,
-            modifier           = Modifier
-                .size(52.dp)
-                .clip(CircleShape)
-        )
-    } else {
-        Box(
-            modifier         = Modifier
-                .size(52.dp)
-                .clip(CircleShape)
-                .background(GreenPrimary),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text       = initials,
-                color      = Color.White,
-                fontSize   = 18.sp,
-                fontWeight = FontWeight.Bold
+private fun HelperInitialsAvatar(initials: String, photoUrl: String?, isActive: Boolean = true) {
+    Box(
+        modifier = Modifier.size(52.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        if (photoUrl != null) {
+            AsyncImage(
+                model              = photoUrl,
+                contentDescription = initials,
+                contentScale       = ContentScale.Crop,
+                modifier           = Modifier
+                    .size(52.dp)
+                    .clip(CircleShape)
             )
+        } else {
+            Box(
+                modifier         = Modifier
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(GreenPrimary),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text       = initials,
+                    color      = Color.White,
+                    fontSize   = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        if (isActive) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(14.dp)
+                    .clip(CircleShape)
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(9.dp)
+                        .clip(CircleShape)
+                        .background(ActiveDotColor)
+                )
+            }
         }
     }
 }
