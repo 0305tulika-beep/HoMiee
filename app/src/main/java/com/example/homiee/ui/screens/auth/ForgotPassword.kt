@@ -24,7 +24,7 @@ fun ForgotPasswordScreen(
     onBack:     () -> Unit = {},
     onContinue: (String) -> Unit = {}
 ) {
-    HideSystemBars(lightIcons = true)
+    HideSystemBars()
 
     var email by remember { mutableStateOf("") }
 

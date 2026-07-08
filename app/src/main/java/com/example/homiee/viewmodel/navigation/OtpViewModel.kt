@@ -34,7 +34,7 @@ class OtpViewModel(private val tokenManager: TokenManager) : ViewModel() {
     private val _resendState = MutableStateFlow(ResendUiState())
     val resendState: StateFlow<ResendUiState> = _resendState
 
-    fun verifyOtp(email: String, otp: String) {   // ← role param removed
+    fun verifyOtp(email: String, otp: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
@@ -45,7 +45,6 @@ class OtpViewModel(private val tokenManager: TokenManager) : ViewModel() {
                     val tokens = result.data.data?.tokens
                     if (tokens != null) {
                         tokenManager.saveTokens(tokens.access, tokens.refresh)
-                        // role NOT saved here — Choice screen sets it after this
                     }
                     _uiState.value = _uiState.value.copy(isLoading = false, isSuccess = true)
                 }

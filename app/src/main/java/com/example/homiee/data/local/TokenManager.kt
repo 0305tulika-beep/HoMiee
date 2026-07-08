@@ -13,7 +13,6 @@ class TokenManager(private val context: Context) {
 
     private val ACCESS_TOKEN_KEY   = stringPreferencesKey("access_token")
     private val REFRESH_TOKEN_KEY  = stringPreferencesKey("refresh_token")
-    private val ROLE_KEY           = stringPreferencesKey("user_role")
     private val FORMS_COMPLETE_KEY = booleanPreferencesKey("forms_completed")
     private val CURRENT_STEP_KEY   = stringPreferencesKey("current_form_step")
 
@@ -21,12 +20,6 @@ class TokenManager(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs[ACCESS_TOKEN_KEY] = access
             prefs[REFRESH_TOKEN_KEY] = refresh
-        }
-    }
-
-    suspend fun saveRole(role: String) {
-        context.dataStore.edit { prefs ->
-            prefs[ROLE_KEY] = role
         }
     }
 
@@ -48,10 +41,6 @@ class TokenManager(private val context: Context) {
 
     suspend fun getRefreshToken(): String? {
         return context.dataStore.data.first()[REFRESH_TOKEN_KEY]
-    }
-
-    suspend fun getRole(): String? {
-        return context.dataStore.data.first()[ROLE_KEY]
     }
 
     suspend fun getCurrentStep(): String? {

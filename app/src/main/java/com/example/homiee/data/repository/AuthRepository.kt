@@ -26,10 +26,6 @@ class AuthRepository {
     suspend fun resendOtp(request: ResendOtpRequest): ApiResult<ResendOtpResponse> =
         safeApiCall { api.resendOtp(request) }
 
-    // ── PLACEHOLDER — wire to real endpoint once backend ships it ──
-    suspend fun setRole(request: SetRoleRequest): ApiResult<SetRoleResponse> =
-        safeApiCall { api.setRole(request) }
-
     private suspend fun <T> safeApiCall(
         isLoginCall: Boolean = false,
         call: suspend () -> Response<T>

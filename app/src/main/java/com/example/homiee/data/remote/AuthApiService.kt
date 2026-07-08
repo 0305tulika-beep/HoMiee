@@ -18,8 +18,4 @@ interface AuthApiService {
 
     @POST("api/auth/resend-otp/")
     suspend fun resendOtp(@Body request: ResendOtpRequest): Response<ResendOtpResponse>
-
-    // ── PLACEHOLDER — update path once backend ships the role-setting endpoint ──
-    @POST("api/auth/set-role/")
-    suspend fun setRole(@Body request: SetRoleRequest): Response<SetRoleResponse>
 }

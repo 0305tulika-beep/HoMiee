@@ -2,28 +2,38 @@ package com.example.homiee.ui.screens.resident
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.homiee.ui.theme.HomieeTheme
 
-@Preview(showBackground = true, name = "Step 1 — Address")
+@Preview(showBackground = true)
 @Composable
-fun ResFormAddressScreenPreview() {
-    HomieeTheme { ResFormAddressScreen(onNext = {}) }
+private fun PreviewAddressFormScreen() {
+    ResFormAddressScreen(
+        houseNo = "", onHouseNoChange = {},
+        area = "", onAreaChange = {},
+        city = "", onCityChange = {},
+        pincode = "", onPincodeChange = {},
+        onUseCurrentLocation = {},
+        onNext = {}
+    )
 }
 
-@Preview(showBackground = true, name = "Step 2 — Emergency Contact")
+@Preview(showBackground = true)
 @Composable
-fun ResFormEmergencyScreenPreview() {
-    HomieeTheme { ResFormEmergencyScreen(onNext = {}) }
+private fun PreviewEmergencyContactFormScreen() {
+    ResFormEmergencyScreen(
+        contactName = "", onContactNameChange = {},
+        mobileNumber = "", onMobileNumberChange = {},
+        onNext = {}
+    )
 }
 
-@Preview(showBackground = true, name = "Step 3 — Identity Verification")
+@Preview(showBackground = true)
 @Composable
-fun ResFormIdentityScreenPreview() {
-    HomieeTheme { ResFormIdentityScreen(onNext = {}) }
+private fun PreviewIdentityVerificationFormScreen() {
+    ResFormIdentityScreen(onUploadAadhaar = {}, onUploadPan = {}, onNext = {})
 }
 
-@Preview(showBackground = true, name = "Step 4 — Photo")
+@Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun ResFormPhotoScreenPreview() {
-    HomieeTheme { ResFormPhotoScreen(onFinish = {}) }
+private fun PreviewResFormPhotoScreen() {
+    ResFormPhotoScreen(onFinish = {})
 }

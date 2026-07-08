@@ -14,7 +14,6 @@ import kotlinx.coroutines.launch
 data class LoginUiState(
     val isLoading:    Boolean = false,
     val isSuccess:    Boolean = false,
-    val role:         String? = null,   // ← NEW: NavGraph reads this to pick Home
     val errorMessage: String? = null
 )
 
@@ -25,7 +24,7 @@ class LoginViewModel(private val tokenManager: TokenManager) : ViewModel() {
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState
 
-    fun login(email: String, password: String) {   // ← role param removed
+    fun login(email: String, password: String) {
         if (email.isBlank() || password.isBlank()) {
             _uiState.value = _uiState.value.copy(
                 errorMessage = "Please enter both email and password."
@@ -41,19 +40,14 @@ class LoginViewModel(private val tokenManager: TokenManager) : ViewModel() {
             when (result) {
                 is ApiResult.Success -> {
                     val tokens = result.data.data?.tokens
-                    val role   = result.data.data?.user?.role
 
                     if (tokens != null) {
                         tokenManager.saveTokens(tokens.access, tokens.refresh)
-                        if (role != null) {
-                            tokenManager.saveRole(role)
-                        }
                         tokenManager.markFormsCompleted()   // returning users already onboarded
 
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
-                            isSuccess = true,
-                            role = role
+                            isSuccess = true
                         )
                     } else {
                         _uiState.value = _uiState.value.copy(

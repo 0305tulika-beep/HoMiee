@@ -1,7 +1,7 @@
 package com.example.homiee.data.model
 
 data class LoginRequest(
-    val identifier: String,   // UI only collects email now, field name unchanged
+    val identifier: String,
     val password: String
 )
 
@@ -22,8 +22,7 @@ data class UserData(
     val lname: String,
     val email: String,
     val mobile: String,
-    val username: String,
-    val role: String? = null   // ← NEW: returned on login so app knows which Home to open
+    val username: String
 )
 
 data class TokenData(
@@ -42,7 +41,6 @@ data class LoginErrorResponse(
     val errors: Map<String, List<String>>?
 )
 
-// ── Register — role REMOVED, no longer collected at signup ──
 data class RegisterRequest(
     val fname:     String,
     val lname:     String,
@@ -91,14 +89,4 @@ data class ResendOtpResponse(
 data class ResendOtpData(
     val identifier:     String,
     val otp_expires_in: String
-)
-
-// ── Set Role — PLACEHOLDER, update path/shape once backend ships it ──
-data class SetRoleRequest(
-    val role: String
-)
-
-data class SetRoleResponse(
-    val status:  String,
-    val message: String
 )

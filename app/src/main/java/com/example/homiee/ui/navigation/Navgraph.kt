@@ -8,6 +8,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -224,18 +227,55 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         }
 
         // ── Resident Forms ───────────────────────────────────────────────────
-        // Back from any form step → close app
         composable(Routes.RES_FORM_1) {
             BackHandler { (context as? Activity)?.finish() }
-            ResFormAddressScreen { navController.navigate(Routes.RES_FORM_2) }
+
+            var houseNo by remember { mutableStateOf("") }
+            var area by remember { mutableStateOf("") }
+            var city by remember { mutableStateOf("") }
+            var pincode by remember { mutableStateOf("") }
+
+            ResFormAddressScreen(
+                houseNo = houseNo,
+                onHouseNoChange = { houseNo = it },
+                area = area,
+                onAreaChange = { area = it },
+                city = city,
+                onCityChange = { city = it },
+                pincode = pincode,
+                onPincodeChange = { pincode = it },
+                onUseCurrentLocation = {
+                    // TODO: wire up actual GPS/location logic here
+                },
+                onNext = { navController.navigate(Routes.RES_FORM_2) }
+            )
         }
         composable(Routes.RES_FORM_2) {
             BackHandler { (context as? Activity)?.finish() }
-            ResFormEmergencyScreen { navController.navigate(Routes.RES_FORM_3) }
+
+            var contactName by remember { mutableStateOf("") }
+            var mobileNumber by remember { mutableStateOf("") }
+
+            ResFormEmergencyScreen(
+                contactName = contactName,
+                onContactNameChange = { contactName = it },
+                mobileNumber = mobileNumber,
+                onMobileNumberChange = { mobileNumber = it },
+                onNext = { navController.navigate(Routes.RES_FORM_3) }
+            )
         }
         composable(Routes.RES_FORM_3) {
             BackHandler { (context as? Activity)?.finish() }
-            ResFormIdentityScreen { navController.navigate(Routes.RES_FORM_4) }
+
+            ResFormIdentityScreen(
+                onUploadAadhaar = {
+                    // TODO: launch Aadhaar file/image picker
+                },
+                onUploadPan = {
+                    // TODO: launch PAN file/image picker
+                },
+                onNext = { navController.navigate(Routes.RES_FORM_4) }
+            )
         }
         composable(Routes.RES_FORM_4) {
             BackHandler { (context as? Activity)?.finish() }

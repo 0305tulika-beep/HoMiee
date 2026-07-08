@@ -1,41 +1,40 @@
 package com.example.homiee.ui.screens.resident
 
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.sp
-import com.example.homiee.ui.components.CardTextField
-import com.example.homiee.ui.theme.TextPrimary
 
 @Composable
-fun ResFormEmergencyScreen(onNext: () -> Unit) {
-    var emergencyName   by remember { mutableStateOf("") }
-    var emergencyMobile by remember { mutableStateOf("") }
-
-    ResFormShell(title = "Emergency Contact", step = 2, onNext = onNext) {
-
-        Text(
-            "EMERGENCY CONTACT",
-            fontWeight    = FontWeight.Bold,
-            fontSize      = 13.sp,
-            color         = TextPrimary,
-            letterSpacing = 0.5.sp
+fun ResFormEmergencyScreen(
+    contactName: String,
+    onContactNameChange: (String) -> Unit,
+    mobileNumber: String,
+    onMobileNumberChange: (String) -> Unit,
+    onNext: () -> Unit
+) {
+    OnboardingStepScaffold(
+        currentStep = 2,
+        title = "Emergency Contact",
+        subtitle = "Add a contact person we can reach in case of emergency",
+        buttonText = "Next",
+        onButtonClick = onNext
+    ) {
+        HomieeFormField(
+            label = "Contact Name",
+            value = contactName,
+            onValueChange = onContactNameChange,
+            placeholder = "Enter full name",
+            leadingIcon = Icons.Default.Person
         )
-
-        CardTextField(
-            value         = emergencyName,
-            onValueChange = { emergencyName = it },
-            placeholder   = "Enter name",
-            label         = "NAME"
-        )
-
-        CardTextField(
-            value         = emergencyMobile,
-            onValueChange = { emergencyMobile = it },
-            placeholder   = "Enter mobile",
-            label         = "MOBILE NO.",
-            keyboardType  = KeyboardType.Phone
+        HomieeFormField(
+            label = "Mobile Number",
+            value = mobileNumber,
+            onValueChange = onMobileNumberChange,
+            placeholder = "Enter mobile number",
+            leadingIcon = Icons.Default.Phone,
+            keyboardType = KeyboardType.Phone
         )
     }
 }

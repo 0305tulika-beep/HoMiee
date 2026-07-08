@@ -65,7 +65,7 @@ fun OtpScreen(
         }
     }
 
-    HideSystemBars(lightIcons = false)
+    HideSystemBars()
 
     Box(
         modifier = Modifier

@@ -53,7 +53,7 @@ fun LoginScreen(
         }
     }
 
-    HideSystemBars(lightIcons = true)
+    HideSystemBars()
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.bg3),
