@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.FlowRow
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
 import com.example.homiee.ui.theme.GreenDark
 
@@ -33,7 +34,6 @@ private val FEEDBACK_TAGS = listOf("Professional", "Punctual", "Friendly", "Skil
 @Composable
 fun FeedbackScreen(
     helperName: String = "Ramesh Kumar",
-    bookingId:  String = "",
     onBack:     () -> Unit = {},
     onSubmit:   () -> Unit = {}
 ) {
@@ -163,7 +163,7 @@ fun FeedbackScreen(
                             color      = GreenPrimary
                         )
                         Spacer(Modifier.height(10.dp))
-                        androidx.compose.foundation.layout.FlowRow(
+                        FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement   = Arrangement.spacedBy(8.dp)
                         ) {

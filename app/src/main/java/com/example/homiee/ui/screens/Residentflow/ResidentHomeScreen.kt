@@ -42,11 +42,11 @@ private val ActiveDotColor = Color(0xFF2ECC71)
 
 @Composable
 fun ResidentHomeScreen(
-    recentActivities: List<BookingItem> = emptyList(),   // ← NEW: real bookings, fed from NavGraph
+    recentActivities: List<BookingItem> = emptyList(),
     onNavItemClick:   (String) -> Unit = {},
     onBookClick:      (String) -> Unit = {},
     onCategoryClick:  (String) -> Unit = {},
-    onActivityClick:  (String) -> Unit = {}               // ← NEW: tap an activity card → its details
+    onActivityClick:  (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = true)
@@ -192,10 +192,10 @@ fun ResidentHomeScreen(
                             .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        HelperCard(name = "Ramesh Kumar", service = "Cleaning", rating = "4.9", isActive = true)
-                        HelperCard(name = "Sunita Devi",  service = "Cooking",  rating = "4.8", isActive = false)
-                        HelperCard(name = "Priya Singh",  service = "Laundry",  rating = "4.7", isActive = true)
-                        HelperCard(name = "Anita Rao",    service = "Laundry",  rating = "4.8", isActive = false)
+                        HelperCard(name = "Ramesh Kumar", service = "Cleaning", rating = "4.9", isActive = true,  onClick = { onBookClick("001") })
+                        HelperCard(name = "Sunita Devi",  service = "Cooking",  rating = "4.8", isActive = false, onClick = { onBookClick("002") })
+                        HelperCard(name = "Priya Singh",  service = "Laundry",  rating = "4.7", isActive = true,  onClick = { onBookClick("003") })
+                        HelperCard(name = "Anita Rao",    service = "Laundry",  rating = "4.8", isActive = false, onClick = { onBookClick("004") })
                     }
 
                     Spacer(Modifier.height(20.dp))
@@ -314,7 +314,8 @@ private fun HelperCard(
     name: String,
     service: String,
     rating: String,
-    isActive: Boolean = true
+    isActive: Boolean = true,
+    onClick: () -> Unit = {}
 ) {
     androidx.compose.material3.Card(
         modifier  = Modifier.width(170.dp),
@@ -373,6 +374,26 @@ private fun HelperCard(
                 Text(name, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = TextPrimary)
             }
 
+            if (isActive) {
+                Spacer(Modifier.height(2.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(ActiveDotColor.copy(alpha = 0.12f))
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(ActiveDotColor)
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text("Active", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = ActiveDotColor)
+                }
+            }
+
             Spacer(Modifier.height(4.dp))
             Text(service, fontSize = 13.sp, color = TextMuted)
             Spacer(Modifier.height(8.dp))
@@ -396,6 +417,7 @@ private fun HelperCard(
                 modifier           = Modifier
                     .width(100.dp)
                     .height(30.dp)
+                    .clickable { onClick() }
             )
         }
     }

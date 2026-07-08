@@ -46,9 +46,7 @@ import com.example.homiee.ui.theme.HomieeTheme
         ChatScreen(
             threadId      = "t001",
             helperName    = "Ramesh Kumar",
-            service       = "Cleaning",
             onBack        = {},
-            onViewBooking = {}
         )
     }
 }
@@ -57,11 +55,8 @@ import com.example.homiee.ui.theme.HomieeTheme
 @Composable fun ActivityScreenPreview() {
     HomieeTheme {
         ActivityScreen(
-            bookingId  = "b001",
             helperName = "Ramesh Kumar",
             onBack     = {},
-            onChat     = {},
-            onCall     = {}
         )
     }
 }
@@ -71,7 +66,6 @@ import com.example.homiee.ui.theme.HomieeTheme
     HomieeTheme {
         FeedbackScreen(
             helperName = "Ramesh Kumar",
-            bookingId  = "b001",
             onBack     = {},
             onSubmit   = {}
         )

@@ -226,8 +226,6 @@ fun ProfileScreen(
     }
 }
 
-// ── Sub-composables ────────────────────────────────────────────────────────────
-
 @Composable
 private fun SectionTitle(text: String) {
     Text(

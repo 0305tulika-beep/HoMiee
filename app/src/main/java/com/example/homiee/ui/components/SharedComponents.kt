@@ -1,11 +1,7 @@
-
-
 package com.example.homiee.ui.components
 
 import androidx.compose.foundation.background
-
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,10 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
@@ -42,7 +35,7 @@ fun HomieeButton(
         onClick  = onClick,
         enabled  = enabled,
         shape    = RoundedCornerShape(50),
-        colors   = ButtonDefaults.buttonColors(containerColor = containerColor),  // ← use it here
+        colors   = ButtonDefaults.buttonColors(containerColor = containerColor),
         modifier = modifier
             .fillMaxWidth()
             .height(52.dp)
@@ -55,7 +48,6 @@ fun HomieeButton(
     }
 }
 
-//text field
 @Composable
 fun GradientTextField(
     value: String,
@@ -187,29 +179,6 @@ fun CardTextField(
 fun systemBarsPadding(): PaddingValues {
     return WindowInsets.systemBars.asPaddingValues()
 }
-@Composable
-fun SelectableChip(
-    label: String,
-    selected: Boolean,
-    onToggle: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val bg     = if (selected) GreenLight else Color.Transparent
-    val border = if (selected) GreenLight else BorderColor
-    val text   = if (selected) White      else TextPrimary
-
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .clip(RoundedCornerShape(50))
-            .background(bg)
-            .border(1.5.dp, border, RoundedCornerShape(50))
-            .clickable { onToggle() }
-            .padding(horizontal = 16.dp, vertical = 10.dp)
-    ) {
-        Text(label, color = text, fontWeight = FontWeight.Medium, fontSize = 14.sp)
-    }
-}
 
 
 @Composable
@@ -237,31 +206,6 @@ fun StepProgressBar(
 
 
 @Composable
-fun OutlinedActionButton(
-    text: String,
-    onClick: () -> Unit,
-    icon: ImageVector? = null,
-    modifier: Modifier = Modifier
-) {
-    OutlinedButton(
-        onClick  = onClick,
-        shape    = RoundedCornerShape(12.dp),
-        border   = ButtonDefaults.outlinedButtonBorder.copy(
-            // teal border
-        ),
-        colors   = ButtonDefaults.outlinedButtonColors(contentColor = GreenMid),
-        modifier = modifier.fillMaxWidth().height(52.dp)
-    ) {
-        if (icon != null) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(8.dp))
-        }
-        Text(text, fontWeight = FontWeight.Medium)
-    }
-}
-
-
-@Composable
 fun OtpBox(
     digit: String,
     modifier: Modifier = Modifier
@@ -279,35 +223,4 @@ fun OtpBox(
             color      = TextPrimary
         )
     }
-}
-
-
-@Composable
-fun FormCard(
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        shape    = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        colors   = CardDefaults.cardColors(containerColor = White),
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            content = content
-        )
-    }
-}
-
-
-@Composable
-fun SectionLabel(text: String) {
-    Text(
-        text       = text,
-        style      = MaterialTheme.typography.bodyMedium,
-        fontWeight = FontWeight.Bold,
-        color      = TextPrimary,
-        letterSpacing = 0.5.sp
-    )
 }

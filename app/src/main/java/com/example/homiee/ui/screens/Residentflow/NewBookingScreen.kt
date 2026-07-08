@@ -1,40 +1,52 @@
 package com.example.homiee.ui.screens.Residentflow
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.homiee.R
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
 import com.example.homiee.ui.theme.GreenDark
 import com.example.homiee.viewmodel.BookingViewModel
 import com.example.homiee.viewmodel.BookingViewModelFactory
+import java.text.SimpleDateFormat
+import java.util.*
 
 private val GreenPrimary  = Color(0xFF1A5C3A)
-private val GreenLight    = Color(0xFFE8F5EE)
 private val TextPrimary   = Color(0xFF1A1A1A)
 private val TextSecondary = Color(0xFF7A7A7A)
 private val CardBg        = Color.White
+private val WarningRed    = Color(0xFFD32F2F)
+private val ALL_HOURS = (1..12).map { it.toString() }
 
+// Converts a 12-hour clock (hour + AM/PM) into minutes-since-midnight for comparison
+private fun toMinutesOfDay(hour: String, period: String): Int {
+    val h = hour.toIntOrNull() ?: 0
+    val hour24 = when {
+        period == "AM" && h == 12 -> 0        // 12 AM = midnight
+        period == "PM" && h != 12 -> h + 12   // 1 PM–11 PM
+        else                      -> h        // 12 PM stays 12, AM hours 1–11 stay as-is
+    }
+    return hour24 * 60
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewBookingScreen(
     helperName: String,
@@ -49,12 +61,26 @@ fun NewBookingScreen(
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = false)
 
     var serviceType by remember { mutableStateOf(helperService) }
-    var selectedDay  by remember { mutableStateOf(12) }
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = System.currentTimeMillis()
+    )
+    var showDatePicker by remember { mutableStateOf(false) }
+    val selectedDateMillis = datePickerState.selectedDateMillis
+
+    val displayDateFormat = remember { SimpleDateFormat("MMM d, yyyy", Locale.getDefault()) }
+    val selectedDateLabel = selectedDateMillis?.let { displayDateFormat.format(Date(it)) }
+        ?: "Select a date"
+
     var startHour    by remember { mutableStateOf("10") }
     var startPeriod  by remember { mutableStateOf("AM") }
     var endHour      by remember { mutableStateOf("12") }
     var endPeriod    by remember { mutableStateOf("PM") }
     var specialInstructions by remember { mutableStateOf("") }
+
+    // ── Time validation: end must be strictly after start ──
+    val startMinutes = remember(startHour, startPeriod) { toMinutesOfDay(startHour, startPeriod) }
+    val endMinutes    = remember(endHour, endPeriod)    { toMinutesOfDay(endHour, endPeriod) }
+    val isTimeRangeInvalid = endMinutes <= startMinutes
 
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -116,48 +142,53 @@ fun NewBookingScreen(
                         shape     = RoundedCornerShape(14.dp),
                         colors    = CardDefaults.cardColors(containerColor = CardBg),
                         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                        modifier  = Modifier.fillMaxWidth()
+                        modifier  = Modifier
+                            .fillMaxWidth()
+                            .clickable { showDatePicker = true }
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("June 2026", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = TextPrimary)
-                            Spacer(Modifier.height(10.dp))
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                listOf("S", "M", "T", "W", "T", "F", "S").forEach {
-                                    Text(it, fontSize = 12.sp, color = TextSecondary, modifier = Modifier.width(32.dp))
-                                }
-                            }
-                            Spacer(Modifier.height(8.dp))
-                            val weeks = listOf(
-                                listOf(null, 1, 2, 3, 4, 5, 6),
-                                listOf(7, 8, 9, 10, 11, 12, 13),
-                                listOf(14, 15, 16, 17, 18, 19, 20),
-                                listOf(21, 22, 23, 24, 25, 26, 27),
-                                listOf(28, 29, 30, null, null, null, null)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment     = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text       = selectedDateLabel,
+                                fontSize   = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color      = TextPrimary
                             )
-                            weeks.forEach { week ->
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    week.forEach { day ->
-                                        Box(
-                                            modifier = Modifier
-                                                .width(32.dp)
-                                                .height(32.dp)
-                                                .clip(CircleShape)
-                                                .background(if (day == selectedDay) GreenPrimary else Color.Transparent)
-                                                .clickable(enabled = day != null) { if (day != null) selectedDay = day },
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            if (day != null) {
-                                                Text(
-                                                    day.toString(),
-                                                    fontSize = 13.sp,
-                                                    color = if (day == selectedDay) Color.White else TextPrimary
-                                                )
-                                            }
-                                        }
-                                    }
+                            Icon(
+                                imageVector        = Icons.Default.CalendarMonth,
+                                contentDescription = "Pick date",
+                                tint               = GreenPrimary
+                            )
+                        }
+                    }
+
+                    if (showDatePicker) {
+                        DatePickerDialog(
+                            onDismissRequest = { showDatePicker = false },
+                            confirmButton = {
+                                TextButton(onClick = { showDatePicker = false }) {
+                                    Text("OK", color = GreenPrimary, fontWeight = FontWeight.Bold)
                                 }
-                                Spacer(Modifier.height(6.dp))
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDatePicker = false }) {
+                                    Text("Cancel", color = TextSecondary)
+                                }
                             }
+                        ) {
+                            DatePicker(
+                                state = datePickerState,
+                                colors = DatePickerDefaults.colors(
+                                    selectedDayContainerColor = GreenPrimary,
+                                    todayDateBorderColor      = GreenPrimary,
+                                    todayContentColor         = GreenPrimary
+                                )
+                            )
                         }
                     }
 
@@ -167,7 +198,7 @@ fun NewBookingScreen(
                     Text("Starting Time", fontSize = 12.sp, color = TextSecondary)
                     Spacer(Modifier.height(6.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        DropdownBox(startHour, listOf("9", "10", "11"), Modifier.weight(1f)) { startHour = it }
+                        DropdownBox(startHour, ALL_HOURS, Modifier.weight(1f)) { startHour = it }
                         DropdownBox(startPeriod, listOf("AM", "PM"), Modifier.weight(1f)) { startPeriod = it }
                     }
 
@@ -175,8 +206,35 @@ fun NewBookingScreen(
                     Text("Ending Time", fontSize = 12.sp, color = TextSecondary)
                     Spacer(Modifier.height(6.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        DropdownBox(endHour, listOf("11", "12", "1"), Modifier.weight(1f)) { endHour = it }
+                        DropdownBox(endHour, ALL_HOURS, Modifier.weight(1f)) { endHour = it }
                         DropdownBox(endPeriod, listOf("AM", "PM"), Modifier.weight(1f)) { endPeriod = it }
+                    }
+
+                    // ── Warning shown when the time range doesn't make sense ──
+                    if (isTimeRangeInvalid) {
+                        Spacer(Modifier.height(10.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(WarningRed.copy(alpha = 0.1f))
+                                .padding(horizontal = 12.dp, vertical = 10.dp)
+                        ) {
+                            Icon(
+                                imageVector        = Icons.Default.Warning,
+                                contentDescription = "Warning",
+                                tint               = WarningRed,
+                                modifier           = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text     = "Ending time must be after starting time",
+                                fontSize = 12.sp,
+                                color    = WarningRed,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
 
                     Spacer(Modifier.height(20.dp))
@@ -198,17 +256,20 @@ fun NewBookingScreen(
 
                     Button(
                         onClick = {
+                            val bookingDateLabel = selectedDateMillis?.let { displayDateFormat.format(Date(it)) }
+                                ?: "Not selected"
                             val id = viewModel.createBooking(
                                 helperName = helperName,
                                 service    = serviceType,
                                 rating     = helperRating,
-                                date       = "Jun $selectedDay, 2026",
+                                date       = bookingDateLabel,
                                 time       = "$startHour:00 $startPeriod"
                             )
                             onBookingConfirmed(id)
                         },
                         shape    = RoundedCornerShape(12.dp),
                         colors   = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
+                        enabled  = selectedDateMillis != null && !isTimeRangeInvalid,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp)

@@ -461,11 +461,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             ChatScreen(
                 threadId      = threadId,
                 helperName    = helperName,
-                service       = service,
                 onBack        = { navController.popBackStack() },
-                onViewBooking = {
-                    navController.navigate(Routes.bookingDetailsRoute(threadId))
-                }
             )
         }
 
@@ -480,13 +476,8 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             val bookingId  = backStackEntry.arguments?.getString("bookingId")  ?: ""
             val helperName = URLDecoder.decode(backStackEntry.arguments?.getString("helperName") ?: "", "UTF-8")
             ActivityScreen(
-                bookingId  = bookingId,
                 helperName = helperName,
                 onBack     = { navController.popBackStack() },
-                onChat     = {
-                    navController.navigate(Routes.chatRoute(bookingId, helperName, "Cleaning"))
-                },
-                onCall     = { /* TODO: dial intent */ }
             )
         }
 
@@ -502,7 +493,6 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             val helperName = URLDecoder.decode(backStackEntry.arguments?.getString("helperName") ?: "", "UTF-8")
             FeedbackScreen(
                 helperName = helperName,
-                bookingId  = bookingId,
                 onBack     = { navController.popBackStack() },
                 onSubmit   = { navController.popBackStack() }
             )

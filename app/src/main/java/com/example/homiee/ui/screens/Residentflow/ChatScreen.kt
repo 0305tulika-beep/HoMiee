@@ -52,9 +52,7 @@ private val MOCK_MESSAGES = listOf(
 fun ChatScreen(
     threadId:   String  = "",
     helperName: String  = "Ramesh Kumar",
-    service:    String  = "Cleaning",
     onBack:     () -> Unit = {},
-    onViewBooking: () -> Unit = {}
 ) {
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = false)
 

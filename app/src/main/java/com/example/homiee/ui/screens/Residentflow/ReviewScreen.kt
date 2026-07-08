@@ -1,9 +1,11 @@
 package com.example.homiee.ui.screens.Residentflow
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -11,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -29,7 +32,38 @@ data class Review(
     val reviewerName: String,
     val timeAgo:      String,
     val rating:       Int,
-    val comment:      String
+    val comment:      String,
+    val tags:         List<String> = emptyList()
+)
+
+val reviews = listOf(
+    Review(
+        reviewerName = "Priya S.",
+        timeAgo      = "2 days ago",
+        rating       = 4,
+        comment      = "Great experience, very professional and punctual.",
+        tags         = listOf("Professional", "Punctual")
+    ),
+    Review(
+        reviewerName = "Arun M.",
+        timeAgo      = "1 week ago",
+        rating       = 4,
+        comment      = "Very good work, would recommend to others.",
+        tags         = listOf("Friendly", "Skilled")
+    ),
+    Review(
+        reviewerName = "Priya S.",
+        timeAgo      = "2 days ago",
+        rating       = 3,
+        comment      = "Decent work but could improve on timing.",
+    ),
+    Review(
+        reviewerName = "Arun M.",
+        timeAgo      = "1 week ago",
+        rating       = 4,
+        comment      = "Excellent cooking skills, very happy with the service.",
+        tags         = listOf("Professional", "Skilled", "Friendly")
+    ),
 )
 
 @Composable
@@ -37,13 +71,6 @@ fun MyReviewsScreen(
     onBack: () -> Unit = {}
 ) {
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = true)
-
-    val reviews = listOf(
-        Review("Priya S.",  "2 days ago",  4, "Great experience, very professional and punctual."),
-        Review("Arun M.",   "1 week ago",  4, "Very good work, would recommend to others."),
-        Review("Priya S.",  "2 days ago",  3, "Decent work but could improve on timing."),
-        Review("Arun M.",   "1 week ago",  4, "Excellent cooking skills, very happy with the service."),
-    )
 
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -119,6 +146,29 @@ private fun ReviewCard(review: Review) {
                         color = if (index < review.rating) Color(0xFFFFC107) else TextMuted,
                         fontSize = 14.sp
                     )
+                }
+            }
+            if (review.tags.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement   = Arrangement.spacedBy(6.dp)
+                ) {
+                    review.tags.forEach { tag ->
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(GreenDark.copy(alpha = 0.1f))
+                                .padding(horizontal = 12.dp, vertical = 5.dp)
+                        ) {
+                            Text(
+                                text       = tag,
+                                fontSize   = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color      = GreenDark
+                            )
+                        }
+                    }
                 }
             }
             Spacer(Modifier.height(6.dp))

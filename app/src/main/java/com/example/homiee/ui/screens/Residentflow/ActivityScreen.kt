@@ -23,17 +23,11 @@ import com.example.homiee.ui.theme.GreenDark
 import kotlinx.coroutines.delay
 
 private val GreenPrimary  = GreenDark
-private val GreenLight    = Color(0xFFE8F5EE)
-private val TextPrimary   = Color(0xFF1A1A1A)
-private val TextSecondary = Color(0xFF7A7A7A)
 
 @Composable
 fun ActivityScreen(
-    bookingId:  String = "",
     helperName: String = "Ramesh Kumar",
     onBack:     () -> Unit = {},
-    onChat:     () -> Unit = {},
-    onCall:     () -> Unit = {}
 ) {
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = false)
 
@@ -187,73 +181,6 @@ fun ActivityScreen(
                 }
             }
 
-            // ── Helper info card ──
-            Card(
-                shape    = RoundedCornerShape(16.dp),
-                colors   = CardDefaults.cardColors(containerColor = Color.White),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier          = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier         = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(GreenPrimary),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text       = helperName.take(2).uppercase(),
-                            color      = Color.White,
-                            fontSize   = 15.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Spacer(Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(helperName, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = TextPrimary)
-                        Text("Mother +91 xxxxxxxxx", fontSize = 12.sp, color = TextSecondary)
-                    }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(GreenLight)
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                    ) {
-                        Text("Verified", fontSize = 12.sp, color = GreenPrimary, fontWeight = FontWeight.SemiBold)
-                    }
-                }
-            }
-
-            // ── Call + Chat buttons ──
-            Row(
-                modifier              = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedButton(
-                    onClick  = onCall,
-                    shape    = RoundedCornerShape(12.dp),
-                    border   = androidx.compose.foundation.BorderStroke(1.5.dp, GreenPrimary),
-                    colors   = ButtonDefaults.outlinedButtonColors(contentColor = GreenPrimary),
-                    modifier = Modifier.weight(1f).height(48.dp)
-                ) {
-                    Text("Call", color = GreenPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                }
-                OutlinedButton(
-                    onClick  = onChat,
-                    shape    = RoundedCornerShape(12.dp),
-                    border   = androidx.compose.foundation.BorderStroke(1.5.dp, GreenPrimary),
-                    colors   = ButtonDefaults.outlinedButtonColors(contentColor = GreenPrimary),
-                    modifier = Modifier.weight(1f).height(48.dp)
-                ) {
-                    Text("Chat", color = GreenPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                }
-            }
-
             // ── SAFETY card ──
             Card(
                 shape    = RoundedCornerShape(16.dp),
@@ -285,7 +212,7 @@ fun ActivityScreen(
                     .height(52.dp)
             ) {
                 Text(
-                    text       = "Emergency Support",
+                    text       = "Emergency SOS",
                     color      = Color.White,
                     fontWeight = FontWeight.Bold,
                     fontSize   = 16.sp

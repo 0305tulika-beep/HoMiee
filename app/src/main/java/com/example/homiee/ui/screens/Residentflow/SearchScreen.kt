@@ -29,7 +29,6 @@ import com.example.homiee.ui.components.NavTab
 import com.example.homiee.navigation.Routes
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
 import com.example.homiee.ui.theme.GreenDark
-import com.example.homiee.ui.theme.GreenMid
 import com.example.homiee.ui.theme.White
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
@@ -78,7 +77,7 @@ private val TEST_HELPERS = listOf(
 // ── Screen ─────────────────────────────────────────────────────────────────────
 @Composable
 fun SearchScreen(
-    initialFilter: String = "All",                  // ← NEW: lets Home open Search pre-filtered
+    initialFilter: String = "All",
     onViewProfile: (String) -> Unit = {},
     onBook: (String) -> Unit = {},
     onNavItemClick: (String) -> Unit = {}
@@ -87,7 +86,7 @@ fun SearchScreen(
 
     var searchQuery    by remember { mutableStateOf("") }
     var selectedSort   by remember { mutableStateOf(SortOption.NEAREST) }
-    var selectedFilter by remember { mutableStateOf(initialFilter) }   // ← starts pre-filtered
+    var selectedFilter by remember { mutableStateOf(initialFilter) }
 
     val displayedHelpers = remember(searchQuery, selectedSort, selectedFilter) {
         TEST_HELPERS
@@ -324,31 +323,6 @@ private fun SearchHelperCard(
                         overflow   = TextOverflow.Ellipsis,
                         modifier   = Modifier.weight(1f, fill = false)
                     )
-                    if (helper.isActive) {
-                        Spacer(Modifier.width(6.dp))
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(ActiveDotColor.copy(alpha = 0.12f))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(6.dp)
-                                        .clip(CircleShape)
-                                        .background(ActiveDotColor)
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    "Active",
-                                    fontSize   = 10.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color      = ActiveDotColor
-                                )
-                            }
-                        }
-                    }
                 }
                 Text(
                     text     = helper.service,

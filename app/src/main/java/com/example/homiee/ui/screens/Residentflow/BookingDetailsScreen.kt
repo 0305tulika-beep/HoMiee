@@ -17,11 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
-import androidx.compose.foundation.border
 import com.example.homiee.ui.theme.GreenDark
 
 private val GreenPrimary  = Color(0xFF1A5C3A)
-private val GreenLight    = Color(0xFFE8F5EE)
 private val TextPrimary   = Color(0xFF1A1A1A)
 private val TextSecondary = Color(0xFF7A7A7A)
 private val CardBg        = Color.White
@@ -42,7 +40,7 @@ fun BookingDetailsScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
 
-        androidx.compose.foundation.layout.Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
 
             // ── Header ──
             Column(
@@ -71,7 +69,6 @@ fun BookingDetailsScreen(
                     Spacer(Modifier.width(12.dp))
                     Column {
                         Text("Booking Details", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                        Text("#$bookingId", fontSize = 12.sp, color = Color.White.copy(alpha = 0.85f))
                     }
                 }
             }
@@ -82,6 +79,8 @@ fun BookingDetailsScreen(
             ) {
                 item {
                     DetailsSectionCard(title = "BOOKING INFORMATION") {
+                        DetailRow("Helper's name", helperName)
+                        DetailRow("Booking ID", "#$bookingId")
                         DetailRow("Service", service)
                         DetailRow("Duration", durationHours)
                         DetailRow("Date", bookingDate)
@@ -146,7 +145,7 @@ fun BookingDetailsScreen(
 }
 
 @Composable
-private fun DetailsSectionCard(title: String, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+private fun DetailsSectionCard(title: String, content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier  = Modifier
             .fillMaxWidth()

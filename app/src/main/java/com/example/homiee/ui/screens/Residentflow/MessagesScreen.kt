@@ -25,7 +25,6 @@ import com.example.homiee.ui.theme.GreenDark
 import com.example.homiee.ui.theme.GreenDarkk
 
 private val GreenPrimary  = Color(0xFF1A5C3A)
-private val GreenLight    = Color(0xFFE8F5EE)
 private val TextPrimary   = Color(0xFF1A1A1A)
 private val TextSecondary = Color(0xFF7A7A7A)
 
@@ -59,7 +58,16 @@ fun MessagesScreen(
         bottomBar = {
             BottomNavBar(
                 selectedTab   = NavTab.MESSAGE,
-                onTabSelected = { onNavItemClick(it.toRoute()) }
+                onTabSelected = { tab ->
+                    val route = when (tab) {
+                        NavTab.HOME     -> Routes.HOME_RES
+                        NavTab.SEARCH   -> Routes.SEARCH
+                        NavTab.BOOKINGS -> Routes.BOOKINGS
+                        NavTab.MESSAGE  -> Routes.MESSAGES
+                        NavTab.ACCOUNT  -> Routes.ACCOUNT
+                    }
+                    onNavItemClick(route)
+                }
             )
         },
         containerColor = Color.Transparent

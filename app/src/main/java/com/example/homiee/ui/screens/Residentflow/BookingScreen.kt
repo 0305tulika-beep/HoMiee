@@ -71,12 +71,12 @@ fun BookingsScreen(
     onNavItemClick:  (String) -> Unit = {},
     onDetailsClick:  (String) -> Unit = {},
     onChatClick:     (String) -> Unit = {},
-    onActivityClick: (String) -> Unit = {},   // ← ADD
-    onReviewClick:   (String) -> Unit = {}    // ← ADD
+    onActivityClick: (String) -> Unit = {},
+    onReviewClick:   (String) -> Unit = {}
 ){
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = false)
 
-    var selectedTab by remember { mutableStateOf(BookingTab.ACTIVE) }
+    var selectedTab by remember { mutableStateOf(BookingTab.UPCOMING) }
 
     val filteredBookings = remember(selectedTab) {
         MOCK_BOOKINGS.filter { it.status == selectedTab }
@@ -162,8 +162,8 @@ fun BookingsScreen(
                             booking         = booking,
                             onDetailsClick  = onDetailsClick,
                             onChatClick     = onChatClick,
-                            onActivityClick = onActivityClick,   // ← ADD
-                            onReviewClick   = onReviewClick,     // ← ADD
+                            onActivityClick = onActivityClick,
+                            onReviewClick   = onReviewClick,
                             modifier        = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                         )
                     }
@@ -296,8 +296,8 @@ private fun BookingCard(
     booking:         BookingItem,
     onDetailsClick:  (String) -> Unit = {},
     onChatClick:     (String) -> Unit = {},
-    onActivityClick: (String) -> Unit = {},   // ← ADD
-    onReviewClick:   (String) -> Unit = {},   // ← ADD
+    onActivityClick: (String) -> Unit = {},
+    onReviewClick:   (String) -> Unit = {},
     modifier:        Modifier = Modifier
 ){
     Card(

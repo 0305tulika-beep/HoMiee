@@ -113,7 +113,7 @@ fun SettingsScreen(
                         }
                     }
                     Spacer(Modifier.height(20.dp))
-                    // ── Danger buttons — right below the card ──
+                    // ── Danger buttons — right below the card ─
                     OutlinedButton(
                         onClick  = {},
                         shape    = RoundedCornerShape(10.dp),

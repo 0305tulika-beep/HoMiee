@@ -57,9 +57,6 @@ private val MOCK_HELPER = object {
     val languages         = "Hindi, English"
     val availabilityStart = "9:00 AM"
     val availabilityEnd   = "6:00 PM"
-    val phoneVerified     = true
-    val idVerified        = true
-    val backgroundChecked = true
     val reviews           = listOf(
         HelperReview("Priya S.", 4, "Very punctual and thorough with cleaning. Would book again.", "2 days ago"),
         HelperReview("Arun M.",  4, "Cooked amazing food. My family loved it.", "1 week ago"),
@@ -72,7 +69,7 @@ fun HelperProfileScreen(
     helperId:  String  = "",
     onBookNow: (String) -> Unit = {},
     onBack:    () -> Unit = {},
-    onChat:    () -> Unit = {}      // ← ADD THIS
+    onChat:    () -> Unit = {}
 ) {
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = false)
 
@@ -115,7 +112,7 @@ fun HelperProfileScreen(
                                     .size(36.dp)
                                     .clip(CircleShape)
                                     .background(GreenLight)
-                                    .clickable { onBack() },    // ← calls popBackStack in Navgraph
+                                    .clickable { onBack() },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -202,7 +199,7 @@ fun HelperProfileScreen(
                                                 )
                                                 Spacer(Modifier.width(4.dp))
                                                 Text(
-                                                    "Active",
+                                                    "Online",
                                                     fontSize   = 11.sp,
                                                     fontWeight = FontWeight.SemiBold,
                                                     color      = ActiveDotColor
