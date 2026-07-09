@@ -45,7 +45,7 @@ data class RegisterRequest(
     val fname:     String,
     val lname:     String,
     val email:     String,
-    val mobile:    String,
+    val mobile:    String? = null,
     val username:  String,
     val password:  String,
     val password2: String

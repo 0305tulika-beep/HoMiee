@@ -13,7 +13,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
@@ -23,6 +26,9 @@ import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.example.homiee.ui.theme.*
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 
 @Composable
 fun HomieeButton(
@@ -32,11 +38,25 @@ fun HomieeButton(
     enabled: Boolean = true,
     containerColor: Color = GreenDark
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val pressedColor = remember(containerColor) {
+        Color(
+            red   = containerColor.red   * 0.85f,
+            green = containerColor.green * 0.85f,
+            blue  = containerColor.blue  * 0.85f,
+            alpha = containerColor.alpha
+        )
+    }
+
     Button(
         onClick  = onClick,
         enabled  = enabled,
         shape    = RoundedCornerShape(50),
-        colors   = ButtonDefaults.buttonColors(containerColor = containerColor),
+        colors   = ButtonDefaults.buttonColors(
+            containerColor = if (isPressed) pressedColor else containerColor
+        ),
+        interactionSource = interactionSource,
         modifier = modifier
             .fillMaxWidth()
             .height(52.dp)
@@ -223,4 +243,154 @@ fun OtpBox(
             color      = TextPrimary
         )
     }
+}
+
+@Composable
+fun HomieeHeader() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(GreenDarkk, GreenDark, GreenLight),
+                    start = Offset(0f, 0f),
+                    end = Offset(1000f, 300f)
+                )
+            )
+            .padding(horizontal = 24.dp, vertical = 32.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Text(
+            text = "HoMiee",
+            color = White,
+            fontSize = 35.sp,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 0.5.sp
+        )
+    }
+}
+
+@Composable
+fun DocumentUploadCard(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onUploadClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, HomieeColors.BorderGray, RoundedCornerShape(12.dp))
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, tint = HomieeColors.PrimaryDark)
+            Spacer(modifier = Modifier.width(10.dp))
+            Column {
+                Text(title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Text(subtitle, fontSize = 12.sp, color = HomieeColors.TextGray)
+            }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedButton(
+            onClick = onUploadClick,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(10.dp)
+        ) {
+            Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text("Upload File")
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text("JPG or PNG, up to 5MB", fontSize = 11.sp, color = HomieeColors.TextGray)
+    }
+}
+
+@Composable
+fun HomieeFormField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    leadingIcon: ImageVector,
+    keyboardType: KeyboardType = KeyboardType.Text
+) {
+    Column(modifier = Modifier.padding(bottom = 20.dp)) {
+        Text(
+            text = label,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color(0xFF374151),
+            modifier = Modifier.padding(bottom = 6.dp)
+        )
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = { Text(placeholder, color = HomieeColors.TextGray) },
+            leadingIcon = { Icon(leadingIcon, contentDescription = null, tint = HomieeColors.PrimaryDark) },
+            singleLine = true,
+            shape = RoundedCornerShape(10.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+@Composable
+fun GradientTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    isPassword: Boolean = false,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    isError: Boolean = false,
+    onFocusLost: () -> Unit = {}
+) {
+    var passwordVisible by remember { mutableStateOf(false) }
+    var wasFocused by remember { mutableStateOf(false) }
+    val ErrorRed = Color(0xFFFF6B6B)
+
+    OutlinedTextField(
+        value         = value,
+        onValueChange = onValueChange,
+        placeholder   = { Text(placeholder, color = White.copy(alpha = 0.7f)) },
+        singleLine    = true,
+        isError       = isError,
+        visualTransformation = if (isPassword && !passwordVisible)
+            PasswordVisualTransformation() else VisualTransformation.None,
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        trailingIcon  = if (isPassword) {
+            {
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(
+                        imageVector = if (passwordVisible) Icons.Default.Visibility
+                        else Icons.Default.VisibilityOff,
+                        contentDescription = null,
+                        tint = White.copy(alpha = 0.7f)
+                    )
+                }
+            }
+        } else null,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor   = if (isError) ErrorRed else White,
+            unfocusedBorderColor = if (isError) ErrorRed else White.copy(alpha = 0.5f),
+            errorBorderColor     = ErrorRed,
+            focusedTextColor     = White,
+            unfocusedTextColor   = White,
+            cursorColor          = White,
+            focusedContainerColor   = White.copy(alpha = 0.15f),
+            unfocusedContainerColor = White.copy(alpha = 0.1f),
+        ),
+        shape    = RoundedCornerShape(50),
+        modifier = modifier
+            .fillMaxWidth()
+            .onFocusChanged { focusState ->
+                // Fires only when the field transitions FROM focused TO unfocused (i.e. user tapped away)
+                if (wasFocused && !focusState.isFocused) {
+                    onFocusLost()
+                }
+                wasFocused = focusState.isFocused
+            }
+    )
 }

@@ -1,7 +1,21 @@
-package com.example.homiee.ui.screens.Residentflow
+package com.example.homiee.ui.screens.allpreviews
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.homiee.ui.screens.Residentflow.ActivityScreen
+import com.example.homiee.ui.screens.Residentflow.BookingConfirmationScreen
+import com.example.homiee.ui.screens.Residentflow.BookingDetailsScreen
+import com.example.homiee.ui.screens.Residentflow.BookingsScreen
+import com.example.homiee.ui.screens.Residentflow.ChatScreen
+import com.example.homiee.ui.screens.Residentflow.FeedbackScreen
+import com.example.homiee.ui.screens.Residentflow.HelperProfileScreen
+import com.example.homiee.ui.screens.Residentflow.MessagesScreen
+import com.example.homiee.ui.screens.Residentflow.MyReviewsScreen
+import com.example.homiee.ui.screens.Residentflow.NewBookingScreen
+import com.example.homiee.ui.screens.Residentflow.ProfileScreen
+import com.example.homiee.ui.screens.Residentflow.ResidentHomeScreen
+import com.example.homiee.ui.screens.Residentflow.SearchScreen
+import com.example.homiee.ui.screens.Residentflow.SettingsScreen
 import com.example.homiee.ui.theme.HomieeTheme
 
 @Preview(showBackground = true, showSystemUi = true, name = "Resident Home")
@@ -9,9 +23,9 @@ import com.example.homiee.ui.theme.HomieeTheme
     HomieeTheme {
         ResidentHomeScreen(
             recentActivities = emptyList(),
-            onNavItemClick   = {},
-            onCategoryClick  = {},
-            onActivityClick  = {}
+            onNavItemClick = {},
+            onCategoryClick = {},
+            onActivityClick = {}
         )
     }
 }
@@ -25,12 +39,12 @@ import com.example.homiee.ui.theme.HomieeTheme
 @Composable fun BookingsScreenPreview() {
     HomieeTheme {
         BookingsScreen(
-            bookings        = emptyList(),
-            onNavItemClick  = {},
-            onDetailsClick  = {},
-            onChatClick     = {},
+            bookings = emptyList(),
+            onNavItemClick = {},
+            onDetailsClick = {},
+            onChatClick = {},
             onActivityClick = {},
-            onReviewClick   = {}
+            onReviewClick = {}
         )
     }
 }
@@ -44,9 +58,9 @@ import com.example.homiee.ui.theme.HomieeTheme
 @Composable fun ChatScreenPreview() {
     HomieeTheme {
         ChatScreen(
-            threadId      = "t001",
-            helperName    = "Ramesh Kumar",
-            onBack        = {},
+            threadId = "t001",
+            helperName = "Ramesh Kumar",
+            onBack = {},
         )
     }
 }
@@ -56,7 +70,7 @@ import com.example.homiee.ui.theme.HomieeTheme
     HomieeTheme {
         ActivityScreen(
             helperName = "Ramesh Kumar",
-            onBack     = {},
+            onBack = {},
         )
     }
 }
@@ -66,8 +80,8 @@ import com.example.homiee.ui.theme.HomieeTheme
     HomieeTheme {
         FeedbackScreen(
             helperName = "Ramesh Kumar",
-            onBack     = {},
-            onSubmit   = {}
+            onBack = {},
+            onSubmit = {}
         )
     }
 }
@@ -96,11 +110,11 @@ import com.example.homiee.ui.theme.HomieeTheme
 @Composable fun NewBookingScreenPreview() {
     HomieeTheme {
         NewBookingScreen(
-            helperName         = "Ramesh Kumar",
-            helperService      = "House Cleaning",
-            helperRating       = 4.9f,
+            helperName = "Ramesh Kumar",
+            helperService = "House Cleaning",
+            helperRating = 4.9f,
             onBookingConfirmed = {},
-            onBack             = {}
+            onBack = {}
         )
     }
 }
@@ -109,11 +123,11 @@ import com.example.homiee.ui.theme.HomieeTheme
 @Composable fun BookingConfirmationScreenPreview() {
     HomieeTheme {
         BookingConfirmationScreen(
-            bookingId   = "hsdgfsgd",
-            helperName  = "Ramesh Kumar",
+            bookingId = "hsdgfsgd",
+            helperName = "Ramesh Kumar",
             bookingDate = "Jun 12, 2026",
             bookingTime = "10:00 AM",
-            onTimeout   = {}
+            onTimeout = {}
         )
     }
 }
@@ -122,12 +136,12 @@ import com.example.homiee.ui.theme.HomieeTheme
 @Composable fun BookingDetailsScreenPreview() {
     HomieeTheme {
         BookingDetailsScreen(
-            bookingId   = "dfgfjhadg",
-            helperName  = "Ramesh Kumar",
-            service     = "Cleaning",
+            bookingId = "dfgfjhadg",
+            helperName = "Ramesh Kumar",
+            service = "Cleaning",
             bookingDate = "Jun 12, 2026",
             bookingTime = "10:00 AM",
-            onBack      = {}
+            onBack = {}
         )
     }
 }

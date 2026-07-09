@@ -11,6 +11,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -25,6 +26,34 @@ import com.example.homiee.ui.theme.GreenLight
 import com.example.homiee.ui.theme.White
 import com.example.homiee.viewmodel.RegisterViewModel
 
+private val ErrorRed = Color(0xFFFF6B6B)
+
+// ── Validation helpers ──
+private fun passwordErrorMessage(password: String, touched: Boolean): String? {
+    if (touched && password.isEmpty()) return "Password is required"
+    if (password.isEmpty()) return null
+    val hasMinLength = password.length >= 8
+    val hasUpper     = password.any { it.isUpperCase() }
+    val hasSpecial   = password.any { !it.isLetterOrDigit() }
+
+    return when {
+        !hasMinLength -> "Password must be at least 8 characters"
+        !hasUpper     -> "Password must include at least 1 capital letter"
+        !hasSpecial   -> "Password must include at least 1 special symbol"
+        else          -> null
+    }
+}
+
+private fun usernameErrorMessage(username: String, touched: Boolean): String? {
+    if (touched && username.isEmpty()) return "Username is required"
+    if (username.isEmpty()) return null
+    val hasSpecialChar = username.any { !it.isLetterOrDigit() }
+    return if (hasSpecialChar) "Username cannot contain special symbols" else null
+}
+
+private fun requiredError(value: String, touched: Boolean, fieldLabel: String): String? =
+    if (touched && value.isBlank()) "$fieldLabel is required" else null
+
 @Composable
 fun SignUpScreen(
     navController: NavController,
@@ -34,13 +63,36 @@ fun SignUpScreen(
     var firstName   by remember { mutableStateOf("") }
     var lastName    by remember { mutableStateOf("") }
     var email       by remember { mutableStateOf("") }
-    var mobile      by remember { mutableStateOf("") }
     var username    by remember { mutableStateOf("") }
     var password    by remember { mutableStateOf("") }
     var confirmPass by remember { mutableStateOf("") }
     var agreed      by remember { mutableStateOf(false) }
 
+    // ── Touched tracking, one flag per field ──
+    var firstNameTouched   by remember { mutableStateOf(false) }
+    var lastNameTouched    by remember { mutableStateOf(false) }
+    var emailTouched       by remember { mutableStateOf(false) }
+    var usernameTouched    by remember { mutableStateOf(false) }
+    var passwordTouched    by remember { mutableStateOf(false) }
+    var confirmPassTouched by remember { mutableStateOf(false) }
+
     val uiState by viewModel.uiState.collectAsState()
+
+    val firstNameError = requiredError(firstName, firstNameTouched, "First name")
+    val lastNameError  = requiredError(lastName,  lastNameTouched,  "Last name")
+    val emailError     = requiredError(email,     emailTouched,     "Email")
+    val usernameError  = usernameErrorMessage(username, usernameTouched)
+    val passwordError  = passwordErrorMessage(password, passwordTouched)
+    val confirmError = when {
+        confirmPassTouched && confirmPass.isEmpty() -> "Please confirm your password"
+        confirmPass.isNotEmpty() && confirmPass != password -> "Passwords do not match"
+        else -> null
+    }
+
+    val isFormValid = firstName.isNotBlank() && lastName.isNotBlank() && email.isNotBlank() &&
+            username.isNotBlank() && usernameError == null &&
+            password.isNotBlank() && passwordError == null &&
+            confirmPass.isNotBlank() && confirmError == null
 
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
@@ -65,36 +117,100 @@ fun SignUpScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.Center
         ) {
-            Text("Create Account", fontSize = 34.sp, fontWeight = FontWeight.Bold, color = White)
-            Text("Join HoMiee", color = White.copy(alpha = 0.85f), fontSize = 15.sp)
+            Text("Create Account", fontSize = 37.sp, fontWeight = FontWeight.Bold, color = White)
+            Text("Join HoMiee", color = White.copy(alpha = 0.85f), fontSize = 18.sp)
 
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(32.dp))
 
-            GradientTextField(firstName,   { firstName   = it }, "First Name")
-            Spacer(Modifier.height(12.dp))
-            GradientTextField(lastName,    { lastName    = it }, "Last Name")
-            Spacer(Modifier.height(12.dp))
+            // ── First + Last name side by side ──
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    GradientTextField(
+                        value         = firstName,
+                        onValueChange = { firstName = it },
+                        placeholder   = "First Name",
+                        isError       = firstNameError != null,
+                        onFocusLost   = { firstNameTouched = true }
+                    )
+                    if (firstNameError != null) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(firstNameError, color = ErrorRed, fontSize = 11.sp)
+                    }
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    GradientTextField(
+                        value         = lastName,
+                        onValueChange = { lastName = it },
+                        placeholder   = "Last Name",
+                        isError       = lastNameError != null,
+                        onFocusLost   = { lastNameTouched = true }
+                    )
+                    if (lastNameError != null) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(lastNameError, color = ErrorRed, fontSize = 11.sp)
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(14.dp))
             GradientTextField(
                 value         = email,
                 onValueChange = { email = it },
                 placeholder   = "Email",
-                keyboardType  = KeyboardType.Email
+                keyboardType  = KeyboardType.Email,
+                isError       = emailError != null,
+                onFocusLost   = { emailTouched = true }
             )
-            Spacer(Modifier.height(12.dp))
-            GradientTextField(
-                value         = mobile,
-                onValueChange = { mobile = it },
-                placeholder   = "Mobile Number",
-                keyboardType  = KeyboardType.Phone
-            )
-            Spacer(Modifier.height(12.dp))
-            GradientTextField(username,    { username    = it }, "Username")
-            Spacer(Modifier.height(12.dp))
-            GradientTextField(password,    { password    = it }, "Password",         isPassword = true)
-            Spacer(Modifier.height(12.dp))
-            GradientTextField(confirmPass, { confirmPass = it }, "Confirm Password", isPassword = true)
+            if (emailError != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(emailError, color = ErrorRed, fontSize = 12.sp)
+            }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(14.dp))
+            GradientTextField(
+                value         = username,
+                onValueChange = { username = it },
+                placeholder   = "Username",
+                isError       = usernameError != null,
+                onFocusLost   = { usernameTouched = true }
+            )
+            if (usernameError != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(usernameError, color = ErrorRed, fontSize = 12.sp)
+            }
+
+            Spacer(Modifier.height(14.dp))
+            GradientTextField(
+                value         = password,
+                onValueChange = { password = it },
+                placeholder   = "Password",
+                isPassword    = true,
+                isError       = passwordError != null,
+                onFocusLost   = { passwordTouched = true }
+            )
+            if (passwordError != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(passwordError, color = ErrorRed, fontSize = 12.sp)
+            }
+
+            Spacer(Modifier.height(14.dp))
+            GradientTextField(
+                value         = confirmPass,
+                onValueChange = { confirmPass = it },
+                placeholder   = "Confirm Password",
+                isPassword    = true,
+                isError       = confirmError != null,
+                onFocusLost   = { confirmPassTouched = true }
+            )
+            if (confirmError != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(confirmError, color = ErrorRed, fontSize = 12.sp)
+            }
+
+            Spacer(Modifier.height(22.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(
@@ -106,45 +222,40 @@ fun SignUpScreen(
                     )
                 )
                 Text(
-                    "By signing up you agree to HoMiee's ",
+                    "I accept all the ",
                     color    = White.copy(alpha = 0.75f),
                     fontSize = 12.sp
                 )
-            }
-            Row(Modifier.padding(start = 48.dp)) {
                 Text(
-                    "Terms of Service",
+                    "Terms & Condition",
                     color      = White,
                     fontWeight = FontWeight.Bold,
                     fontSize   = 12.sp,
-                    modifier   = Modifier.clickable { }
-                )
-                Text(" and ", color = White.copy(alpha = 0.75f), fontSize = 12.sp)
-                Text(
-                    "Privacy Policy",
-                    color      = White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize   = 12.sp,
+                    textDecoration = TextDecoration.Underline,
                     modifier   = Modifier.clickable { }
                 )
             }
-
             if (uiState.errorMessage != null) {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(10.dp))
                 Text(uiState.errorMessage ?: "", color = Color(0xFFFFCDD2), fontSize = 13.sp)
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(28.dp))
 
             HomieeButton(
                 text    = if (uiState.isLoading) "Signing Up..." else "Sign Up",
-                enabled = agreed && !uiState.isLoading,
+                enabled = agreed && isFormValid && !uiState.isLoading,
                 onClick = {
+                    firstNameTouched   = true
+                    lastNameTouched    = true
+                    emailTouched       = true
+                    usernameTouched    = true
+                    passwordTouched    = true
+                    confirmPassTouched = true
                     viewModel.register(
                         firstName = firstName,
                         lastName  = lastName,
                         email     = email,
-                        mobile    = mobile,
                         username  = username,
                         password  = password,
                         password2 = confirmPass
@@ -152,7 +263,7 @@ fun SignUpScreen(
                 }
             )
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(18.dp))
 
             Row(
                 modifier              = Modifier.fillMaxWidth(),

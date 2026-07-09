@@ -35,7 +35,8 @@ object Routes {
     const val LOGIN_ROUTE        = "login"
     const val OTP_ROUTE          = "otp/{email}/{flow}"   // flow = "login" | "signup"
     const val FORGOT_PASSWORD    = "forgot_password"
-    const val TERMS_AND_CONDITIONS = "terms_and_conditions"
+    // NOTE: TERMS_AND_CONDITIONS route removed — now a popup dialog shown inside OtpScreen
+    // for the signup flow, rather than a separate navigation destination.
 
     // Resident forms — 4 steps
     const val RES_FORM_1 = "res_form_address"
@@ -183,8 +184,9 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         }
 
         // ── OTP ─────────────────────────────────────────────────────────────
-        // login  → HOME  (clear all auth)
-        // signup → TERMS (clear otp from stack)
+        // login  → HOME (clear all auth)
+        // signup → shows T&C popup INSIDE OtpScreen after verification;
+        //          once agreed, goes to RES_FORM_1 (clear signup + otp from stack)
         composable(
             route     = Routes.OTP_ROUTE,
             arguments = listOf(
@@ -199,30 +201,19 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
 
             OtpScreen(
                 email     = email,
+                flow      = flow,
                 onConfirm = {
                     if (flow == "login") {
                         navController.navigate(Routes.HOME_RES) {
                             popUpTo(Routes.LOGIN_ROUTE) { inclusive = true }
                         }
                     } else {
-                        navController.navigate(Routes.TERMS_AND_CONDITIONS) {
-                            popUpTo(Routes.OTP_ROUTE) { inclusive = true }
+                        // T&C agreement already handled by the popup inside OtpScreen
+                        navController.navigate(Routes.RES_FORM_1) {
+                            popUpTo(Routes.SIGNUP_ROUTE) { inclusive = true }
                         }
                     }
                 }
-            )
-        }
-
-        // ── Terms & Conditions ────────────────────────────────────────────────
-        // Back → close app; Agree → RES_FORM_1 (clear all signup screens)
-        composable(Routes.TERMS_AND_CONDITIONS) {
-            TermsAndConditionsScreen(
-                onAgree = {
-                    navController.navigate(Routes.RES_FORM_1) {
-                        popUpTo(Routes.SIGNUP_ROUTE) { inclusive = true }
-                    }
-                },
-                onClose = { (context as? Activity)?.finish() }
             )
         }
 

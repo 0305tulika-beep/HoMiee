@@ -373,26 +373,6 @@ private fun HelperCard(
                 Text(name, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = TextPrimary)
             }
 
-            if (isActive) {
-                Spacer(Modifier.height(2.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(ActiveDotColor.copy(alpha = 0.12f))
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .clip(CircleShape)
-                            .background(ActiveDotColor)
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text("Active", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = ActiveDotColor)
-                }
-            }
-
             Spacer(Modifier.height(4.dp))
             Text(service, fontSize = 13.sp, color = TextMuted)
             Spacer(Modifier.height(8.dp))

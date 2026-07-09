@@ -28,20 +28,18 @@ class RegisterViewModel : ViewModel() {
     // Kept so OtpScreen → back → Signup can restore fields if you wire that up later
     var firstNameValue: String = ""
     var lastNameValue:  String = ""
-    var mobileValue:    String = ""
     var usernameValue:  String = ""
 
     fun register(
         firstName: String,
         lastName:  String,
         email:     String,
-        mobile:    String,
         username:  String,
         password:  String,
         password2: String
     ) {
         if (firstName.isBlank() || lastName.isBlank() || email.isBlank() ||
-            mobile.isBlank() || username.isBlank() || password.isBlank()) {
+            username.isBlank() || password.isBlank()) {
             _uiState.value = _uiState.value.copy(
                 errorMessage = "Please fill in all fields."
             )
@@ -56,7 +54,6 @@ class RegisterViewModel : ViewModel() {
 
         firstNameValue = firstName
         lastNameValue  = lastName
-        mobileValue    = mobile
         usernameValue  = username
 
         viewModelScope.launch {
@@ -67,7 +64,6 @@ class RegisterViewModel : ViewModel() {
                     fname     = firstName,
                     lname     = lastName,
                     email     = email,
-                    mobile    = mobile,
                     username  = username,
                     password  = password,
                     password2 = password2

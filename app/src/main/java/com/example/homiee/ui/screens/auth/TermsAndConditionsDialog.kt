@@ -1,21 +1,25 @@
 package com.example.homiee.ui.screens.auth
 
-import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import kotlinx.coroutines.launch
 
 private val GreenDark    = Color(0xFF0F3D26)
 private val TextPrimary  = Color(0xFF1A1A1A)
@@ -75,42 +79,46 @@ These Terms are governed by the laws of India. Any disputes shall be subject to 
 For questions or concerns, please reach out to us at support@homiee.in or call our helpline at 1800-XXX-XXXX (Mon–Sat, 9 AM – 6 PM).
 """.trimIndent()
 
+/**
+ * Terms & Conditions shown as a POPUP dialog after OTP verification (signup flow only),
+ * not a separate navigation destination. Must be agreed to before proceeding — no
+ * dismiss-on-back or dismiss-on-outside-tap, since agreement is mandatory.
+ *
+ * Subtle entrance animation: fade + scale-up from 92% → 100%.
+ */
 @Composable
-fun TermsAndConditionsScreen(
-    onAgree: () -> Unit = {},
-    onClose: () -> Unit = {}   // back → close app
+fun TermsAndConditionsDialog(
+    onAgree: () -> Unit
 ) {
-    TransparentStatusBarWhiteNavBar(lightStatusBarIcons = false)
+    val scale = remember { Animatable(0.92f) }
+    val alpha = remember { Animatable(0f) }
 
-    // Backing from T&C should close app (same as pressing back on home)
-    val context = LocalContext.current
-    BackHandler {
-        onClose()
+    LaunchedEffect(Unit) {
+        launch {
+            scale.animateTo(1f, animationSpec = tween(durationMillis = 260))
+        }
+        launch {
+            alpha.animateTo(1f, animationSpec = tween(durationMillis = 220))
+        }
     }
 
-    Box(
-        modifier          = Modifier
-            .fillMaxSize()
-            .navigationBarsPadding(),
-        contentAlignment  = Alignment.Center
-    ) {
-
-        // Dim scrim behind the card
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
+    Dialog(
+        onDismissRequest = { /* no-op — agreement is mandatory, no dismiss */ },
+        properties = DialogProperties(
+            dismissOnBackPress    = false,
+            dismissOnClickOutside = false,
+            usePlatformDefaultWidth = false
         )
-
-        // ── Card ──────────────────────────────────────────────────────────
+    ) {
         Card(
             modifier  = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.88f)
-                .padding(horizontal = 16.dp),
-            shape     = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 20.dp, bottomEnd = 20.dp),
+                .fillMaxWidth(0.94f)
+                .fillMaxHeight(0.85f)
+                .scale(scale.value)
+                .alpha(alpha.value),
+            shape     = RoundedCornerShape(24.dp),
             colors    = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
 

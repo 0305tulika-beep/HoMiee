@@ -30,18 +30,27 @@ import com.example.homiee.viewmodel.LoginViewModel
 import com.example.homiee.viewmodel.LoginViewModelFactory
 import androidx.compose.ui.platform.LocalContext
 
+private val ErrorRed = Color(0xFFFF6B6B)
+
 @Composable
 fun LoginScreen(
     navController: NavController,
     onLoginSuccess: (String) -> Unit,
     onForgotPassword: () -> Unit = {},
-            viewModel: LoginViewModel = viewModel(
+    viewModel: LoginViewModel = viewModel(
         factory = LoginViewModelFactory(LocalContext.current)
     )
 ) {
     var email      by remember { mutableStateOf("") }
     var password   by remember { mutableStateOf("") }
     var rememberMe by remember { mutableStateOf(false) }
+
+    // ── Touched tracking: becomes true once the user leaves the field ──
+    var emailTouched    by remember { mutableStateOf(false) }
+    var passwordTouched by remember { mutableStateOf(false) }
+
+    val emailError    = if (emailTouched && email.isBlank())    "Email is required"    else null
+    val passwordError = if (passwordTouched && password.isBlank()) "Password is required" else null
 
     val uiState by viewModel.uiState.collectAsState()
 
@@ -84,8 +93,14 @@ fun LoginScreen(
                 value         = email,
                 onValueChange = { email = it },
                 placeholder   = "Email",
-                keyboardType  = KeyboardType.Email
+                keyboardType  = KeyboardType.Email,
+                isError       = emailError != null,
+                onFocusLost   = { emailTouched = true }
             )
+            if (emailError != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(emailError, color = ErrorRed, fontSize = 12.sp)
+            }
 
             Spacer(Modifier.height(12.dp))
 
@@ -93,8 +108,14 @@ fun LoginScreen(
                 value         = password,
                 onValueChange = { password = it },
                 placeholder   = "Password",
-                isPassword    = true
+                isPassword    = true,
+                isError       = passwordError != null,
+                onFocusLost   = { passwordTouched = true }
             )
+            if (passwordError != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(passwordError, color = ErrorRed, fontSize = 12.sp)
+            }
 
             Spacer(Modifier.height(12.dp))
 
@@ -138,6 +159,8 @@ fun LoginScreen(
                 text    = if (uiState.isLoading) "Logging In..." else "Log In",
                 enabled = !uiState.isLoading,
                 onClick = {
+                    emailTouched = true
+                    passwordTouched = true
                     viewModel.login(email = email, password = password)
                 }
             )

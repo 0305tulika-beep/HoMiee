@@ -40,12 +40,14 @@ import com.example.homiee.viewmodel.OtpViewModelFactory
 @Composable
 fun OtpScreen(
     email: String,
+    flow: String = "login",
     onConfirm: () -> Unit,
     viewModel: OtpViewModel = viewModel(
         factory = OtpViewModelFactory(LocalContext.current)
     )
 ) {
     var otpValue by remember { mutableStateOf("") }
+    var showTermsDialog by remember { mutableStateOf(false) }
 
     val uiState by viewModel.uiState.collectAsState()
     val resendState by viewModel.resendState.collectAsState()
@@ -60,7 +62,12 @@ fun OtpScreen(
 
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
-            onConfirm()
+            if (flow == "signup") {
+                // Show T&C popup instead of navigating immediately
+                showTermsDialog = true
+            } else {
+                onConfirm()
+            }
             viewModel.resetState()
         }
     }
@@ -200,5 +207,15 @@ fun OtpScreen(
 
             Spacer(Modifier.height(24.dp))
         }
+    }
+
+    // ── T&C popup — only shown for signup flow, right after OTP succeeds ──
+    if (showTermsDialog) {
+        TermsAndConditionsDialog(
+            onAgree = {
+                showTermsDialog = false
+                onConfirm()   // now actually proceed to next screen (RES_FORM_1)
+            }
+        )
     }
 }

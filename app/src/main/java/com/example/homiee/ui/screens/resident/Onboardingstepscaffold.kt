@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.homiee.ui.components.HomieeColors
+import com.example.homiee.ui.components.HomieeHeader
 
 val HELPER_ONBOARDING_STEP_LABELS = listOf(
     "Address\n",

@@ -1,8 +1,14 @@
-package com.example.homiee.ui.screens.auth
+package com.example.homiee.ui.screens.allpreviews
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
+import com.example.homiee.ui.screens.auth.ForgotPasswordScreen
+import com.example.homiee.ui.screens.auth.LoginScreen
+import com.example.homiee.ui.screens.auth.OtpScreen
+import com.example.homiee.ui.screens.auth.SignUpScreen
+import com.example.homiee.ui.screens.auth.SplashScreen
+import com.example.homiee.ui.screens.auth.TermsAndConditionsScreen
 import com.example.homiee.ui.theme.HomieeTheme
 
 // ── 1. Splash ────────────────────────────────────────────────────────────────
@@ -20,8 +26,8 @@ fun SplashScreenPreview() {
 fun LoginScreenPreview() {
     HomieeTheme {
         LoginScreen(
-            navController    = rememberNavController(),
-            onLoginSuccess   = {},
+            navController = rememberNavController(),
+            onLoginSuccess = {},
             onForgotPassword = {}
         )
     }
@@ -33,7 +39,7 @@ fun LoginScreenPreview() {
 fun ForgotPasswordScreenPreview() {
     HomieeTheme {
         ForgotPasswordScreen(
-            onBack     = {},
+            onBack = {},
             onContinue = {}
         )
     }
@@ -54,7 +60,7 @@ fun SignUpScreenPreview() {
 fun OtpScreenPreview() {
     HomieeTheme {
         OtpScreen(
-            email     = "test@example.com",
+            email = "test@example.com",
             onConfirm = {}
         )
     }

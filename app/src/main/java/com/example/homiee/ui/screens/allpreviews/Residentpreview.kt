@@ -1,7 +1,11 @@
-package com.example.homiee.ui.screens.resident
+package com.example.homiee.ui.screens.allpreviews
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.homiee.ui.screens.resident.ResFormAddressScreen
+import com.example.homiee.ui.screens.resident.ResFormEmergencyScreen
+import com.example.homiee.ui.screens.resident.ResFormIdentityScreen
+import com.example.homiee.ui.screens.resident.ResFormPhotoScreen
 
 @Preview(showBackground = true)
 @Composable
