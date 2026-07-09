@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.homiee.ui.components.HideSystemBars
 import com.example.homiee.ui.components.HomieeColors
 import com.example.homiee.ui.components.HomieeHeader
 
@@ -28,6 +29,7 @@ val HELPER_ONBOARDING_STEP_LABELS = listOf(
     "Identity\n Verification",
     "Profile\n Photo"
 )
+
 @Composable
 fun OnboardingStepScaffold(
     currentStep: Int,
@@ -39,6 +41,8 @@ fun OnboardingStepScaffold(
     onButtonClick: () -> Unit,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    HideSystemBars(lightIcons = true)
+
     Scaffold(
         topBar = { HomieeHeader() },
         bottomBar = {

@@ -19,6 +19,8 @@ import com.example.homiee.ui.components.HomieeButton
 import com.example.homiee.ui.components.systemBarsPadding
 import com.example.homiee.ui.theme.White
 
+private val ErrorRed = Color(0xFFFF6B6B)
+
 @Composable
 fun ForgotPasswordScreen(
     onBack:     () -> Unit = {},
@@ -27,6 +29,9 @@ fun ForgotPasswordScreen(
     HideSystemBars()
 
     var email by remember { mutableStateOf("") }
+    var emailTouched by remember { mutableStateOf(false) }
+
+    val emailError = if (emailTouched && email.isBlank()) "Email is required" else null
 
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -67,8 +72,14 @@ fun ForgotPasswordScreen(
                 value         = email,
                 onValueChange = { email = it },
                 placeholder   = "Email",
-                keyboardType  = KeyboardType.Email
+                keyboardType  = KeyboardType.Email,
+                isError       = emailError != null,
+                onFocusLost   = { emailTouched = true }
             )
+            if (emailError != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(emailError, color = ErrorRed, fontSize = 12.sp)
+            }
 
             Spacer(Modifier.height(32.dp))
 
@@ -76,7 +87,10 @@ fun ForgotPasswordScreen(
             HomieeButton(
                 text    = "Continue",
                 enabled = email.isNotBlank(),
-                onClick = { if (email.isNotBlank()) onContinue(email.trim()) }
+                onClick = {
+                    emailTouched = true
+                    if (email.isNotBlank()) onContinue(email.trim())
+                }
             )
 
             Spacer(Modifier.height(24.dp))

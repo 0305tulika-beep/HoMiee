@@ -122,24 +122,21 @@ fun GradientTextField(
 }
 
 @Composable
-fun HideSystemBars() {
+fun HideSystemBars(lightIcons: Boolean = false) {
     val view = LocalView.current
     DisposableEffect(Unit) {
         val window = (view.context as android.app.Activity).window
         val controller = WindowInsetsControllerCompat(window, view)
 
-        // Make nav bar + status bar transparent and draw content behind them
         window.statusBarColor = android.graphics.Color.TRANSPARENT
         window.navigationBarColor = android.graphics.Color.TRANSPARENT
 
-        // Light icons since your background is dark/green
-        controller.isAppearanceLightStatusBars = false
-        controller.isAppearanceLightNavigationBars = false
+        controller.isAppearanceLightStatusBars = !lightIcons
+        controller.isAppearanceLightNavigationBars = !lightIcons
 
         onDispose { }
     }
 }
-
 @Composable
 fun TransparentStatusBarWhiteNavBar(lightStatusBarIcons: Boolean = true) {
     val view = LocalView.current
@@ -228,13 +225,15 @@ fun OnboardingStepIndicator(
 @Composable
 fun OtpBox(
     digit: String,
+    hasError: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val ErrorRed = Color(0xFFFF6B6B)
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .size(48.dp)
-            .border(2.dp, GreenDark, CircleShape)
+            .border(2.dp, if (hasError) ErrorRed else GreenDark, CircleShape)
     ) {
         Text(
             text       = digit,

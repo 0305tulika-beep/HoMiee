@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -37,6 +38,8 @@ import com.example.homiee.ui.theme.White
 import com.example.homiee.viewmodel.OtpViewModel
 import com.example.homiee.viewmodel.OtpViewModelFactory
 
+private val ErrorRed = Color(0xFFFF6B6B)
+
 @Composable
 fun OtpScreen(
     email: String,
@@ -48,6 +51,10 @@ fun OtpScreen(
 ) {
     var otpValue by remember { mutableStateOf("") }
     var showTermsDialog by remember { mutableStateOf(false) }
+    var otpTouched by remember { mutableStateOf(false) }
+    var wasFocused by remember { mutableStateOf(false) }
+
+    val otpIncompleteError = if (otpTouched && otpValue.length < 6) "Please enter the full 6-digit code" else null
 
     val uiState by viewModel.uiState.collectAsState()
     val resendState by viewModel.resendState.collectAsState()
@@ -142,7 +149,10 @@ fun OtpScreen(
                 }
             ) {
                 repeat(6) { index ->
-                    OtpBox(digit = otpValue.getOrNull(index)?.toString() ?: "")
+                    OtpBox(
+                        digit   = otpValue.getOrNull(index)?.toString() ?: "",
+                        hasError = otpIncompleteError != null
+                    )
                 }
             }
 
@@ -152,12 +162,24 @@ fun OtpScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 modifier        = Modifier
                     .size(1.dp)
-                    .focusRequester(focusRequester),
+                    .focusRequester(focusRequester)
+                    .onFocusChanged { focusState ->
+                        // Fires when user taps away from the hidden OTP input
+                        if (wasFocused && !focusState.isFocused) {
+                            otpTouched = true
+                        }
+                        wasFocused = focusState.isFocused
+                    },
                 colors          = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = Color.Transparent,
                     focusedBorderColor   = Color.Transparent
                 )
             )
+
+            if (otpIncompleteError != null) {
+                Spacer(Modifier.height(10.dp))
+                Text(otpIncompleteError, color = ErrorRed, fontSize = 12.sp)
+            }
 
             if (uiState.errorMessage != null) {
                 Spacer(Modifier.height(16.dp))
@@ -181,6 +203,7 @@ fun OtpScreen(
                 text     = if (uiState.isLoading) "Verifying..." else "Confirm",
                 enabled  = otpValue.length == 6 && !uiState.isLoading,
                 onClick  = {
+                    otpTouched = true
                     viewModel.verifyOtp(email = email, otp = otpValue)
                 },
                 modifier = Modifier.fillMaxWidth()

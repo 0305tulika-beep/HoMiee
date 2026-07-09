@@ -8,7 +8,7 @@ import com.example.homiee.ui.screens.auth.LoginScreen
 import com.example.homiee.ui.screens.auth.OtpScreen
 import com.example.homiee.ui.screens.auth.SignUpScreen
 import com.example.homiee.ui.screens.auth.SplashScreen
-import com.example.homiee.ui.screens.auth.TermsAndConditionsScreen
+import com.example.homiee.ui.screens.auth.TermsAndConditionsDialog
 import com.example.homiee.ui.theme.HomieeTheme
 
 // ── 1. Splash ────────────────────────────────────────────────────────────────
@@ -54,26 +54,39 @@ fun SignUpScreenPreview() {
     }
 }
 
-// ── 5. OTP ────────────────────────────────────────────────────────────────────
-@Preview(showBackground = true, name = "OTP Screen")
+// ── 5. OTP — Login flow ───────────────────────────────────────────────────────
+@Preview(showBackground = true, name = "OTP Screen — Login Flow")
 @Composable
-fun OtpScreenPreview() {
+fun OtpScreenLoginPreview() {
     HomieeTheme {
         OtpScreen(
-            email = "test@example.com",
+            email     = "test@example.com",
+            flow      = "login",
             onConfirm = {}
         )
     }
 }
 
-// ── 6. Terms & Conditions ─────────────────────────────────────────────────────
-@Preview(showBackground = true, name = "Terms & Conditions")
+// ── 6. OTP — Signup flow (this is the one that can trigger the T&C popup) ────
+@Preview(showBackground = true, name = "OTP Screen — Signup Flow")
 @Composable
-fun TermsAndConditionsScreenPreview() {
+fun OtpScreenSignupPreview() {
     HomieeTheme {
-        TermsAndConditionsScreen(
-            onAgree = {},
-            onClose = {}
+        OtpScreen(
+            email     = "test@example.com",
+            flow      = "signup",
+            onConfirm = {}
+        )
+    }
+}
+
+// ── 7. Terms & Conditions (now a popup dialog, previewed standalone) ─────────
+@Preview(showBackground = true, name = "Terms & Conditions Dialog")
+@Composable
+fun TermsAndConditionsDialogPreview() {
+    HomieeTheme {
+        TermsAndConditionsDialog(
+            onAgree = {}
         )
     }
 }
