@@ -3,6 +3,7 @@ package com.example.homiee.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.homiee.data.local.SessionManager   // ADDED
 import com.example.homiee.data.local.TokenManager
 import com.example.homiee.data.model.LoginRequest
 import com.example.homiee.data.repository.ApiResult
@@ -43,6 +44,7 @@ class LoginViewModel(private val tokenManager: TokenManager) : ViewModel() {
 
                     if (tokens != null) {
                         tokenManager.saveTokens(tokens.access, tokens.refresh)
+                        SessionManager.accessToken = tokens.access   // ADDED
                         tokenManager.markFormsCompleted()   // returning users already onboarded
 
                         _uiState.value = _uiState.value.copy(

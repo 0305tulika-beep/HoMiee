@@ -29,12 +29,13 @@ import com.example.homiee.ui.components.NavTab
 import com.example.homiee.navigation.Routes
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
 import com.example.homiee.ui.theme.GreenDark
+import com.example.homiee.ui.theme.TextPrimary
 import com.example.homiee.ui.theme.White
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-private val GreenPrimary     = Color(0xFF1A5C3A)
-private val ChipSelectedBg   = Color(0xFF1A5C3A)
-private val ChipSelectedText = Color.White
+//private val ChipSelectedText = Color.White
+private val ChipSelectedBg   = Color(0xFFE0F2EF)
+private val ChipSelectedText = Color(0xFF0F766E)
 private val ChipUnselBg      = Color.White
 private val ChipUnselBorder  = Color(0xFFCCCCCC)
 private val ChipUnselText    = Color(0xFF333333)
@@ -108,6 +109,7 @@ fun SearchScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             BottomNavBar(
                 selectedTab   = NavTab.SEARCH,
@@ -184,7 +186,7 @@ fun SearchScreen(
                                     unfocusedContainerColor = Color.White,
                                     focusedBorderColor      = Color.Transparent,
                                     unfocusedBorderColor    = Color.Transparent,
-                                    cursorColor             = GreenPrimary
+                                    cursorColor             = GreenDark
                                 ),
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -219,7 +221,7 @@ fun SearchScreen(
                             text          = "SORT BY",
                             fontSize      = 13.sp,
                             fontWeight    = FontWeight.Bold,
-                            color         = White,
+                            color         = TextPrimary,
                             letterSpacing = 0.8.sp
                         )
                         Spacer(Modifier.height(8.dp))
@@ -241,7 +243,7 @@ fun SearchScreen(
                         text     = "${displayedHelpers.size} HELPERS FOUND",
                         fontSize = 16.sp,
                         fontWeight    = FontWeight.Bold,
-                        color    = GreenDark,
+                        color    = TextPrimary,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
                     )
                 }
@@ -348,16 +350,23 @@ private fun SearchHelperCard(
 
             Spacer(Modifier.width(10.dp))
 
-            Image(
-                painter            = painterResource(R.drawable.btn_book),
-                contentDescription = "Book",
-                contentScale       = ContentScale.Fit,
-                modifier           = Modifier
-                    .height(30.dp)
-                    .width(80.dp)
+            Box(
+                modifier = Modifier
+                    .height(34.dp)
+                    .widthIn(min = 84.dp)
                     .clip(RoundedCornerShape(8.dp))
+                    .background(GreenDark)
                     .clickable { onBook() }
-            )
+                    .padding(horizontal = 14.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text       = "Book",
+                    color      = Color.White,
+                    fontSize   = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
@@ -383,7 +392,7 @@ private fun HelperInitialsAvatar(initials: String, photoUrl: String?, isActive: 
                 modifier         = Modifier
                     .size(52.dp)
                     .clip(CircleShape)
-                    .background(GreenPrimary),
+                    .background(GreenDark),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -424,7 +433,7 @@ private fun FilterChipItem(label: String, isSelected: Boolean, onClick: () -> Un
             .background(if (isSelected) ChipSelectedBg else ChipUnselBg)
             .border(
                 width = 1.dp,
-                color = if (isSelected) ChipSelectedBg else ChipUnselBorder,
+                color = if (isSelected) Color(0xFFB2DFDB) else ChipUnselBorder,
                 shape = RoundedCornerShape(20.dp)
             )
             .clickable { onClick() }

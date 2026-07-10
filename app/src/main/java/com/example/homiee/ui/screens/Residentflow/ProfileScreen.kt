@@ -1,9 +1,15 @@
 package com.example.homiee.ui.screens.Residentflow
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -11,6 +17,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,22 +35,32 @@ import com.example.homiee.navigation.Routes
 import com.example.homiee.ui.components.BottomNavBar
 import com.example.homiee.ui.components.NavTab
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
-import com.example.homiee.ui.components.systemBarsPadding
+import com.example.homiee.ui.components.statusBarsPadding
 import com.example.homiee.ui.theme.GreenDark
 import com.example.homiee.ui.theme.TextMuted
 import com.example.homiee.ui.theme.TextPrimary
 import com.example.homiee.ui.theme.White
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 
 @Composable
 fun ProfileScreen(
     onNavItemClick:   (String) -> Unit = {},
-    onSettingsClick:  () -> Unit = {},
     onMyReviewsClick: () -> Unit = {}
 ) {
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = true)
 
+    var showSettings by remember { mutableStateOf(false) }
+
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
+            val offsetY by animateDpAsState(
+                targetValue = if (showSettings) 100.dp else 0.dp,
+                label = "bottomNavOffset"
+            )
             BottomNavBar(
                 selectedTab   = NavTab.ACCOUNT,
                 onTabSelected = { tab ->
@@ -52,7 +72,8 @@ fun ProfileScreen(
                         NavTab.ACCOUNT  -> Routes.ACCOUNT
                     }
                     onNavItemClick(route)
-                }
+                },
+                modifier = Modifier.offset(y = offsetY)
             )
         },
         containerColor = Color.Transparent
@@ -77,7 +98,7 @@ fun ProfileScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(systemBarsPadding())
+                        .padding(statusBarsPadding())
                         .padding(horizontal = 20.dp, vertical = 16.dp)
                 ) {
                     Text(
@@ -93,7 +114,7 @@ fun ProfileScreen(
                         color    = White,
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
-                            .clickable { onSettingsClick() }
+                            .clickable { showSettings = true }
                     )
                 }
 
@@ -222,6 +243,86 @@ fun ProfileScreen(
                     }
                 }
             }
+
+            // ── Settings slide-in panel (overlays everything, incl. bottom bar) ──
+            Box(modifier = Modifier.fillMaxSize()) {
+
+                // Scrim
+                AnimatedVisibility(
+                    visible = showSettings,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.45f))
+                            .clickable(
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() }
+                            ) { showSettings = false }
+                    )
+                }
+
+                // Panel
+                AnimatedVisibility(
+                    visible = showSettings,
+                    enter = slideInHorizontally(initialOffsetX = { it }),
+                    exit = slideOutHorizontally(targetOffsetX = { it }),
+                    modifier = Modifier.align(Alignment.CenterEnd)
+                ) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(0.78f),
+                        color = White,
+                        shadowElevation = 12.dp
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(statusBarsPadding())
+                                .padding(horizontal = 20.dp)
+                        ) {
+                            Spacer(Modifier.height(24.dp))
+
+                            Text(
+                                text = "Settings",
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 22.sp
+                            )
+
+                            Spacer(Modifier.height(32.dp))
+
+                            SettingsOptionButton(
+                                label = "Logout",
+                                onClick = {
+                                    showSettings = false
+                                    // TODO: wire up actual logout logic (clear session, navigate to LOGIN_ROUTE)
+                                }
+                            )
+                            Spacer(Modifier.height(14.dp))
+                            SettingsOptionButton(
+                                label = "Deactivate Account",
+                                onClick = {
+                                    showSettings = false
+                                    // TODO: wire up deactivate-account API call
+                                }
+                            )
+                            Spacer(Modifier.height(14.dp))
+                            SettingsOptionButton(
+                                label = "Delete Account",
+                                onClick = {
+                                    showSettings = false
+                                    // TODO: wire up delete-account confirmation + API call
+                                },
+                                isDestructive = true
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -232,7 +333,7 @@ private fun SectionTitle(text: String) {
         text          = text,
         fontSize      = 18.sp,
         fontWeight    = FontWeight.Bold,
-        color         = GreenDark,
+        color         = TextPrimary,
         letterSpacing = 0.8.sp,
         modifier      = Modifier
             .fillMaxWidth()
@@ -269,5 +370,25 @@ private fun TrustedContactItem(name: String, relation: String, phone: String) {
             Text(name,               fontSize = 14.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
             Text("$relation $phone", fontSize = 12.sp, color = TextMuted)
         }
+    }
+}
+
+@Composable
+private fun SettingsOptionButton(
+    label: String,
+    onClick: () -> Unit,
+    isDestructive: Boolean = false
+) {
+    Button(
+        onClick = onClick,
+        shape = RoundedCornerShape(10.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (isDestructive) Color(0xFFD32F2F) else Color(0xFF2E7D67)
+        )
+    ) {
+        Text(label, color = White, fontWeight = FontWeight.Medium, fontSize = 15.sp)
     }
 }

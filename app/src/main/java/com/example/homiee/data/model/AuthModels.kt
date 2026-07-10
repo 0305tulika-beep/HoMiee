@@ -21,6 +21,7 @@ data class UserData(
     val fname: String,
     val lname: String,
     val email: String,
+    val role: String = "Resident",
     val mobile: String,
     val username: String
 )
@@ -90,3 +91,4 @@ data class ResendOtpData(
     val identifier:     String,
     val otp_expires_in: String
 )
+

@@ -9,19 +9,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.homiee.ui.components.DocumentUploadCard
 
-
 @Composable
 fun ResFormIdentityScreen(
     onUploadAadhaar: () -> Unit,
     onUploadPan: () -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
+    onBack: () -> Unit
 ) {
     OnboardingStepScaffold(
         currentStep = 3,
         title = "Identity Verification",
         subtitle = "Upload your Aadhaar card and PAN card for verification",
         buttonText = "Next",
-        onButtonClick = onNext
+        onButtonClick = onNext,
+        onBackClick = onBack
     ) {
         DocumentUploadCard(
             icon = Icons.Default.Badge,

@@ -33,6 +33,8 @@ import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
 import com.example.homiee.ui.theme.GreenDark
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
+private val Teal   = Color(0xFFE0F2EF)
+private val TealBorder = Color(0xFF0F766E)
 private val GreenPrimary  = Color(0xFF1A5C3A)
 private val TextPrimary   = Color(0xFF1A1A1A)
 private val TextSecondary = Color(0xFF7A7A7A)
@@ -83,6 +85,7 @@ fun BookingsScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             BottomNavBar(
                 selectedTab   = NavTab.BOOKINGS,
@@ -203,15 +206,15 @@ private fun BookingTabChip(
     Box(
         modifier         = modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(if (isSelected) GreenPrimary else Color.White)
-            .border(1.dp, if (isSelected) GreenPrimary else Color(0xFFCCCCCC), RoundedCornerShape(20.dp))
+            .background(if (isSelected) Teal else Color.White)
+            .border(1.dp, if (isSelected) TealBorder else Color(0xFFCCCCCC), RoundedCornerShape(20.dp))
             .clickable { onClick() }
             .padding(vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text       = label,
-            color      = if (isSelected) Color.White else TextSecondary,
+            color      = if (isSelected) TealBorder else TextSecondary,
             fontSize   = 13.sp,
             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
         )
@@ -314,7 +317,7 @@ private fun BookingCard(
                     modifier         = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(GreenPrimary),
+                        .background(GreenDark),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -437,7 +440,7 @@ private fun BookingCard(
                     BookingTab.COMPLETED -> Button(
                         onClick        = {onReviewClick(booking.id) },
                         shape          = RoundedCornerShape(10.dp),
-                        colors         = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
+                        colors         = ButtonDefaults.buttonColors(containerColor = GreenDark),
                         modifier       = Modifier.weight(1f).height(44.dp),
                         contentPadding = PaddingValues(horizontal = 4.dp)
                     ) {

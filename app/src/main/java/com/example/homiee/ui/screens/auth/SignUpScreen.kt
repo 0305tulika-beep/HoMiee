@@ -21,7 +21,7 @@ import com.example.homiee.navigation.Routes
 import com.example.homiee.ui.components.GradientTextField
 import com.example.homiee.ui.components.HideSystemBars
 import com.example.homiee.ui.components.HomieeButton
-import com.example.homiee.ui.components.systemBarsPadding
+import com.example.homiee.ui.components.statusBarsPadding
 import com.example.homiee.ui.theme.GreenLight
 import com.example.homiee.ui.theme.White
 import com.example.homiee.viewmodel.RegisterViewModel
@@ -44,13 +44,6 @@ private fun passwordErrorMessage(password: String, touched: Boolean): String? {
     }
 }
 
-private fun usernameErrorMessage(username: String, touched: Boolean): String? {
-    if (touched && username.isEmpty()) return "Username is required"
-    if (username.isEmpty()) return null
-    val hasSpecialChar = username.any { !it.isLetterOrDigit() }
-    return if (hasSpecialChar) "Username cannot contain special symbols" else null
-}
-
 private fun requiredError(value: String, touched: Boolean, fieldLabel: String): String? =
     if (touched && value.isBlank()) "$fieldLabel is required" else null
 
@@ -63,7 +56,6 @@ fun SignUpScreen(
     var firstName   by remember { mutableStateOf("") }
     var lastName    by remember { mutableStateOf("") }
     var email       by remember { mutableStateOf("") }
-    var username    by remember { mutableStateOf("") }
     var password    by remember { mutableStateOf("") }
     var confirmPass by remember { mutableStateOf("") }
     var agreed      by remember { mutableStateOf(false) }
@@ -72,7 +64,6 @@ fun SignUpScreen(
     var firstNameTouched   by remember { mutableStateOf(false) }
     var lastNameTouched    by remember { mutableStateOf(false) }
     var emailTouched       by remember { mutableStateOf(false) }
-    var usernameTouched    by remember { mutableStateOf(false) }
     var passwordTouched    by remember { mutableStateOf(false) }
     var confirmPassTouched by remember { mutableStateOf(false) }
 
@@ -81,7 +72,6 @@ fun SignUpScreen(
     val firstNameError = requiredError(firstName, firstNameTouched, "First name")
     val lastNameError  = requiredError(lastName,  lastNameTouched,  "Last name")
     val emailError     = requiredError(email,     emailTouched,     "Email")
-    val usernameError  = usernameErrorMessage(username, usernameTouched)
     val passwordError  = passwordErrorMessage(password, passwordTouched)
     val confirmError = when {
         confirmPassTouched && confirmPass.isEmpty() -> "Please confirm your password"
@@ -90,13 +80,12 @@ fun SignUpScreen(
     }
 
     val isFormValid = firstName.isNotBlank() && lastName.isNotBlank() && email.isNotBlank() &&
-            username.isNotBlank() && usernameError == null &&
             password.isNotBlank() && passwordError == null &&
             confirmPass.isNotBlank() && confirmError == null
 
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
-            navController.navigate(Routes.OTP_ROUTE)
+            navController.navigate(Routes.otpRoute(viewModel.registeredEmail, "signup"))
             viewModel.resetState()
         }
     }
@@ -111,7 +100,7 @@ fun SignUpScreen(
         )
         Column(
             modifier = Modifier
-                .padding(systemBarsPadding())
+                .padding(statusBarsPadding())
                 .fillMaxSize()
                 .padding(horizontal = 28.dp)
                 .verticalScroll(rememberScrollState()),
@@ -167,19 +156,6 @@ fun SignUpScreen(
             if (emailError != null) {
                 Spacer(Modifier.height(4.dp))
                 Text(emailError, color = ErrorRed, fontSize = 12.sp)
-            }
-
-            Spacer(Modifier.height(14.dp))
-            GradientTextField(
-                value         = username,
-                onValueChange = { username = it },
-                placeholder   = "Username",
-                isError       = usernameError != null,
-                onFocusLost   = { usernameTouched = true }
-            )
-            if (usernameError != null) {
-                Spacer(Modifier.height(4.dp))
-                Text(usernameError, color = ErrorRed, fontSize = 12.sp)
             }
 
             Spacer(Modifier.height(14.dp))
@@ -249,14 +225,12 @@ fun SignUpScreen(
                     firstNameTouched   = true
                     lastNameTouched    = true
                     emailTouched       = true
-                    usernameTouched    = true
                     passwordTouched    = true
                     confirmPassTouched = true
                     viewModel.register(
                         firstName = firstName,
                         lastName  = lastName,
                         email     = email,
-                        username  = username,
                         password  = password,
                         password2 = confirmPass
                     )

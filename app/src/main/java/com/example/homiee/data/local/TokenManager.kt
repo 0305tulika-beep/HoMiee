@@ -15,6 +15,8 @@ class TokenManager(private val context: Context) {
     private val REFRESH_TOKEN_KEY  = stringPreferencesKey("refresh_token")
     private val FORMS_COMPLETE_KEY = booleanPreferencesKey("forms_completed")
     private val CURRENT_STEP_KEY   = stringPreferencesKey("current_form_step")
+    private val FIRST_NAME_KEY     = stringPreferencesKey("first_name")
+    private val LAST_NAME_KEY      = stringPreferencesKey("last_name")
 
     suspend fun saveTokens(access: String, refresh: String) {
         context.dataStore.edit { prefs ->
@@ -53,5 +55,20 @@ class TokenManager(private val context: Context) {
 
     suspend fun clearTokens() {
         context.dataStore.edit { it.clear() }
+    }
+
+    suspend fun saveUserName(firstName: String, lastName: String) {
+        context.dataStore.edit { prefs ->
+            prefs[FIRST_NAME_KEY] = firstName
+            prefs[LAST_NAME_KEY]  = lastName
+        }
+    }
+
+    suspend fun getFirstName(): String? {
+        return context.dataStore.data.first()[FIRST_NAME_KEY]
+    }
+
+    suspend fun getLastName(): String? {
+        return context.dataStore.data.first()[LAST_NAME_KEY]
     }
 }

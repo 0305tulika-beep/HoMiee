@@ -28,7 +28,10 @@ import com.example.homiee.ui.theme.GreenDarkk
 import kotlinx.coroutines.launch
 
 private val GreenPrimary    = Color(0xFF1A5C3A)
-private val GreenBubble     = Color(0xFF1A5C3A)
+// Subtle, theme-matching "me" bubble — a soft sage tint instead of a solid green,
+// so it reads as part of the same palette without shouting green.
+private val MeBubble        = Color(0xFFDCE7E1)
+private val MeBubbleText    = Color(0xFF1A1A1A)
 private val GreyBubble      = Color(0xFFF0F0F0)
 private val TextPrimary     = Color(0xFF1A1A1A)
 private val TextSecondary   = Color(0xFF7A7A7A)
@@ -162,7 +165,7 @@ fun ChatScreen(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(GreenPrimary)
+                    .background(GreenDark)
                     .clickable {
                         if (messageText.isNotBlank()) {
                             messages.add(
@@ -203,7 +206,7 @@ private fun ChatBubble(message: ChatMessage) {
                 modifier         = Modifier
                     .size(28.dp)
                     .clip(CircleShape)
-                    .background(GreenPrimary),
+                    .background(GreenDark),
                 contentAlignment = Alignment.Center
             ) {
                 Text("RK", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
@@ -222,14 +225,14 @@ private fun ChatBubble(message: ChatMessage) {
                             bottomEnd    = 16.dp
                         )
                     )
-                    .background(if (message.isMe) GreenBubble else GreyBubble)
+                    .background(if (message.isMe) MeBubble else GreyBubble)
                     .padding(horizontal = 14.dp, vertical = 10.dp)
                     .widthIn(max = 260.dp)
             ) {
                 Text(
                     text      = message.text,
                     fontSize  = 13.sp,
-                    color     = if (message.isMe) Color.White else TextPrimary,
+                    color     = if (message.isMe) MeBubbleText else TextPrimary,
                     lineHeight = 18.sp
                 )
             }

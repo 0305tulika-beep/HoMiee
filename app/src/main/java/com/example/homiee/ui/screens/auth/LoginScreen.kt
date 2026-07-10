@@ -25,12 +25,16 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.example.homiee.R
 import com.example.homiee.ui.components.HideSystemBars
-import com.example.homiee.ui.components.systemBarsPadding
+import com.example.homiee.ui.components.statusBarsPadding
 import com.example.homiee.viewmodel.LoginViewModel
 import com.example.homiee.viewmodel.LoginViewModelFactory
 import androidx.compose.ui.platform.LocalContext
 
 private val ErrorRed = Color(0xFFFF6B6B)
+
+// ── Same validation helper pattern as SignUpScreen ──
+private fun requiredError(value: String, touched: Boolean, fieldLabel: String): String? =
+    if (touched && value.isBlank()) "$fieldLabel is required" else null
 
 @Composable
 fun LoginScreen(
@@ -49,10 +53,13 @@ fun LoginScreen(
     var emailTouched    by remember { mutableStateOf(false) }
     var passwordTouched by remember { mutableStateOf(false) }
 
-    val emailError    = if (emailTouched && email.isBlank())    "Email is required"    else null
-    val passwordError = if (passwordTouched && password.isBlank()) "Password is required" else null
-
     val uiState by viewModel.uiState.collectAsState()
+
+    val emailError    = requiredError(email,    emailTouched,    "Email")
+    val passwordError = requiredError(password, passwordTouched, "Password")
+
+    // ── Same isFormValid gating pattern as SignUpScreen ──
+    val isFormValid = email.isNotBlank() && password.isNotBlank()
 
     // Login success → always goes to Resident Home (resident-only app)
     LaunchedEffect(uiState.isSuccess) {
@@ -75,7 +82,7 @@ fun LoginScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 28.dp)
-                .padding(systemBarsPadding())
+                .padding(statusBarsPadding())
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.Center
         ) {
@@ -157,7 +164,7 @@ fun LoginScreen(
 
             HomieeButton(
                 text    = if (uiState.isLoading) "Logging In..." else "Log In",
-                enabled = !uiState.isLoading,
+                enabled = isFormValid && !uiState.isLoading,
                 onClick = {
                     emailTouched = true
                     passwordTouched = true

@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.homiee.R
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
-import com.example.homiee.ui.components.systemBarsPadding
+import com.example.homiee.ui.components.statusBarsPadding
 import com.example.homiee.ui.theme.TextMuted
 import com.example.homiee.ui.theme.TextPrimary
 import com.example.homiee.ui.theme.White
@@ -47,7 +47,7 @@ fun SettingsScreen(
             Row(
                 modifier          = Modifier
                     .fillMaxWidth()
-                    .padding(systemBarsPadding())
+                    .padding(statusBarsPadding())
                     .padding(horizontal = 8.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {

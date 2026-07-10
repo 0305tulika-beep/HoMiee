@@ -26,18 +26,27 @@ private fun PreviewEmergencyContactFormScreen() {
     ResFormEmergencyScreen(
         contactName = "", onContactNameChange = {},
         mobileNumber = "", onMobileNumberChange = {},
-        onNext = {}
+        onNext = {},
+        onBack = {}
     )
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun PreviewIdentityVerificationFormScreen() {
-    ResFormIdentityScreen(onUploadAadhaar = {}, onUploadPan = {}, onNext = {})
+    ResFormIdentityScreen(
+        onUploadAadhaar = {},
+        onUploadPan = {},
+        onNext = {},
+        onBack = {}
+    )
 }
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun PreviewResFormPhotoScreen() {
-    ResFormPhotoScreen(onFinish = {})
+    ResFormPhotoScreen(
+        onFinish = {},
+        onBack = {}
+    )
 }

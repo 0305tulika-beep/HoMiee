@@ -3,6 +3,7 @@ package com.example.homiee.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.homiee.data.local.SessionManager   // ADDED
 import com.example.homiee.data.local.TokenManager
 import com.example.homiee.data.model.ResendOtpRequest
 import com.example.homiee.data.model.VerifyOtpRequest
@@ -45,6 +46,7 @@ class OtpViewModel(private val tokenManager: TokenManager) : ViewModel() {
                     val tokens = result.data.data?.tokens
                     if (tokens != null) {
                         tokenManager.saveTokens(tokens.access, tokens.refresh)
+                        SessionManager.accessToken = tokens.access   // ADDED
                     }
                     _uiState.value = _uiState.value.copy(isLoading = false, isSuccess = true)
                 }

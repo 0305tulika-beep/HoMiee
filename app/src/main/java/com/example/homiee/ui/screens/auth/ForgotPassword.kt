@@ -16,7 +16,7 @@ import com.example.homiee.R
 import com.example.homiee.ui.components.GradientTextField
 import com.example.homiee.ui.components.HideSystemBars
 import com.example.homiee.ui.components.HomieeButton
-import com.example.homiee.ui.components.systemBarsPadding
+import com.example.homiee.ui.components.statusBarsPadding
 import com.example.homiee.ui.theme.White
 
 private val ErrorRed = Color(0xFFFF6B6B)
@@ -46,7 +46,7 @@ fun ForgotPasswordScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .systemBarsPadding()
+                .statusBarsPadding()
                 .padding(horizontal = 28.dp),
             verticalArrangement = Arrangement.Center
         ) {

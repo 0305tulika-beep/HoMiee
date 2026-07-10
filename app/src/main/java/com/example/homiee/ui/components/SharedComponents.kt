@@ -29,6 +29,8 @@ import com.example.homiee.ui.theme.*
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.core.view.WindowInsetsCompat
+
 
 @Composable
 fun HomieeButton(
@@ -122,21 +124,49 @@ fun GradientTextField(
 }
 
 @Composable
-fun HideSystemBars(lightIcons: Boolean = false) {
+fun HideSystemBars() {
     val view = LocalView.current
     DisposableEffect(Unit) {
         val window = (view.context as android.app.Activity).window
         val controller = WindowInsetsControllerCompat(window, view)
 
+        // Make nav bar + status bar transparent and draw content behind them
         window.statusBarColor = android.graphics.Color.TRANSPARENT
         window.navigationBarColor = android.graphics.Color.TRANSPARENT
 
-        controller.isAppearanceLightStatusBars = !lightIcons
-        controller.isAppearanceLightNavigationBars = !lightIcons
+        // Light icons since your background is dark/green
+        controller.isAppearanceLightStatusBars = false
+        controller.isAppearanceLightNavigationBars = false
 
         onDispose { }
     }
 }
+@Composable
+fun HideSystemBars2(lightIcons: Boolean = false) {
+    val view = LocalView.current
+    DisposableEffect(Unit) {
+        val window = (view.context as android.app.Activity).window
+        val controller = WindowInsetsControllerCompat(window, view)
+
+        // Draw edge-to-edge; content can extend behind the bars,
+        // but we'll pad it manually using insets in the screen composables
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        // Make both bars fully transparent
+        window.statusBarColor = android.graphics.Color.TRANSPARENT
+        window.navigationBarColor = android.graphics.Color.TRANSPARENT
+
+        // Icon appearance (dark icons on light background, or vice versa)
+        controller.isAppearanceLightStatusBars = !lightIcons
+        controller.isAppearanceLightNavigationBars = !lightIcons
+
+        // Ensure both bars are always visible (no hide/swipe behavior)
+        controller.show(WindowInsetsCompat.Type.systemBars())
+
+        onDispose { }
+    }
+}
+
 @Composable
 fun TransparentStatusBarWhiteNavBar(lightStatusBarIcons: Boolean = true) {
     val view = LocalView.current
@@ -159,8 +189,13 @@ fun TransparentStatusBarWhiteNavBar(lightStatusBarIcons: Boolean = true) {
     }
 }
 @Composable
-fun systemBarsPadding(): PaddingValues {
-    return WindowInsets.systemBars.asPaddingValues()
+fun statusBarsPadding(): PaddingValues {
+    return WindowInsets.statusBars.asPaddingValues()
+}
+
+@Composable
+fun navigationBarsPadding(): PaddingValues {
+    return WindowInsets.navigationBars.asPaddingValues()
 }
 
 @Composable

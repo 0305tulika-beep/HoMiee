@@ -53,13 +53,15 @@ private fun Modifier.dashedBorder(
     )
 }
 
-
 @Composable
 fun ResFormPhotoScreen(
-    onFinish: () -> Unit
+    onFinish: (Uri?) -> Unit,   // CHANGED: now passes the picked uri back
+    onBack: () -> Unit,
+    showValidationError: Boolean = false,
+    isLoading: Boolean = false,
+    errorMessage: String? = null
 ) {
     var imageUri by remember { mutableStateOf<Uri?>(null) }
-    val context = LocalContext.current
 
     val pickImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -73,7 +75,10 @@ fun ResFormPhotoScreen(
         subtitle = "Upload a clear photo for your profile.",
         buttonText = "Finish",
         buttonIcon = Icons.Default.Check,
-        onButtonClick = onFinish
+        onButtonClick = { onFinish(imageUri) },   // CHANGED: pass the uri along
+        onBackClick = onBack,
+        isLoading = isLoading,
+        errorMessage = errorMessage
     ) {
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -84,11 +89,13 @@ fun ResFormPhotoScreen(
                 .fillMaxWidth()
                 .height(300.dp)
                 .clip(RoundedCornerShape(20.dp))
-                .dashedBorder(color = HomieeColors.PrimaryDark.copy(alpha = 0.5f))
+                .dashedBorder(
+                    color = if (showValidationError && imageUri == null) Color(0xFFDC2626)
+                    else HomieeColors.PrimaryDark.copy(alpha = 0.5f)
+                )
                 .clickable { pickImageLauncher.launch("image/*") }
         ) {
             if (imageUri != null) {
-                // Selected photo fills the drop-zone
                 androidx.compose.foundation.Image(
                     painter = rememberAsyncImagePainter(model = imageUri),
                     contentDescription = "Profile photo",
@@ -97,8 +104,6 @@ fun ResFormPhotoScreen(
                         .fillMaxSize()
                         .clip(RoundedCornerShape(20.dp))
                 )
-
-                // Small edit badge, bottom-right, to re-pick the photo
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -108,18 +113,10 @@ fun ResFormPhotoScreen(
                         .background(HomieeColors.PrimaryDark),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Change photo",
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
+                    Icon(Icons.Default.Edit, contentDescription = "Change photo", tint = Color.White, modifier = Modifier.size(18.dp))
                 }
             } else {
-                // Empty state: camera icon + prompts
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
                         modifier = Modifier
                             .size(64.dp)
@@ -127,28 +124,15 @@ fun ResFormPhotoScreen(
                             .background(HomieeColors.PrimaryMint),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.PhotoCamera,
-                            contentDescription = null,
-                            tint = HomieeColors.PrimaryDark,
-                            modifier = Modifier.size(28.dp)
-                        )
+                        Icon(Icons.Default.PhotoCamera, contentDescription = null, tint = HomieeColors.PrimaryDark, modifier = Modifier.size(28.dp))
                     }
                     Spacer(modifier = Modifier.height(14.dp))
-                    Text(
-                        text = "Tap to Upload",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF111827)
-                    )
+                    Text("Tap to Upload", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF111827))
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "JPG or PNG, up to 5MB",
-                        fontSize = 12.sp,
-                        color = HomieeColors.TextGray
-                    )
+                    Text("JPG or PNG, up to 5MB", fontSize = 12.sp, color = HomieeColors.TextGray)
                 }
             }
         }
+        if (showValidationError && imageUri == null) FieldWarning("Please upload a profile photo")
     }
 }

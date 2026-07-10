@@ -54,33 +54,19 @@ fun SignUpScreenPreview() {
     }
 }
 
-// ── 5. OTP — Login flow ───────────────────────────────────────────────────────
-@Preview(showBackground = true, name = "OTP Screen — Login Flow")
+// ── 5. OTP — Signup flow ───────────────────────────────────────────────────────
+@Preview(showBackground = true, name = "OTP Screen")
 @Composable
-fun OtpScreenLoginPreview() {
+fun OtpScreenPreview() {
     HomieeTheme {
         OtpScreen(
             email     = "test@example.com",
-            flow      = "login",
             onConfirm = {}
         )
     }
 }
 
-// ── 6. OTP — Signup flow (this is the one that can trigger the T&C popup) ────
-@Preview(showBackground = true, name = "OTP Screen — Signup Flow")
-@Composable
-fun OtpScreenSignupPreview() {
-    HomieeTheme {
-        OtpScreen(
-            email     = "test@example.com",
-            flow      = "signup",
-            onConfirm = {}
-        )
-    }
-}
-
-// ── 7. Terms & Conditions (now a popup dialog, previewed standalone) ─────────
+// ── 6. Terms & Conditions  ─────────
 @Preview(showBackground = true, name = "Terms & Conditions Dialog")
 @Composable
 fun TermsAndConditionsDialogPreview() {

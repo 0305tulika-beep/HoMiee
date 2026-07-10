@@ -4,19 +4,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LocationCity
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.Numbers
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -35,14 +29,19 @@ fun ResFormAddressScreen(
     pincode: String,
     onPincodeChange: (String) -> Unit,
     onUseCurrentLocation: () -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
+    showValidationError: Boolean = false,   // NEW
+    isLoading: Boolean = false,             // NEW
+    errorMessage: String? = null            // NEW
 ) {
     OnboardingStepScaffold(
         currentStep = 1,
         title = "Your Address",
         subtitle = "Please enter your current address details",
         buttonText = "Next",
-        onButtonClick = onNext
+        onButtonClick = onNext,
+        isLoading = isLoading,
+        errorMessage = errorMessage
     ) {
         HomieeFormField(
             label = "House / Apt No.",
@@ -51,6 +50,8 @@ fun ResFormAddressScreen(
             placeholder = "Enter house / apt no.",
             leadingIcon = Icons.Default.Home
         )
+        if (showValidationError && houseNo.isBlank()) FieldWarning("House / Apt No. is required")
+
         HomieeFormField(
             label = "Area / Locality",
             value = area,
@@ -58,6 +59,8 @@ fun ResFormAddressScreen(
             placeholder = "Enter area / locality",
             leadingIcon = Icons.Default.LocationOn
         )
+        if (showValidationError && area.isBlank()) FieldWarning("Area / Locality is required")
+
         HomieeFormField(
             label = "City",
             value = city,
@@ -65,6 +68,8 @@ fun ResFormAddressScreen(
             placeholder = "Enter city",
             leadingIcon = Icons.Default.LocationCity
         )
+        if (showValidationError && city.isBlank()) FieldWarning("City is required")
+
         HomieeFormField(
             label = "Pincode",
             value = pincode,
@@ -73,6 +78,8 @@ fun ResFormAddressScreen(
             leadingIcon = Icons.Default.Numbers,
             keyboardType = KeyboardType.Number
         )
+        if (showValidationError && pincode.isBlank()) FieldWarning("Pincode is required")
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -94,3 +101,13 @@ fun ResFormAddressScreen(
     }
 }
 
+// NEW: shared small red helper text used across all onboarding forms
+@Composable
+fun FieldWarning(text: String) {
+    Text(
+        text = text,
+        color = Color(0xFFDC2626),
+        fontSize = 12.sp,
+        modifier = Modifier.padding(start = 4.dp, top = 2.dp, bottom = 8.dp)
+    )
+}

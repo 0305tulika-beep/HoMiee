@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.example.homiee.BuildConfig
 import com.example.homiee.R
 import com.example.homiee.data.local.TokenManager
 import com.example.homiee.navigation.Routes
@@ -71,20 +72,16 @@ fun SplashScreen(onFinished: (String) -> Unit) {
     // ── Decide where to go after splash ──
     LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(1600)
-
+        if (BuildConfig.DEBUG) {
+            tokenManager.clearTokens()
+        }
         val destination = when {
-            // No token → new user, send to Signup
             tokenManager.getAccessToken() == null -> Routes.SIGNUP_ROUTE
-
-            // Token exists but forms not done → resume exact form step
             !tokenManager.areFormsCompleted() -> {
                 tokenManager.getCurrentStep() ?: Routes.RES_FORM_1
             }
-
-            // Token + forms complete → go straight to Resident Home
             else -> Routes.HOME_RES
         }
-
         onFinished(destination)
     }
 

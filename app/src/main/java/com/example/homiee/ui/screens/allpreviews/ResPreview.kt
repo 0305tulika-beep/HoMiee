@@ -88,12 +88,7 @@ import com.example.homiee.ui.theme.HomieeTheme
 
 @Preview(showBackground = true, showSystemUi = true, name = "Profile Screen")
 @Composable fun ProfileScreenPreview() {
-    HomieeTheme { ProfileScreen(onNavItemClick = {}, onSettingsClick = {}, onMyReviewsClick = {}) }
-}
-
-@Preview(showBackground = true, showSystemUi = true, name = "Settings Screen")
-@Composable fun SettingsScreenPreview() {
-    HomieeTheme { SettingsScreen(onBack = {}) }
+    HomieeTheme { ProfileScreen(onNavItemClick = {}, onMyReviewsClick = {}) }
 }
 
 @Preview(showBackground = true, showSystemUi = true, name = "My Reviews Screen")

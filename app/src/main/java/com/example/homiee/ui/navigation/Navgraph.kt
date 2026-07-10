@@ -1,22 +1,22 @@
 package com.example.homiee.navigation
 
 import android.app.Activity
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.homiee.ui.components.NavTab
@@ -26,6 +26,7 @@ import com.example.homiee.ui.screens.resident.*
 import com.example.homiee.viewmodel.BookingViewModel
 import com.example.homiee.viewmodel.BookingViewModelFactory
 import com.example.homiee.viewmodel.RegisterViewModel
+import com.example.homiee.viewmodel.navigation.ResidentOnboardingViewModel
 import java.net.URLDecoder
 import java.net.URLEncoder
 
@@ -35,10 +36,9 @@ object Routes {
     const val LOGIN_ROUTE        = "login"
     const val OTP_ROUTE          = "otp/{email}/{flow}"   // flow = "login" | "signup"
     const val FORGOT_PASSWORD    = "forgot_password"
-    // NOTE: TERMS_AND_CONDITIONS route removed — now a popup dialog shown inside OtpScreen
-    // for the signup flow, rather than a separate navigation destination.
 
-    // Resident forms — 4 steps
+    // Resident forms — nested graph + 4 steps
+    const val RES_ONBOARDING_GRAPH = "res_onboarding"     // NEW: parent graph route
     const val RES_FORM_1 = "res_form_address"
     const val RES_FORM_2 = "res_form_emergency"
     const val RES_FORM_3 = "res_form_identity"
@@ -53,7 +53,6 @@ object Routes {
     const val ACCOUNT         = "account"
 
     // Sub-screens
-    const val SETTINGS       = "settings"
     const val MY_REVIEWS     = "my_reviews"
     const val HELPER_PROFILE = "helper_profile/{helperId}"
 
@@ -140,15 +139,35 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             }
         }
 
+        // ── Resident Home ────────────────────────────────────────────────────
+        composable(Routes.HOME_RES) {
+            BackHandler { (context as? Activity)?.finish() }
+
+            val bookings by bookingViewModel.bookings.collectAsState()
+
+            ResidentHomeScreen(
+                recentActivities = bookings,
+                onNavItemClick = { navController.navigateMain(it) },
+                onBookClick = { helperId ->
+                    navController.navigate(Routes.helperProfileRoute(helperId))
+                },
+                onCategoryClick = { category ->
+                    navController.navigate(Routes.searchFilteredRoute(category))
+                },
+                onActivityClick = { bookingId ->
+                    navController.navigate(Routes.bookingDetailsRoute(bookingId))
+                }
+            )
+        }
+
         // ── Login ────────────────────────────────────────────────────────────
-        // Back → close app
         composable(Routes.LOGIN_ROUTE) {
             BackHandler { (context as? Activity)?.finish() }
             LoginScreen(
-                navController    = navController,
-                onLoginSuccess   = { email ->
-                    navController.navigate(Routes.otpRoute(email, "login")) {
-                        popUpTo(Routes.LOGIN_ROUTE) { inclusive = false }
+                navController = navController,
+                onLoginSuccess = { _ ->
+                    navController.navigate(Routes.HOME_RES) {
+                        popUpTo(Routes.LOGIN_ROUTE) { inclusive = true }
                     }
                 },
                 onForgotPassword = {
@@ -158,12 +177,10 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         }
 
         // ── Forgot Password ───────────────────────────────────────────────────
-        // Back → Login (normal popBackStack)
         composable(Routes.FORGOT_PASSWORD) {
             ForgotPasswordScreen(
-                onBack     = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
                 onContinue = { _ ->
-                    // TODO: call reset-password API; then navigate accordingly
                     navController.popBackStack()
                 }
             )
@@ -174,8 +191,8 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             val registerViewModel: RegisterViewModel = viewModel()
             SignUpScreen(
                 navController = navController,
-                viewModel     = registerViewModel,
-                onSignedUp    = { email ->
+                viewModel = registerViewModel,
+                onSignedUp = { email ->
                     navController.navigate(Routes.otpRoute(email, "signup")) {
                         popUpTo(Routes.SIGNUP_ROUTE) { inclusive = false }
                     }
@@ -184,14 +201,11 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         }
 
         // ── OTP ─────────────────────────────────────────────────────────────
-        // login  → HOME (clear all auth)
-        // signup → shows T&C popup INSIDE OtpScreen after verification;
-        //          once agreed, goes to RES_FORM_1 (clear signup + otp from stack)
         composable(
-            route     = Routes.OTP_ROUTE,
+            route = Routes.OTP_ROUTE,
             arguments = listOf(
                 navArgument("email") { type = NavType.StringType },
-                navArgument("flow")  { type = NavType.StringType }
+                navArgument("flow") { type = NavType.StringType }
             )
         ) { backStackEntry ->
             val email = URLDecoder.decode(
@@ -200,15 +214,13 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             val flow = backStackEntry.arguments?.getString("flow") ?: "login"
 
             OtpScreen(
-                email     = email,
-                flow      = flow,
+                email = email,
                 onConfirm = {
                     if (flow == "login") {
                         navController.navigate(Routes.HOME_RES) {
                             popUpTo(Routes.LOGIN_ROUTE) { inclusive = true }
                         }
                     } else {
-                        // T&C agreement already handled by the popup inside OtpScreen
                         navController.navigate(Routes.RES_FORM_1) {
                             popUpTo(Routes.SIGNUP_ROUTE) { inclusive = true }
                         }
@@ -217,118 +229,134 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             )
         }
 
-        // ── Resident Forms ───────────────────────────────────────────────────
-        composable(Routes.RES_FORM_1) {
-            BackHandler { (context as? Activity)?.finish() }
+        // ── Resident Onboarding (nested graph, shared ViewModel) ───────────────
+        navigation(
+            startDestination = Routes.RES_FORM_1,
+            route = Routes.RES_ONBOARDING_GRAPH
+        ) {
+            composable(Routes.RES_FORM_1) { backStackEntry ->
+                BackHandler { (context as? Activity)?.finish() }
 
-            var houseNo by remember { mutableStateOf("") }
-            var area by remember { mutableStateOf("") }
-            var city by remember { mutableStateOf("") }
-            var pincode by remember { mutableStateOf("") }
-
-            ResFormAddressScreen(
-                houseNo = houseNo,
-                onHouseNoChange = { houseNo = it },
-                area = area,
-                onAreaChange = { area = it },
-                city = city,
-                onCityChange = { city = it },
-                pincode = pincode,
-                onPincodeChange = { pincode = it },
-                onUseCurrentLocation = {
-                    // TODO: wire up actual GPS/location logic here
-                },
-                onNext = { navController.navigate(Routes.RES_FORM_2) }
-            )
-        }
-        composable(Routes.RES_FORM_2) {
-            BackHandler { (context as? Activity)?.finish() }
-
-            var contactName by remember { mutableStateOf("") }
-            var mobileNumber by remember { mutableStateOf("") }
-
-            ResFormEmergencyScreen(
-                contactName = contactName,
-                onContactNameChange = { contactName = it },
-                mobileNumber = mobileNumber,
-                onMobileNumberChange = { mobileNumber = it },
-                onNext = { navController.navigate(Routes.RES_FORM_3) }
-            )
-        }
-        composable(Routes.RES_FORM_3) {
-            BackHandler { (context as? Activity)?.finish() }
-
-            ResFormIdentityScreen(
-                onUploadAadhaar = {
-                    // TODO: launch Aadhaar file/image picker
-                },
-                onUploadPan = {
-                    // TODO: launch PAN file/image picker
-                },
-                onNext = { navController.navigate(Routes.RES_FORM_4) }
-            )
-        }
-        composable(Routes.RES_FORM_4) {
-            BackHandler { (context as? Activity)?.finish() }
-            ResFormPhotoScreen {
-                navController.navigate(Routes.HOME_RES) {
-                    popUpTo(Routes.RES_FORM_1) { inclusive = true }
+                val parentEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry(Routes.RES_ONBOARDING_GRAPH)
                 }
-            }
-        }
+                val vm: ResidentOnboardingViewModel = viewModel(parentEntry)
+                val showErrors by vm.addressShowErrors.collectAsState()
+                val loading by vm.addressLoading.collectAsState()
+                val error by vm.addressError.collectAsState()
 
-        // ── Home ─────────────────────────────────────────────────────────────
-        // Back → close app
-        composable(Routes.HOME_RES) {
-            BackHandler { (context as? Activity)?.finish() }
-
-            LaunchedEffect(Unit) { bookingViewModel.checkPendingConfirmation() }
-            val showConfirmation by bookingViewModel.showConfirmation.collectAsState()
-            val lastBooking      by bookingViewModel.lastCreatedBooking.collectAsState()
-            val bookings         by bookingViewModel.bookings.collectAsState()
-
-            LaunchedEffect(showConfirmation) {
-                if (showConfirmation && lastBooking != null) {
-                    navController.navigate(Routes.bookingConfirmedRoute(lastBooking!!.id))
-                }
+                ResFormAddressScreen(
+                    houseNo = vm.houseNo,
+                    onHouseNoChange = vm::onHouseNoChange,
+                    area = vm.area,
+                    onAreaChange = vm::onAreaChange,
+                    city = vm.city,
+                    onCityChange = vm::onCityChange,
+                    pincode = vm.pincode,
+                    onPincodeChange = vm::onPincodeChange,
+                    onUseCurrentLocation = {
+                        // TODO: wire up actual GPS/location logic, then call:
+                        // vm.updateLocation(lat, lng)
+                    },
+                    onNext = {
+                        vm.submitAddress { navController.navigate(Routes.RES_FORM_2) }
+                    },
+                    showValidationError = showErrors,
+                    isLoading = loading,
+                    errorMessage = error
+                )
             }
 
-            ResidentHomeScreen(
-                recentActivities = bookings,
-                onNavItemClick   = { navController.navigateMain(it) },
-                onBookClick      = { helperId ->
-                    navController.navigate(Routes.helperProfileRoute(helperId))
-                },
-                onCategoryClick  = { category ->
-                    navController.navigate(Routes.searchFilteredRoute(category))
-                },
-                onActivityClick  = { bookingId ->
-                    navController.navigate(Routes.bookingDetailsRoute(bookingId))
+            composable(Routes.RES_FORM_2) { backStackEntry ->
+                BackHandler { navController.popBackStack() }
+
+                val parentEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry(Routes.RES_ONBOARDING_GRAPH)
                 }
-            )
-        }
+                val vm: ResidentOnboardingViewModel = viewModel(parentEntry)
+                val showErrors by vm.emergencyShowErrors.collectAsState()
+                val loading by vm.emergencyLoading.collectAsState()
+                val error by vm.emergencyError.collectAsState()
+
+                ResFormEmergencyScreen(
+                    contactName = vm.contactName,
+                    onContactNameChange = vm::onContactNameChange,
+                    mobileNumber = vm.mobileNumber,
+                    onMobileNumberChange = vm::onMobileNumberChange,
+                    onNext = {
+                        vm.submitEmergencyContact { navController.navigate(Routes.RES_FORM_3) }
+                    },
+                    onBack = { navController.popBackStack() },
+                    showValidationError = showErrors,
+                    isLoading = loading,
+                    errorMessage = error
+                )
+            }
+
+            composable(Routes.RES_FORM_3) {
+                BackHandler { navController.popBackStack() }
+
+                ResFormIdentityScreen(
+                    onUploadAadhaar = {
+                        // TODO: launch Aadhaar file/image picker
+                    },
+                    onUploadPan = {
+                        // TODO: launch PAN file/image picker
+                    },
+                    onNext = { navController.navigate(Routes.RES_FORM_4) },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Routes.RES_FORM_4) { backStackEntry ->
+                BackHandler { navController.popBackStack() }
+
+                val parentEntry = remember(backStackEntry) {
+                    navController.getBackStackEntry(Routes.RES_ONBOARDING_GRAPH)
+                }
+                val vm: ResidentOnboardingViewModel = viewModel(parentEntry)
+                val formContext = LocalContext.current
+                val showErrors by vm.photoShowErrors.collectAsState()
+                val loading by vm.photoLoading.collectAsState()
+                val error by vm.photoError.collectAsState()
+
+                ResFormPhotoScreen(
+                    onFinish = { pickedUri ->
+                        vm.submitPhoto(formContext, pickedUri) {
+                            navController.navigate(Routes.HOME_RES) {
+                                popUpTo(Routes.RES_ONBOARDING_GRAPH) { inclusive = true }
+                            }
+                        }
+                    },
+                    onBack = { navController.popBackStack() },
+                    showValidationError = showErrors,
+                    isLoading = loading,
+                    errorMessage = error
+                )
+            }
+        } // ← closes navigation(RES_ONBOARDING_GRAPH)
 
         // ── Search (unfiltered) ───────────────────────────────────────────────
         composable(Routes.SEARCH) {
             SearchScreen(
-                onViewProfile  = { navController.navigate(Routes.helperProfileRoute(it)) },
-                onBook         = { navController.navigate(Routes.helperProfileRoute(it)) },
+                onViewProfile = { navController.navigate(Routes.helperProfileRoute(it)) },
+                onBook = { navController.navigate(Routes.helperProfileRoute(it)) },
                 onNavItemClick = { navController.navigateMain(it) }
             )
         }
 
         // ── Search (pre-filtered from category tap) ───────────────────────────
         composable(
-            route     = Routes.SEARCH_FILTERED,
+            route = Routes.SEARCH_FILTERED,
             arguments = listOf(navArgument("category") { type = NavType.StringType })
         ) { backStackEntry ->
             val category = URLDecoder.decode(
                 backStackEntry.arguments?.getString("category") ?: "All", "UTF-8"
             )
             SearchScreen(
-                initialFilter  = category,
-                onViewProfile  = { navController.navigate(Routes.helperProfileRoute(it)) },
-                onBook         = { navController.navigate(Routes.helperProfileRoute(it)) },
+                initialFilter = category,
+                onViewProfile = { navController.navigate(Routes.helperProfileRoute(it)) },
+                onBook = { navController.navigate(Routes.helperProfileRoute(it)) },
                 onNavItemClick = { navController.navigateMain(it) }
             )
         }
@@ -337,12 +365,12 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         composable(Routes.BOOKINGS) {
             val bookings by bookingViewModel.bookings.collectAsState()
             BookingsScreen(
-                bookings        = bookings,
-                onNavItemClick  = { navController.navigateMain(it) },
-                onDetailsClick  = { bookingId ->
+                bookings = bookings,
+                onNavItemClick = { navController.navigateMain(it) },
+                onDetailsClick = { bookingId ->
                     navController.navigate(Routes.bookingDetailsRoute(bookingId))
                 },
-                onChatClick     = { bookingId ->
+                onChatClick = { bookingId ->
                     navController.navigate(
                         Routes.chatRoute(bookingId, "Ramesh Kumar", "Cleaning")
                     )
@@ -350,7 +378,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                 onActivityClick = { bookingId ->
                     navController.navigate(Routes.activityRoute(bookingId, "Ramesh Kumar"))
                 },
-                onReviewClick   = { bookingId ->
+                onReviewClick = { bookingId ->
                     navController.navigate(Routes.feedbackRoute(bookingId, "Ramesh Kumar"))
                 }
             )
@@ -360,7 +388,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         composable(Routes.MESSAGES) {
             MessagesScreen(
                 onNavItemClick = { navController.navigateMain(it) },
-                onThreadClick  = { threadId ->
+                onThreadClick = { threadId ->
                     navController.navigate(
                         Routes.chatRoute(threadId, "Ramesh Kumar", "Cleaning")
                     )
@@ -371,15 +399,9 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         // ── Account ──────────────────────────────────────────────────────────
         composable(Routes.ACCOUNT) {
             ProfileScreen(
-                onNavItemClick   = { navController.navigateMain(it) },
-                onSettingsClick  = { navController.navigate(Routes.SETTINGS) },
+                onNavItemClick = { navController.navigateMain(it) },
                 onMyReviewsClick = { navController.navigate(Routes.MY_REVIEWS) }
             )
-        }
-
-        // ── Settings ─────────────────────────────────────────────────────────
-        composable(Routes.SETTINGS) {
-            SettingsScreen(onBack = { navController.popBackStack() })
         }
 
         // ── My Reviews ───────────────────────────────────────────────────────
@@ -389,15 +411,23 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
 
         // ── Helper Profile ────────────────────────────────────────────────────
         composable(
-            route     = Routes.HELPER_PROFILE,
+            route = Routes.HELPER_PROFILE,
             arguments = listOf(navArgument("helperId") { type = NavType.StringType })
         ) { backStackEntry ->
             val helperId = backStackEntry.arguments?.getString("helperId") ?: ""
             HelperProfileScreen(
-                helperId  = helperId,
-                onBookNow = { navController.navigate(Routes.newBookingRoute("Ramesh Kumar", "Cleaning", 4.9f)) },
-                onBack    = { navController.popBackStack() },
-                onChat    = {
+                helperId = helperId,
+                onBookNow = {
+                    navController.navigate(
+                        Routes.newBookingRoute(
+                            "Ramesh Kumar",
+                            "Cleaning",
+                            4.9f
+                        )
+                    )
+                },
+                onBack = { navController.popBackStack() },
+                onChat = {
                     navController.navigate(
                         Routes.chatRoute(helperId, "Ramesh Kumar", "Cleaning")
                     )
@@ -407,21 +437,25 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
 
         // ── New Booking ───────────────────────────────────────────────────────
         composable(
-            route     = Routes.NEW_BOOKING,
+            route = Routes.NEW_BOOKING,
             arguments = listOf(
                 navArgument("helperName") { type = NavType.StringType },
-                navArgument("service")    { type = NavType.StringType },
-                navArgument("rating")     { type = NavType.FloatType }
+                navArgument("service") { type = NavType.StringType },
+                navArgument("rating") { type = NavType.FloatType }
             )
         ) { backStackEntry ->
-            val helperName = URLDecoder.decode(backStackEntry.arguments?.getString("helperName") ?: "", "UTF-8")
-            val service    = URLDecoder.decode(backStackEntry.arguments?.getString("service")    ?: "", "UTF-8")
-            val rating     = backStackEntry.arguments?.getFloat("rating") ?: 0f
+            val helperName = URLDecoder.decode(
+                backStackEntry.arguments?.getString("helperName") ?: "",
+                "UTF-8"
+            )
+            val service =
+                URLDecoder.decode(backStackEntry.arguments?.getString("service") ?: "", "UTF-8")
+            val rating = backStackEntry.arguments?.getFloat("rating") ?: 0f
 
             NewBookingScreen(
-                helperName         = helperName,
-                helperService      = service,
-                helperRating       = rating,
+                helperName = helperName,
+                helperService = service,
+                helperRating = rating,
                 onBookingConfirmed = {
                     navController.navigate(Routes.BOOKINGS) {
                         popUpTo(Routes.HOME_RES) { inclusive = false }
@@ -433,18 +467,18 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
 
         // ── Booking Confirmed ─────────────────────────────────────────────────
         composable(
-            route     = Routes.BOOKING_CONFIRMED,
+            route = Routes.BOOKING_CONFIRMED,
             arguments = listOf(navArgument("bookingId") { type = NavType.StringType })
         ) { backStackEntry ->
             val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
-            val booking   = bookingViewModel.getBookingById(bookingId)
+            val booking = bookingViewModel.getBookingById(bookingId)
 
             BookingConfirmationScreen(
-                bookingId   = bookingId,
-                helperName  = booking?.helperName  ?: "Helper",
+                bookingId = bookingId,
+                helperName = booking?.helperName ?: "Helper",
                 bookingDate = booking?.bookingDate ?: "",
                 bookingTime = booking?.bookingTime ?: "",
-                onTimeout   = {
+                onTimeout = {
                     bookingViewModel.dismissConfirmation()
                     navController.navigate(Routes.bookingDetailsRoute(bookingId)) {
                         popUpTo(Routes.BOOKING_CONFIRMED) { inclusive = true }
@@ -455,21 +489,25 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
 
         // ── Booking Details ───────────────────────────────────────────────────
         composable(
-            route     = Routes.BOOKING_DETAILS,
+            route = Routes.BOOKING_DETAILS,
             arguments = listOf(navArgument("bookingId") { type = NavType.StringType })
         ) { backStackEntry ->
             val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
-            val booking   = bookingViewModel.getBookingById(bookingId)
+            val booking = bookingViewModel.getBookingById(bookingId)
 
             BookingDetailsScreen(
-                bookingId   = bookingId,
-                helperName  = booking?.helperName  ?: "Helper",
-                service     = booking?.service     ?: "",
+                bookingId = bookingId,
+                helperName = booking?.helperName ?: "Helper",
+                service = booking?.service ?: "",
                 bookingDate = booking?.bookingDate ?: "",
                 bookingTime = booking?.bookingTime ?: "",
-                onChat      = {
+                onChat = {
                     navController.navigate(
-                        Routes.chatRoute(bookingId, booking?.helperName ?: "Helper", booking?.service ?: "")
+                        Routes.chatRoute(
+                            bookingId,
+                            booking?.helperName ?: "Helper",
+                            booking?.service ?: ""
+                        )
                     )
                 },
                 onBack = { navController.popBackStack() }
@@ -478,54 +516,64 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
 
         // ── Chat ──────────────────────────────────────────────────────────────
         composable(
-            route     = Routes.CHAT,
+            route = Routes.CHAT,
             arguments = listOf(
-                navArgument("threadId")   { type = NavType.StringType },
+                navArgument("threadId") { type = NavType.StringType },
                 navArgument("helperName") { type = NavType.StringType },
-                navArgument("service")    { type = NavType.StringType }
+                navArgument("service") { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val threadId   = backStackEntry.arguments?.getString("threadId")   ?: ""
-            val helperName = URLDecoder.decode(backStackEntry.arguments?.getString("helperName") ?: "", "UTF-8")
-            val service    = URLDecoder.decode(backStackEntry.arguments?.getString("service")    ?: "", "UTF-8")
+            val threadId = backStackEntry.arguments?.getString("threadId") ?: ""
+            val helperName = URLDecoder.decode(
+                backStackEntry.arguments?.getString("helperName") ?: "",
+                "UTF-8"
+            )
+            val service =
+                URLDecoder.decode(backStackEntry.arguments?.getString("service") ?: "", "UTF-8")
 
             ChatScreen(
-                threadId      = threadId,
-                helperName    = helperName,
-                onBack        = { navController.popBackStack() },
+                threadId = threadId,
+                helperName = helperName,
+                onBack = { navController.popBackStack() },
             )
         }
 
         // ── Activity ──────────────────────────────────────────────────────────
         composable(
-            route     = Routes.ACTIVITY,
+            route = Routes.ACTIVITY,
             arguments = listOf(
-                navArgument("bookingId")  { type = NavType.StringType },
+                navArgument("bookingId") { type = NavType.StringType },
                 navArgument("helperName") { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val bookingId  = backStackEntry.arguments?.getString("bookingId")  ?: ""
-            val helperName = URLDecoder.decode(backStackEntry.arguments?.getString("helperName") ?: "", "UTF-8")
+            val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
+            val helperName = URLDecoder.decode(
+                backStackEntry.arguments?.getString("helperName") ?: "",
+                "UTF-8"
+            )
             ActivityScreen(
                 helperName = helperName,
-                onBack     = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
             )
         }
 
         // ── Feedback ──────────────────────────────────────────────────────────
         composable(
-            route     = Routes.FEEDBACK,
+            route = Routes.FEEDBACK,
             arguments = listOf(
-                navArgument("bookingId")  { type = NavType.StringType },
+                navArgument("bookingId") { type = NavType.StringType },
                 navArgument("helperName") { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val bookingId  = backStackEntry.arguments?.getString("bookingId")  ?: ""
-            val helperName = URLDecoder.decode(backStackEntry.arguments?.getString("helperName") ?: "", "UTF-8")
+            val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
+            val helperName = URLDecoder.decode(
+                backStackEntry.arguments?.getString("helperName") ?: "",
+                "UTF-8"
+            )
             FeedbackScreen(
                 helperName = helperName,
-                onBack     = { navController.popBackStack() },
-                onSubmit   = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onSubmit = { navController.popBackStack() }
             )
         }
     }

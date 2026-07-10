@@ -13,14 +13,21 @@ fun ResFormEmergencyScreen(
     onContactNameChange: (String) -> Unit,
     mobileNumber: String,
     onMobileNumberChange: (String) -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
+    onBack: () -> Unit,
+    showValidationError: Boolean = false,   // NEW
+    isLoading: Boolean = false,             // NEW
+    errorMessage: String? = null            // NEW
 ) {
     OnboardingStepScaffold(
         currentStep = 2,
         title = "Emergency Contact",
         subtitle = "Add a contact person we can reach in case of emergency",
         buttonText = "Next",
-        onButtonClick = onNext
+        onButtonClick = onNext,
+        onBackClick = onBack,
+        isLoading = isLoading,
+        errorMessage = errorMessage
     ) {
         HomieeFormField(
             label = "Contact Name",
@@ -29,6 +36,8 @@ fun ResFormEmergencyScreen(
             placeholder = "Enter full name",
             leadingIcon = Icons.Default.Person
         )
+        if (showValidationError && contactName.isBlank()) FieldWarning("Contact name is required")
+
         HomieeFormField(
             label = "Mobile Number",
             value = mobileNumber,
@@ -37,5 +46,6 @@ fun ResFormEmergencyScreen(
             leadingIcon = Icons.Default.Phone,
             keyboardType = KeyboardType.Phone
         )
+        if (showValidationError && mobileNumber.isBlank()) FieldWarning("Mobile number is required")
     }
 }

@@ -35,6 +35,8 @@ private val CardBg        = Color.White
 private val WarningRed    = Color(0xFFD32F2F)
 private val ALL_HOURS = (1..12).map { it.toString() }
 
+private const val SPECIAL_INSTRUCTIONS_LIMIT = 300
+
 // Converts a 12-hour clock (hour + AM/PM) into minutes-since-midnight for comparison
 private fun toMinutesOfDay(hour: String, period: String): Int {
     val h = hour.toIntOrNull() ?: 0
@@ -132,7 +134,9 @@ fun NewBookingScreen(
                         shape           = RoundedCornerShape(10.dp),
                         colors          = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor   = GreenPrimary,
-                            unfocusedBorderColor = Color(0xFFCCCCCC)
+                            unfocusedBorderColor = Color(0xFFCCCCCC),
+                            focusedTextColor     = TextPrimary,
+                            unfocusedTextColor   = TextPrimary
                         )
                     )
 
@@ -195,16 +199,16 @@ fun NewBookingScreen(
                     Spacer(Modifier.height(20.dp))
                     SectionLabel("SELECT TIME")
 
-                    Text("Starting Time", fontSize = 12.sp, color = TextSecondary)
-                    Spacer(Modifier.height(6.dp))
+                    Text("Starting Time", fontSize = 16.sp, color = GreenDark)
+//                    Spacer(Modifier.height(2.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         DropdownBox(startHour, ALL_HOURS, Modifier.weight(1f)) { startHour = it }
                         DropdownBox(startPeriod, listOf("AM", "PM"), Modifier.weight(1f)) { startPeriod = it }
                     }
 
-                    Spacer(Modifier.height(14.dp))
-                    Text("Ending Time", fontSize = 12.sp, color = TextSecondary)
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(5.dp))
+                    Text("Ending Time", fontSize = 16.sp, color = GreenDark)
+//                    Spacer(Modifier.height(2.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         DropdownBox(endHour, ALL_HOURS, Modifier.weight(1f)) { endHour = it }
                         DropdownBox(endPeriod, listOf("AM", "PM"), Modifier.weight(1f)) { endPeriod = it }
@@ -241,15 +245,30 @@ fun NewBookingScreen(
                     SectionLabel("SPECIAL INSTRUCTIONS")
                     OutlinedTextField(
                         value         = specialInstructions,
-                        onValueChange = { specialInstructions = it },
+                        onValueChange = { newValue ->
+                            // Enforce a hard 300-character cap
+                            if (newValue.length <= SPECIAL_INSTRUCTIONS_LIMIT) {
+                                specialInstructions = newValue
+                            }
+                        },
                         modifier      = Modifier
                             .fillMaxWidth()
                             .height(100.dp),
                         shape         = RoundedCornerShape(10.dp),
                         colors        = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor   = GreenPrimary,
-                            unfocusedBorderColor = Color(0xFFCCCCCC)
+                            unfocusedBorderColor = Color(0xFFCCCCCC),
+                            focusedTextColor     = TextPrimary,
+                            unfocusedTextColor   = TextPrimary
                         )
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text          = "${specialInstructions.length}/$SPECIAL_INSTRUCTIONS_LIMIT",
+                        fontSize      = 11.sp,
+                        color         = TextSecondary,
+                        modifier      = Modifier.fillMaxWidth(),
+                        textAlign     = androidx.compose.ui.text.style.TextAlign.End
                     )
 
                     Spacer(Modifier.height(24.dp))
@@ -268,7 +287,7 @@ fun NewBookingScreen(
                             onBookingConfirmed(id)
                         },
                         shape    = RoundedCornerShape(12.dp),
-                        colors   = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
+                        colors   = ButtonDefaults.buttonColors(containerColor = GreenDark),
                         enabled  = selectedDateMillis != null && !isTimeRangeInvalid,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -306,17 +325,33 @@ private fun DropdownBox(
         OutlinedButton(
             onClick  = { expanded = true },
             shape    = RoundedCornerShape(10.dp),
-            colors   = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
+            colors   = ButtonDefaults.outlinedButtonColors(contentColor = GreenDark),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(value, fontSize = 14.sp)
+            Text(value, fontSize = 14.sp, color = TextPrimary, fontWeight = FontWeight.SemiBold)
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        DropdownMenu(
+            expanded         = expanded,
+            onDismissRequest = { expanded = false },
+            modifier         = Modifier.background(Color.White)
+        ) {
             options.forEach { option ->
-                DropdownMenuItem(text = { Text(option) }, onClick = {
-                    onSelect(option)
-                    expanded = false
-                })
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text     = option,
+                            color    = TextPrimary,
+                            fontSize = 14.sp
+                        )
+                    },
+                    onClick = {
+                        onSelect(option)
+                        expanded = false
+                    },
+                    colors = MenuDefaults.itemColors(
+                        textColor = TextPrimary
+                    )
+                )
             }
         }
     }

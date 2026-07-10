@@ -55,6 +55,7 @@ fun MessagesScreen(
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = false)
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             BottomNavBar(
                 selectedTab   = NavTab.MESSAGE,
@@ -131,7 +132,7 @@ private fun MessageThreadItem(
                 modifier         = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(GreenPrimary),
+                    .background(GreenDark),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -186,7 +187,7 @@ private fun MessageThreadItem(
                     modifier         = Modifier
                         .size(18.dp)
                         .clip(CircleShape)
-                        .background(GreenPrimary),
+                        .background(GreenDark),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(

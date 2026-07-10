@@ -28,7 +28,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.homiee.ui.components.HideSystemBars
 import com.example.homiee.ui.components.HomieeButton
 import com.example.homiee.ui.components.OtpBox
-import com.example.homiee.ui.components.systemBarsPadding
+import com.example.homiee.ui.components.statusBarsPadding
 import com.example.homiee.ui.theme.GreenDark
 import com.example.homiee.ui.theme.GreenMid
 import com.example.homiee.ui.theme.GreenTint
@@ -43,7 +43,6 @@ private val ErrorRed = Color(0xFFFF6B6B)
 @Composable
 fun OtpScreen(
     email: String,
-    flow: String = "login",
     onConfirm: () -> Unit,
     viewModel: OtpViewModel = viewModel(
         factory = OtpViewModelFactory(LocalContext.current)
@@ -67,14 +66,10 @@ fun OtpScreen(
         keyboardController?.show()
     }
 
+    // OTP is signup-only now — success always shows the T&C popup
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
-            if (flow == "signup") {
-                // Show T&C popup instead of navigating immediately
-                showTermsDialog = true
-            } else {
-                onConfirm()
-            }
+            showTermsDialog = true
             viewModel.resetState()
         }
     }
@@ -89,7 +84,7 @@ fun OtpScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(systemBarsPadding())
+                .padding(statusBarsPadding())
                 .padding(horizontal = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -125,7 +120,7 @@ fun OtpScreen(
             Spacer(Modifier.height(10.dp))
 
             Text(
-                text      = "We've sent a 6-digit code to",
+                text      = "We've sent a 6-digit code to ",
                 fontSize  = 14.sp,
                 color     = TextMuted,
                 textAlign = TextAlign.Center
@@ -232,12 +227,12 @@ fun OtpScreen(
         }
     }
 
-    // ── T&C popup — only shown for signup flow, right after OTP succeeds ──
+    // ── T&C popup — shown right after OTP succeeds (signup only) ──
     if (showTermsDialog) {
         TermsAndConditionsDialog(
             onAgree = {
                 showTermsDialog = false
-                onConfirm()   // now actually proceed to next screen (RES_FORM_1)
+                onConfirm()   // proceed to next screen (RES_FORM_1)
             }
         )
     }
