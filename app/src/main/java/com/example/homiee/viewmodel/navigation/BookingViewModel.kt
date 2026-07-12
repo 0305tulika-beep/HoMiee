@@ -37,7 +37,8 @@ class BookingViewModel(
         service: String,
         rating: Float,
         date: String,
-        time: String
+        time: String,
+        address: String = ""          // NEW — human-readable service location
     ): String {
         val newId = "b${System.currentTimeMillis()}"
         val newBooking = BookingItem(
@@ -48,7 +49,8 @@ class BookingViewModel(
             status      = BookingTab.UPCOMING,
             isPending   = true,
             bookingDate = date,
-            bookingTime = time
+            bookingTime = time,
+            address     = address     // NEW
         )
         _bookings.value = (_bookings.value + newBooking).toMutableList()
         _lastCreatedBooking.value = newBooking

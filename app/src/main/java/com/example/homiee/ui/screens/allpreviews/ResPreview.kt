@@ -88,7 +88,13 @@ import com.example.homiee.ui.theme.HomieeTheme
 
 @Preview(showBackground = true, showSystemUi = true, name = "Profile Screen")
 @Composable fun ProfileScreenPreview() {
-    HomieeTheme { ProfileScreen(onNavItemClick = {}, onMyReviewsClick = {}) }
+    HomieeTheme {
+        ProfileScreen(
+            onNavItemClick = {},
+            onMyReviewsClick = {},
+            onLoggedOut = {}
+        )
+    }
 }
 
 @Preview(showBackground = true, showSystemUi = true, name = "My Reviews Screen")

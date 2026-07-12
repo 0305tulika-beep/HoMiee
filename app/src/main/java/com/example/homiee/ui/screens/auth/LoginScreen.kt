@@ -33,8 +33,27 @@ import androidx.compose.ui.platform.LocalContext
 private val ErrorRed = Color(0xFFFF6B6B)
 
 // ── Same validation helper pattern as SignUpScreen ──
+private val EMAIL_REGEX = Regex("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+private fun isValidEmail(email: String): Boolean = EMAIL_REGEX.matches(email.trim())
+
+private fun emailErrorMessage(email: String, touched: Boolean): String? {
+    if (touched && email.isBlank()) return "Email is required"
+    if (email.isNotBlank() && !isValidEmail(email)) return "Please enter a valid email address"
+    return null
+}
+
 private fun requiredError(value: String, touched: Boolean, fieldLabel: String): String? =
     if (touched && value.isBlank()) "$fieldLabel is required" else null
+
+// NEW: a lightweight, non-blocking heads-up if the typed password contains
+// a space. Unlike SignUp (where we're creating a fresh password and can
+// safely enforce the rule), Login is checking against an existing account —
+// blocking submission here could lock out someone whose real password
+// happens to contain a space from before this rule existed. So this is
+// shown as a hint but does NOT factor into isFormValid below.
+private fun passwordSpaceWarning(password: String): String? =
+    if (password.isNotEmpty() && password.any { it.isWhitespace() })
+        "Note: your password contains a space" else null
 
 @Composable
 fun LoginScreen(
@@ -55,11 +74,13 @@ fun LoginScreen(
 
     val uiState by viewModel.uiState.collectAsState()
 
-    val emailError    = requiredError(email,    emailTouched,    "Email")
-    val passwordError = requiredError(password, passwordTouched, "Password")
+    val emailError    = emailErrorMessage(email, emailTouched)
+    val passwordRequiredError = requiredError(password, passwordTouched, "Password")
+    // CHANGED: required error (if any) takes priority over the space hint.
+    val passwordError = passwordRequiredError ?: passwordSpaceWarning(password)
 
     // ── Same isFormValid gating pattern as SignUpScreen ──
-    val isFormValid = email.isNotBlank() && password.isNotBlank()
+    val isFormValid = email.isNotBlank() && emailError == null && password.isNotBlank()
 
     // Login success → always goes to Resident Home (resident-only app)
     LaunchedEffect(uiState.isSuccess) {
@@ -116,12 +137,18 @@ fun LoginScreen(
                 onValueChange = { password = it },
                 placeholder   = "Password",
                 isPassword    = true,
-                isError       = passwordError != null,
+                // CHANGED: only the required-field case marks the field
+                // red; the space hint is informational, not an error state.
+                isError       = passwordRequiredError != null,
                 onFocusLost   = { passwordTouched = true }
             )
             if (passwordError != null) {
                 Spacer(Modifier.height(4.dp))
-                Text(passwordError, color = ErrorRed, fontSize = 12.sp)
+                Text(
+                    passwordError,
+                    color = if (passwordRequiredError != null) ErrorRed else White.copy(alpha = 0.75f),
+                    fontSize = 12.sp
+                )
             }
 
             Spacer(Modifier.height(12.dp))

@@ -3,6 +3,7 @@ package com.example.homiee
 import android.app.Application
 import com.example.homiee.data.local.SessionManager
 import com.example.homiee.data.local.TokenManager
+import com.example.homiee.data.remote.RetrofitClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -10,6 +11,9 @@ import kotlinx.coroutines.launch
 class HomieeApp : Application() {
     override fun onCreate() {
         super.onCreate()
+
+        RetrofitClient.init(this)
+
         val tokenManager = TokenManager(this)
         CoroutineScope(Dispatchers.IO).launch {
             SessionManager.accessToken = tokenManager.getAccessToken()

@@ -92,3 +92,29 @@ data class ResendOtpData(
     val otp_expires_in: String
 )
 
+// ── Logout ──
+data class LogoutResponse(
+    val status: String,
+    val message: String
+)
+
+// ── Deactivate ──
+data class DeactivateAccountRequest(
+    val password: String
+)
+
+data class DeactivateAccountResponse(
+    val status: String,
+    val message: String
+)
+
+// ── Delete ──
+data class DeleteAccountResponse(
+    val status: String,
+    val message: String
+)
+
+data class DeleteAccountRequest(
+    val password: String
+)
+

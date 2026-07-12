@@ -3,8 +3,6 @@ package com.example.homiee.ui.screens.allpreviews
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.homiee.ui.screens.resident.ResFormAddressScreen
-import com.example.homiee.ui.screens.resident.ResFormEmergencyScreen
-import com.example.homiee.ui.screens.resident.ResFormIdentityScreen
 import com.example.homiee.ui.screens.resident.ResFormPhotoScreen
 
 @Preview(showBackground = true)
@@ -15,32 +13,11 @@ private fun PreviewAddressFormScreen() {
         area = "", onAreaChange = {},
         city = "", onCityChange = {},
         pincode = "", onPincodeChange = {},
-        onUseCurrentLocation = {},
+        onUseCurrentLocation = { _, _ -> },
         onNext = {}
     )
 }
 
-@Preview(showBackground = true)
-@Composable
-private fun PreviewEmergencyContactFormScreen() {
-    ResFormEmergencyScreen(
-        contactName = "", onContactNameChange = {},
-        mobileNumber = "", onMobileNumberChange = {},
-        onNext = {},
-        onBack = {}
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun PreviewIdentityVerificationFormScreen() {
-    ResFormIdentityScreen(
-        onUploadAadhaar = {},
-        onUploadPan = {},
-        onNext = {},
-        onBack = {}
-    )
-}
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable

@@ -72,9 +72,9 @@ fun SplashScreen(onFinished: (String) -> Unit) {
     // ── Decide where to go after splash ──
     LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(1600)
-        if (BuildConfig.DEBUG) {
-            tokenManager.clearTokens()
-        }
+//        if (BuildConfig.DEBUG) {
+//            tokenManager.clearTokens()
+//        }
         val destination = when {
             tokenManager.getAccessToken() == null -> Routes.SIGNUP_ROUTE
             !tokenManager.areFormsCompleted() -> {

@@ -1,6 +1,6 @@
 package com.example.homiee.ui.screens.resident
 
-import com.example.homiee.ui.components.OnboardingStepIndicator
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,10 +26,9 @@ import com.example.homiee.ui.components.HomieeColors
 import com.example.homiee.ui.components.HomieeHeader
 import com.example.homiee.ui.theme.GreenDark
 
+// 2 steps now: Address -> Photo (Emergency Contact + Identity forms removed)
 val HELPER_ONBOARDING_STEP_LABELS = listOf(
     "Address\n",
-    "Emergency\n Contact",
-    "Identity\n Verification",
     "Profile\n Photo"
 )
 
@@ -43,15 +42,36 @@ fun OnboardingStepScaffold(
     buttonIcon: ImageVector = Icons.Default.ArrowForward,
     onButtonClick: () -> Unit,
     onBackClick: (() -> Unit)? = null,
-    isLoading: Boolean = false,          // NEW
-    errorMessage: String? = null,        // NEW
+    onSkipClick: (() -> Unit)? = null,   // NEW: optional skip action shown at the very top of the screen
+    isLoading: Boolean = false,
+    errorMessage: String? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     HideSystemBars2(lightIcons = true)
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = { HomieeHeader() },
+        topBar = {
+            Column {
+                HomieeHeader()
+                if (onSkipClick != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Text(
+                            text = "Skip",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = HomieeColors.PrimaryDark,
+                            modifier = Modifier.clickable { onSkipClick() }
+                        )
+                    }
+                }
+            }
+        },
         bottomBar = {
             Column(
                 modifier = Modifier
@@ -59,7 +79,6 @@ fun OnboardingStepScaffold(
                     .navigationBarsPadding()
                     .padding(24.dp)
             ) {
-                // NEW: warning / error banner, shown above the buttons
                 if (errorMessage != null) {
                     Text(
                         text = errorMessage,
@@ -77,7 +96,7 @@ fun OnboardingStepScaffold(
                     ) {
                         OutlinedButton(
                             onClick = onBackClick,
-                            enabled = !isLoading,   // NEW
+                            enabled = !isLoading,
                             modifier = Modifier
                                 .weight(1f)
                                 .height(52.dp),
@@ -93,7 +112,7 @@ fun OnboardingStepScaffold(
 
                         Button(
                             onClick = onButtonClick,
-                            enabled = !isLoading,   // NEW
+                            enabled = !isLoading,
                             modifier = Modifier
                                 .weight(1f)
                                 .height(52.dp),
@@ -116,7 +135,7 @@ fun OnboardingStepScaffold(
                 } else {
                     Button(
                         onClick = onButtonClick,
-                        enabled = !isLoading,   // NEW
+                        enabled = !isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
@@ -152,7 +171,6 @@ fun OnboardingStepScaffold(
             Spacer(modifier = Modifier.height(6.dp))
             Text(text = subtitle, fontSize = 14.sp, color = HomieeColors.TextGray)
             Spacer(modifier = Modifier.height(28.dp))
-            OnboardingStepIndicator(currentStep = currentStep, stepLabels = stepLabels)
             Spacer(modifier = Modifier.height(32.dp))
             content()
             Spacer(modifier = Modifier.height(24.dp))

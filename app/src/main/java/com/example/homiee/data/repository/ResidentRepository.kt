@@ -13,9 +13,6 @@ class ResidentRepository {
     suspend fun saveAddress(request: ResidentAddressRequest): ApiResult<ResidentAddressResponse> =
         safeApiCall { api.saveAddress(request) }
 
-    suspend fun saveEmergencyContact(request: EmergencyContactRequest): ApiResult<EmergencyContactResponse> =
-        safeApiCall { api.saveEmergencyContact(request) }
-
     suspend fun uploadPhoto(part: MultipartBody.Part): ApiResult<ProfilePhotoResponse> =
         safeApiCall { api.uploadPhoto(part) }
 

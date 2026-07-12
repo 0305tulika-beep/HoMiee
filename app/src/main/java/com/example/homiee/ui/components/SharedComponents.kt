@@ -1,5 +1,8 @@
 package com.example.homiee.ui.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -12,15 +15,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
@@ -198,64 +200,6 @@ fun navigationBarsPadding(): PaddingValues {
     return WindowInsets.navigationBars.asPaddingValues()
 }
 
-@Composable
-fun OnboardingStepIndicator(
-    currentStep: Int,
-    stepLabels: List<String>,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        stepLabels.forEachIndexed { index, label ->
-            val stepNumber = index + 1
-            val isActiveOrDone = stepNumber <= currentStep
-            val isActive = stepNumber == currentStep
-
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    modifier = Modifier
-                        .size(if (isActive) 44.dp else 40.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (isActiveOrDone) HomieeColors.PrimaryDark
-                            else HomieeColors.StepInactive
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = stepNumber.toString(),
-                        color = if (isActiveOrDone) Color.White else HomieeColors.StepInactiveText,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = if (isActive) 18.sp else 15.sp
-                    )
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = label,
-                    fontSize = 12.sp,
-                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isActive) HomieeColors.PrimaryDark else HomieeColors.TextGray,
-                    textAlign = TextAlign.Center
-                )
-            }
-
-            if (index != stepLabels.lastIndex) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(bottom = 20.dp)
-                        .height(2.dp)
-                        .background(
-                            if (stepNumber < currentStep) HomieeColors.PrimaryDark
-                            else HomieeColors.StepInactive
-                        )
-                )
-            }
-        }
-    }
-}
 
 @Composable
 fun OtpBox(
@@ -264,10 +208,37 @@ fun OtpBox(
     modifier: Modifier = Modifier
 ) {
     val ErrorRed = Color(0xFFFF6B6B)
+
+    // NEW: a little spring "pop" whenever a digit lands in this box —
+    // snaps down to 70% scale then springs back past/to 100%, giving a
+    // satisfying bounce as the user types each OTP digit. Purely visual:
+    // graphicsLayer scales the rendered box without affecting its measured
+    // layout size, so neighboring boxes in the OTP row never shift.
+    val scale = remember { Animatable(1f) }
+    var previousDigit by remember { mutableStateOf("") }
+
+    LaunchedEffect(digit) {
+        if (digit.isNotEmpty() && digit != previousDigit) {
+            scale.snapTo(0.7f)
+            scale.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMedium
+                )
+            )
+        }
+        previousDigit = digit
+    }
+
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .size(48.dp)
+            .graphicsLayer {
+                scaleX = scale.value
+                scaleY = scale.value
+            }
             .border(2.dp, if (hasError) ErrorRed else GreenDark, CircleShape)
     ) {
         Text(
@@ -301,42 +272,6 @@ fun HomieeHeader() {
             fontWeight = FontWeight.ExtraBold,
             letterSpacing = 0.5.sp
         )
-    }
-}
-
-@Composable
-fun DocumentUploadCard(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onUploadClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, HomieeColors.BorderGray, RoundedCornerShape(12.dp))
-            .padding(16.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, tint = HomieeColors.PrimaryDark)
-            Spacer(modifier = Modifier.width(10.dp))
-            Column {
-                Text(title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                Text(subtitle, fontSize = 12.sp, color = HomieeColors.TextGray)
-            }
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        OutlinedButton(
-            onClick = onUploadClick,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(10.dp)
-        ) {
-            Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(modifier = Modifier.width(6.dp))
-            Text("Upload File")
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text("JPG or PNG, up to 5MB", fontSize = 11.sp, color = HomieeColors.TextGray)
     }
 }
 

@@ -14,9 +14,6 @@ interface ResidentApiService {
     @POST("api/userdetails/residents/address/")
     suspend fun saveAddress(@Body request: ResidentAddressRequest): Response<ResidentAddressResponse>
 
-    @POST("api/userdetails/residents/emergency-contact/")
-    suspend fun saveEmergencyContact(@Body request: EmergencyContactRequest): Response<EmergencyContactResponse>
-
     @Multipart
     @POST("api/userdetails/residents/photo/")
     suspend fun uploadPhoto(@Part profile_photo: MultipartBody.Part): Response<ProfilePhotoResponse>

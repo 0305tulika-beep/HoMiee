@@ -31,6 +31,7 @@ fun BookingDetailsScreen(
     service:       String,
     bookingDate:   String,
     bookingTime:   String,
+    address:       String  = "",          // NEW — human-readable service location
     durationHours: String  = "2 hours",
     onChat:        () -> Unit = {},
     onCancel:      () -> Unit = {},
@@ -85,6 +86,20 @@ fun BookingDetailsScreen(
                         DetailRow("Duration", durationHours)
                         DetailRow("Date", bookingDate)
                         DetailRow("Time", bookingTime)
+                    }
+                }
+
+                // ── Service location — only shown if an address was actually captured ──
+                if (address.isNotBlank()) {
+                    item {
+                        DetailsSectionCard(title = "SERVICE LOCATION") {
+                            Text(
+                                text       = address,
+                                fontSize   = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color      = TextPrimary
+                            )
+                        }
                     }
                 }
 

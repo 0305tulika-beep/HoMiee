@@ -37,12 +37,11 @@ object Routes {
     const val OTP_ROUTE          = "otp/{email}/{flow}"   // flow = "login" | "signup"
     const val FORGOT_PASSWORD    = "forgot_password"
 
-    // Resident forms — nested graph + 4 steps
-    const val RES_ONBOARDING_GRAPH = "res_onboarding"     // NEW: parent graph route
+    // Resident forms — nested graph + 2 steps
+    // (Emergency Contact + its OTP step, and Identity form, both removed)
+    const val RES_ONBOARDING_GRAPH = "res_onboarding"     // parent graph route
     const val RES_FORM_1 = "res_form_address"
-    const val RES_FORM_2 = "res_form_emergency"
-    const val RES_FORM_3 = "res_form_identity"
-    const val RES_FORM_4 = "res_form_photo"
+    const val RES_FORM_2 = "res_form_photo"               // was RES_FORM_3
 
     // Main tabs
     const val HOME_RES        = "home_resident"
@@ -120,6 +119,20 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
     val bookingViewModel: BookingViewModel = viewModel(
         factory = BookingViewModelFactory(context)
     )
+
+    // NEW: whenever any API call 401s with an expired/invalid token,
+    // TokenAuthenticator clears the session and flips this flag — react by
+    // sending the user cleanly back to login instead of leaving them stuck
+    // on a screen where every request silently keeps failing.
+    val sessionExpired by com.example.homiee.data.local.SessionManager.sessionExpired.collectAsState()
+    androidx.compose.runtime.LaunchedEffect(sessionExpired) {
+        if (sessionExpired) {
+            com.example.homiee.data.local.SessionManager.consumeSessionExpired()
+            navController.navigate(Routes.LOGIN_ROUTE) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
 
     NavHost(
         navController      = navController,
@@ -200,7 +213,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             )
         }
 
-        // ── OTP ─────────────────────────────────────────────────────────────
+        // ── OTP (signup / login email verification) ───────────────────────────
         composable(
             route = Routes.OTP_ROUTE,
             arguments = listOf(
@@ -230,6 +243,8 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         }
 
         // ── Resident Onboarding (nested graph, shared ViewModel) ───────────────
+        // 2 steps: Address -> Photo
+        // (Emergency Contact + its OTP verification, and Identity form, removed)
         navigation(
             startDestination = Routes.RES_FORM_1,
             route = Routes.RES_ONBOARDING_GRAPH
@@ -241,6 +256,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                     navController.getBackStackEntry(Routes.RES_ONBOARDING_GRAPH)
                 }
                 val vm: ResidentOnboardingViewModel = viewModel(parentEntry)
+                val formContext = LocalContext.current
                 val showErrors by vm.addressShowErrors.collectAsState()
                 val loading by vm.addressLoading.collectAsState()
                 val error by vm.addressError.collectAsState()
@@ -254,61 +270,27 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                     onCityChange = vm::onCityChange,
                     pincode = vm.pincode,
                     onPincodeChange = vm::onPincodeChange,
-                    onUseCurrentLocation = {
-                        // TODO: wire up actual GPS/location logic, then call:
-                        // vm.updateLocation(lat, lng)
+                    onUseCurrentLocation = { lat, lng ->
+                        vm.updateLocation(lat, lng)
                     },
                     onNext = {
-                        vm.submitAddress { navController.navigate(Routes.RES_FORM_2) }
+                        vm.submitAddress(formContext, Routes.RES_FORM_2) {
+                            navController.navigate(Routes.RES_FORM_2)
+                        }
                     },
                     showValidationError = showErrors,
                     isLoading = loading,
                     errorMessage = error
                 )
             }
+
+            // NOTE: Emergency Contact form + its OTP verification step, and the
+            // Identity (Aadhaar/PAN) form, have all been removed per request.
+            // ResFormEmergencyScreen.kt, ResFormEmergencyOtpScreen.kt, and
+            // ResFormIdentityScreen.kt are no longer referenced anywhere and
+            // can be deleted from the project.
 
             composable(Routes.RES_FORM_2) { backStackEntry ->
-                BackHandler { navController.popBackStack() }
-
-                val parentEntry = remember(backStackEntry) {
-                    navController.getBackStackEntry(Routes.RES_ONBOARDING_GRAPH)
-                }
-                val vm: ResidentOnboardingViewModel = viewModel(parentEntry)
-                val showErrors by vm.emergencyShowErrors.collectAsState()
-                val loading by vm.emergencyLoading.collectAsState()
-                val error by vm.emergencyError.collectAsState()
-
-                ResFormEmergencyScreen(
-                    contactName = vm.contactName,
-                    onContactNameChange = vm::onContactNameChange,
-                    mobileNumber = vm.mobileNumber,
-                    onMobileNumberChange = vm::onMobileNumberChange,
-                    onNext = {
-                        vm.submitEmergencyContact { navController.navigate(Routes.RES_FORM_3) }
-                    },
-                    onBack = { navController.popBackStack() },
-                    showValidationError = showErrors,
-                    isLoading = loading,
-                    errorMessage = error
-                )
-            }
-
-            composable(Routes.RES_FORM_3) {
-                BackHandler { navController.popBackStack() }
-
-                ResFormIdentityScreen(
-                    onUploadAadhaar = {
-                        // TODO: launch Aadhaar file/image picker
-                    },
-                    onUploadPan = {
-                        // TODO: launch PAN file/image picker
-                    },
-                    onNext = { navController.navigate(Routes.RES_FORM_4) },
-                    onBack = { navController.popBackStack() }
-                )
-            }
-
-            composable(Routes.RES_FORM_4) { backStackEntry ->
                 BackHandler { navController.popBackStack() }
 
                 val parentEntry = remember(backStackEntry) {
@@ -320,15 +302,25 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                 val loading by vm.photoLoading.collectAsState()
                 val error by vm.photoError.collectAsState()
 
+                // Pure navigation — TokenManager.markFormsCompleted() is now called
+                // from inside the ViewModel (submitPhoto on success, or
+                // skipOnboarding), which is the actual source of truth Splash reads.
+                val goHome: () -> Unit = {
+                    navController.navigate(Routes.HOME_RES) {
+                        popUpTo(Routes.RES_ONBOARDING_GRAPH) { inclusive = true }
+                    }
+                }
+
                 ResFormPhotoScreen(
                     onFinish = { pickedUri ->
-                        vm.submitPhoto(formContext, pickedUri) {
-                            navController.navigate(Routes.HOME_RES) {
-                                popUpTo(Routes.RES_ONBOARDING_GRAPH) { inclusive = true }
-                            }
-                        }
+                        vm.submitPhoto(formContext, pickedUri) { goHome() }
                     },
                     onBack = { navController.popBackStack() },
+                    onSkip = {
+                        // Pure local skip: no API call, just marks onboarding
+                        // complete and goes home immediately.
+                        vm.skipOnboarding(formContext) { goHome() }
+                    },
                     showValidationError = showErrors,
                     isLoading = loading,
                     errorMessage = error
@@ -400,7 +392,12 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         composable(Routes.ACCOUNT) {
             ProfileScreen(
                 onNavItemClick = { navController.navigateMain(it) },
-                onMyReviewsClick = { navController.navigate(Routes.MY_REVIEWS) }
+                onMyReviewsClick = { navController.navigate(Routes.MY_REVIEWS) },
+                onLoggedOut = {
+                    navController.navigate(Routes.SIGNUP_ROUTE) {
+                        popUpTo(0) { inclusive = true }   // clear entire back stack
+                    }
+                }
             )
         }
 
@@ -501,6 +498,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                 service = booking?.service ?: "",
                 bookingDate = booking?.bookingDate ?: "",
                 bookingTime = booking?.bookingTime ?: "",
+                address = booking?.address ?: "",
                 onChat = {
                     navController.navigate(
                         Routes.chatRoute(

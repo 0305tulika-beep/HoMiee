@@ -53,6 +53,7 @@ data class BookingItem(
     val isPending: Boolean = false,
     val bookingDate: String = "",
     val bookingTime: String = "",
+    val address: String = "",
     val initials: String = helperName.take(2).uppercase()
 )
 

@@ -29,14 +29,31 @@ import com.example.homiee.viewmodel.RegisterViewModel
 private val ErrorRed = Color(0xFFFF6B6B)
 
 // ── Validation helpers ──
+private val EMAIL_REGEX = Regex("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+private fun isValidEmail(email: String): Boolean = EMAIL_REGEX.matches(email.trim())
+
+private fun emailErrorMessage(email: String, touched: Boolean): String? {
+    if (touched && email.isBlank()) return "Email is required"
+    if (email.isNotBlank() && !isValidEmail(email)) return "Please enter a valid email address"
+    return null
+}
+
 private fun passwordErrorMessage(password: String, touched: Boolean): String? {
     if (touched && password.isEmpty()) return "Password is required"
     if (password.isEmpty()) return null
+
+    // CHANGED: check for spaces first, and exclude whitespace from the
+    // "special character" check below — previously a password consisting
+    // partly/entirely of spaces (e.g. "password ") could incorrectly pass
+    // the special-character requirement, since isLetterOrDigit() is false
+    // for whitespace too.
+    val hasSpace     = password.any { it.isWhitespace() }
     val hasMinLength = password.length >= 8
     val hasUpper     = password.any { it.isUpperCase() }
-    val hasSpecial   = password.any { !it.isLetterOrDigit() }
+    val hasSpecial   = password.any { !it.isLetterOrDigit() && !it.isWhitespace() }
 
     return when {
+        hasSpace      -> "Password must not contain spaces"
         !hasMinLength -> "Password must be at least 8 characters"
         !hasUpper     -> "Password must include at least 1 capital letter"
         !hasSpecial   -> "Password must include at least 1 special symbol"
@@ -71,15 +88,21 @@ fun SignUpScreen(
 
     val firstNameError = requiredError(firstName, firstNameTouched, "First name")
     val lastNameError  = requiredError(lastName,  lastNameTouched,  "Last name")
-    val emailError     = requiredError(email,     emailTouched,     "Email")
+    val emailError     = emailErrorMessage(email, emailTouched)
     val passwordError  = passwordErrorMessage(password, passwordTouched)
     val confirmError = when {
         confirmPassTouched && confirmPass.isEmpty() -> "Please confirm your password"
+        // CHANGED: surface the same "no spaces" warning here too, so typing
+        // a space directly into Confirm Password (before Password has been
+        // validated) still gives immediate feedback instead of just a
+        // generic mismatch error.
+        confirmPass.isNotEmpty() && confirmPass.any { it.isWhitespace() } -> "Password must not contain spaces"
         confirmPass.isNotEmpty() && confirmPass != password -> "Passwords do not match"
         else -> null
     }
 
-    val isFormValid = firstName.isNotBlank() && lastName.isNotBlank() && email.isNotBlank() &&
+    val isFormValid = firstName.isNotBlank() && lastName.isNotBlank() &&
+            email.isNotBlank() && emailError == null &&
             password.isNotBlank() && passwordError == null &&
             confirmPass.isNotBlank() && confirmError == null
 

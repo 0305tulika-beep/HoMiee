@@ -26,6 +26,15 @@ class AuthRepository {
     suspend fun resendOtp(request: ResendOtpRequest): ApiResult<ResendOtpResponse> =
         safeApiCall { api.resendOtp(request) }
 
+    suspend fun logout(): ApiResult<LogoutResponse> =
+        safeApiCall { api.logout() }
+
+    suspend fun deactivateAccount(password: String): ApiResult<DeactivateAccountResponse> =
+        safeApiCall { api.deactivateAccount(DeactivateAccountRequest(password)) }
+
+    suspend fun deleteAccount(password: String): ApiResult<DeleteAccountResponse> =
+        safeApiCall { api.deleteAccount(DeleteAccountRequest(password)) }
+
     private suspend fun <T> safeApiCall(
         isLoginCall: Boolean = false,
         call: suspend () -> Response<T>

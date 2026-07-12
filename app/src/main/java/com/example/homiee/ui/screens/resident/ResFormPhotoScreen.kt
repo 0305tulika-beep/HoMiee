@@ -2,6 +2,7 @@ package com.example.homiee.ui.screens.resident
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,7 +26,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,14 +57,23 @@ private fun Modifier.dashedBorder(
 fun ResFormPhotoScreen(
     onFinish: (Uri?) -> Unit,   // CHANGED: now passes the picked uri back
     onBack: () -> Unit,
+    onSkip: () -> Unit = {},    // NEW: lets the user bypass this step entirely
     showValidationError: Boolean = false,
     isLoading: Boolean = false,
     errorMessage: String? = null
 ) {
     var imageUri by remember { mutableStateOf<Uri?>(null) }
 
+    // CHANGED: switched from ActivityResultContracts.GetContent() to
+    // PickVisualMedia (the system Photo Picker). GetContent hands back
+    // arbitrary SAF/document URIs whose read grant can be unreliable across
+    // OEM gallery/file-manager apps (this is what was causing "Couldn't read
+    // the selected image" on some devices). PickVisualMedia returns picker
+    // URIs (content://media/picker/...) that are always readable without any
+    // extra permission handling, and it's the Android-recommended API for
+    // this use case on API 21+ (backed by Google Play services on older OSes).
     val pickImageLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
         imageUri = uri
     }
@@ -77,6 +86,7 @@ fun ResFormPhotoScreen(
         buttonIcon = Icons.Default.Check,
         onButtonClick = { onFinish(imageUri) },   // CHANGED: pass the uri along
         onBackClick = onBack,
+        onSkipClick = onSkip,                     // NEW: renders Skip at the top of the screen
         isLoading = isLoading,
         errorMessage = errorMessage
     ) {
@@ -93,7 +103,11 @@ fun ResFormPhotoScreen(
                     color = if (showValidationError && imageUri == null) Color(0xFFDC2626)
                     else HomieeColors.PrimaryDark.copy(alpha = 0.5f)
                 )
-                .clickable { pickImageLauncher.launch("image/*") }
+                .clickable {
+                    pickImageLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                }
         ) {
             if (imageUri != null) {
                 androidx.compose.foundation.Image(

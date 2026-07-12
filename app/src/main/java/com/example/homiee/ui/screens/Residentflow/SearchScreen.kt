@@ -137,147 +137,146 @@ fun SearchScreen(
                 modifier           = Modifier.fillMaxSize()
             )
 
-            LazyColumn(
-                modifier       = Modifier
+            Column(
+                modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
-                contentPadding = PaddingValues(bottom = 16.dp)
+                    .padding(innerPadding)
             ) {
 
-                // ── Green header + search bar ─────────────────────────────
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .statusBarsPadding()
-                            .padding(horizontal = 20.dp)
-                            .padding(top = 24.dp, bottom = 28.dp)
-                    ) {
-                        Column {
-                            Text(
-                                text       = "Find A Helper",
-                                color      = Color.White,
-                                fontSize   = 26.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(Modifier.height(16.dp))
-                            OutlinedTextField(
-                                value         = searchQuery,
-                                onValueChange = { searchQuery = it },
-                                placeholder   = {
-                                    Text(
-                                        "Search for helpers...",
-                                        color    = TextSecondary,
-                                        fontSize = 14.sp
-                                    )
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        painter            = painterResource(R.drawable.ic_search),
-                                        contentDescription = "Search",
-                                        tint               = TextSecondary,
-                                        modifier           = Modifier.size(20.dp)
-                                    )
-                                },
-                                singleLine = true,
-                                shape      = RoundedCornerShape(14.dp),
-                                colors     = OutlinedTextFieldDefaults.colors(
-                                    focusedContainerColor   = Color.White,
-                                    unfocusedContainerColor = Color.White,
-                                    focusedBorderColor      = Color.Transparent,
-                                    unfocusedBorderColor    = Color.Transparent,
-                                    cursorColor             = GreenDark
-                                ),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    }
-                }
-
-                // ── Service filter chips ─────────────────────────────────────
-                item {
-                    LazyRow(
-                        contentPadding        = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(SERVICE_FILTERS) { filter ->
-                            FilterChipItem(
-                                label      = filter,
-                                isSelected = selectedFilter == filter,
-                                onClick    = { selectedFilter = filter }
-                            )
-                        }
-                    }
-                }
-
-                // ── Sort by ──────────────────────────────────────────────────
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                    ) {
+                // ── Fixed: Green header + search bar ──────────────────────
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 20.dp)
+                        .padding(top = 24.dp, bottom = 28.dp)
+                ) {
+                    Column {
                         Text(
-                            text          = "SORT BY",
-                            fontSize      = 13.sp,
-                            fontWeight    = FontWeight.Bold,
-                            color         = TextPrimary,
-                            letterSpacing = 0.8.sp
+                            text       = "Find A Helper",
+                            color      = Color.White,
+                            fontSize   = 26.sp,
+                            fontWeight = FontWeight.Bold
                         )
-                        Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            SortOption.values().forEach { option ->
-                                FilterChipItem(
-                                    label      = option.label,
-                                    isSelected = selectedSort == option,
-                                    onClick    = { selectedSort = option }
+                        Spacer(Modifier.height(16.dp))
+                        OutlinedTextField(
+                            value         = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder   = {
+                                Text(
+                                    "Search for helpers...",
+                                    color    = TextSecondary,
+                                    fontSize = 14.sp
                                 )
-                            }
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    painter            = painterResource(R.drawable.ic_search),
+                                    contentDescription = "Search",
+                                    tint               = TextSecondary,
+                                    modifier           = Modifier.size(20.dp)
+                                )
+                            },
+                            singleLine = true,
+                            shape      = RoundedCornerShape(14.dp),
+                            colors     = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor   = Color.White,
+                                unfocusedContainerColor = Color.White,
+                                focusedBorderColor      = Color.Transparent,
+                                unfocusedBorderColor    = Color.Transparent,
+                                cursorColor             = GreenDark
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+
+                // ── Fixed: Service filter chips ────────────────────────────
+                LazyRow(
+                    contentPadding        = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(SERVICE_FILTERS) { filter ->
+                        FilterChipItem(
+                            label      = filter,
+                            isSelected = selectedFilter == filter,
+                            onClick    = { selectedFilter = filter }
+                        )
+                    }
+                }
+
+                // ── Fixed: Sort by ──────────────────────────────────────────
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Text(
+                        text          = "SORT BY",
+                        fontSize      = 13.sp,
+                        fontWeight    = FontWeight.Bold,
+                        color         = TextPrimary,
+                        letterSpacing = 0.8.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SortOption.values().forEach { option ->
+                            FilterChipItem(
+                                label      = option.label,
+                                isSelected = selectedSort == option,
+                                onClick    = { selectedSort = option }
+                            )
                         }
                     }
                 }
 
-                // ── Result count ─────────────────────────────────────────────
-                item {
-                    Text(
-                        text     = "${displayedHelpers.size} HELPERS FOUND",
-                        fontSize = 16.sp,
-                        fontWeight    = FontWeight.Bold,
-                        color    = TextPrimary,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
-                    )
-                }
+                // ── Scrollable: result count + helper cards ─────────────────
+                LazyColumn(
+                    modifier       = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
 
-                // ── Helper cards ─────────────────────────────────────────────
-                items(displayedHelpers, key = { it.id }) { helper ->
-                    SearchHelperCard(
-                        helper   = helper,
-                        onBook   = { onBook(helper.id) },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                    )
-                }
-
-                // ── Empty state ──────────────────────────────────────────────
-                if (displayedHelpers.isEmpty()) {
                     item {
-                        Box(
-                            modifier         = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 60.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    "No helpers found",
-                                    color    = TextSecondary,
-                                    fontSize = 16.sp
-                                )
-                                Spacer(Modifier.height(4.dp))
-                                Text(
-                                    "Try a different service or clear your search",
-                                    color    = TextSecondary,
-                                    fontSize = 13.sp
-                                )
+                        Text(
+                            text       = "${displayedHelpers.size} HELPERS FOUND",
+                            fontSize   = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color      = TextPrimary,
+                            modifier   = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                        )
+                    }
+
+                    items(displayedHelpers, key = { it.id }) { helper ->
+                        SearchHelperCard(
+                            helper   = helper,
+                            onBook   = { onBook(helper.id) },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                        )
+                    }
+
+                    if (displayedHelpers.isEmpty()) {
+                        item {
+                            Box(
+                                modifier         = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 60.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        "No helpers found",
+                                        color    = TextSecondary,
+                                        fontSize = 16.sp
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        "Try a different service or clear your search",
+                                        color    = TextSecondary,
+                                        fontSize = 13.sp
+                                    )
+                                }
                             }
                         }
                     }
