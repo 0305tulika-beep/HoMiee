@@ -22,10 +22,12 @@ import com.example.homiee.ui.theme.TextPrimary
 import com.example.homiee.ui.theme.White
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import com.example.homiee.R
 import com.example.homiee.ui.components.HideSystemBars
 import com.example.homiee.ui.components.statusBarsPadding
+import com.example.homiee.viewmodel.LoginUiState
 import com.example.homiee.viewmodel.LoginViewModel
 import com.example.homiee.viewmodel.LoginViewModelFactory
 import androidx.compose.ui.platform.LocalContext
@@ -60,9 +62,14 @@ fun LoginScreen(
     navController: NavController,
     onLoginSuccess: (String) -> Unit,
     onForgotPassword: () -> Unit = {},
-    viewModel: LoginViewModel = viewModel(
-        factory = LoginViewModelFactory(LocalContext.current)
-    )
+    // CHANGED: nullable + skipped entirely in preview. LoginViewModelFactory
+    // constructs TokenManager, which touches Android Keystore-backed
+    // EncryptedSharedPreferences — that has no security provider available
+    // inside the Layout Preview sandbox and throws, which is what was
+    // causing "Render problem" here. LocalInspectionMode is true only
+    // during preview, so real construction never runs there.
+    viewModel: LoginViewModel? = if (LocalInspectionMode.current) null
+    else viewModel(factory = LoginViewModelFactory(LocalContext.current))
 ) {
     var email      by remember { mutableStateOf("") }
     var password   by remember { mutableStateOf("") }
@@ -72,7 +79,9 @@ fun LoginScreen(
     var emailTouched    by remember { mutableStateOf(false) }
     var passwordTouched by remember { mutableStateOf(false) }
 
-    val uiState by viewModel.uiState.collectAsState()
+    // CHANGED: falls back to a default state when there's no real ViewModel (preview)
+    val uiState by viewModel?.uiState?.collectAsState()
+        ?: remember { mutableStateOf(LoginUiState()) }
 
     val emailError    = emailErrorMessage(email, emailTouched)
     val passwordRequiredError = requiredError(password, passwordTouched, "Password")
@@ -86,7 +95,7 @@ fun LoginScreen(
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
             onLoginSuccess(email)
-            viewModel.resetState()
+            viewModel?.resetState()
         }
     }
 
@@ -195,7 +204,7 @@ fun LoginScreen(
                 onClick = {
                     emailTouched = true
                     passwordTouched = true
-                    viewModel.login(email = email, password = password)
+                    viewModel?.login(email = email, password = password)
                 }
             )
 

@@ -77,7 +77,7 @@ fun ActivityScreen(
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(
-                        text       = "ACTIVE JOB",
+                        text       = "Active Job",
                         fontSize   = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color      = Color.White

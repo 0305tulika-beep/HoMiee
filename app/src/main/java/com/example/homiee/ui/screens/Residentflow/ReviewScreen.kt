@@ -1,32 +1,32 @@
 package com.example.homiee.ui.screens.Residentflow
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.homiee.R
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
-import com.example.homiee.ui.components.statusBarsPadding
 import com.example.homiee.ui.theme.GreenDark
 import com.example.homiee.ui.theme.TextMuted
 import com.example.homiee.ui.theme.TextPrimary
-import com.example.homiee.ui.theme.White
+
+private val GreenPrimary  = Color(0xFF1A5C3A)
+private val GreenLight    = Color(0xFFE8F5EE)
+private val TextPrimary   = Color(0xFF1A1A1A)
 
 data class Review(
     val reviewerName: String,
@@ -74,35 +74,37 @@ fun MyReviewsScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
 
-        Image(
-            painter            = painterResource(id = R.drawable.bg),
-            contentDescription = null,
-            contentScale       = ContentScale.Crop,
-            modifier           = Modifier.fillMaxSize()
-        )
-
         Column(modifier = Modifier.fillMaxSize()) {
 
-            // ── Header with back ──
+            // ── Header: back arrow + title — outside the card, top of screen ──
             Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier          = Modifier
                     .fillMaxWidth()
-                    .padding(statusBarsPadding())
-                    .padding(horizontal = 8.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 16.dp)
             ) {
-                IconButton(onClick = onBack) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(GreenLight)
+                        .clickable { onBack() },
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(
-                        imageVector        = Icons.Default.ArrowBack,
+                        imageVector        = Icons.Default.ArrowBackIosNew,
                         contentDescription = "Back",
-                        tint               = White
+                        tint               = GreenPrimary,
+                        modifier           = Modifier.size(20.dp)
                     )
                 }
+                Spacer(Modifier.width(14.dp))
                 Text(
                     text       = "My Reviews",
-                    fontSize   = 25.sp,
+                    fontSize   = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color      = White
+                    color      = com.example.homiee.ui.screens.Residentflow.TextPrimary
                 )
             }
 

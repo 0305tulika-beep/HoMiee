@@ -17,8 +17,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
-import com.example.homiee.ui.theme.GreenDark
 
+private val GreenLight    = Color(0xFFE8F5EE)
 private val GreenPrimary  = Color(0xFF1A5C3A)
 private val TextPrimary   = Color(0xFF1A1A1A)
 private val TextSecondary = Color(0xFF7A7A7A)
@@ -31,7 +31,7 @@ fun BookingDetailsScreen(
     service:       String,
     bookingDate:   String,
     bookingTime:   String,
-    address:       String  = "",          // NEW — human-readable service location
+    address:       String  = "",
     durationHours: String  = "2 hours",
     onChat:        () -> Unit = {},
     onCancel:      () -> Unit = {},
@@ -43,35 +43,36 @@ fun BookingDetailsScreen(
 
         Column(modifier = Modifier.fillMaxSize()) {
 
-            // ── Header ──
-            Column(
-                modifier = Modifier
+            // ── Header: back arrow + title — outside the card, top of screen ──
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier          = Modifier
                     .fillMaxWidth()
-                    .background(GreenDark)
                     .statusBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 16.dp)
+                    .padding(horizontal = 16.dp, vertical = 16.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.15f))
-                            .clickable { onBack() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector        = Icons.Default.ArrowBackIosNew,
-                            contentDescription = "Back",
-                            tint               = Color.White,
-                            modifier           = Modifier.size(16.dp)
-                        )
-                    }
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Text("Booking Details", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    }
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(GreenLight)
+                        .clickable { onBack() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector        = Icons.Default.ArrowBackIosNew,
+                        contentDescription = "Back",
+                        tint               = GreenPrimary,
+                        modifier           = Modifier.size(20.dp)
+                    )
                 }
+                Spacer(Modifier.width(14.dp))
+                Text(
+                    text       = "Booking Details",
+                    fontSize   = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color      = TextPrimary
+                )
             }
             Spacer(Modifier.height(100.dp))
             androidx.compose.foundation.lazy.LazyColumn(

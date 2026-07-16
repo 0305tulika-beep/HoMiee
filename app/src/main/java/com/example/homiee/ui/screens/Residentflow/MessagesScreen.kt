@@ -1,28 +1,30 @@
 package com.example.homiee.ui.screens.Residentflow
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.homiee.R
 import com.example.homiee.navigation.Routes
-import com.example.homiee.navigation.toRoute
 import com.example.homiee.ui.components.BottomNavBar
 import com.example.homiee.ui.components.NavTab
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
 import com.example.homiee.ui.theme.GreenDark
-import com.example.homiee.ui.theme.GreenDarkk
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 private val GreenPrimary  = Color(0xFF1A5C3A)
 private val TextPrimary   = Color(0xFF1A1A1A)
@@ -74,39 +76,53 @@ fun MessagesScreen(
         containerColor = Color.Transparent
     ) { innerPadding ->
 
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(Color(0xFFF7F7F7))
         ) {
+            // ── Background image ──
+            Image(
+                painter           = painterResource(id = R.drawable.bg1),
+                contentDescription = null,
+                modifier           = Modifier.fillMaxSize(),
+                contentScale       = ContentScale.Crop
+            )
 
-            // ── Green header ──
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(GreenDark)
-                    .statusBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 20.dp)
-            ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+
+                // ── Title, floated on bg1 ──
                 Text(
                     text       = "Messages",
                     fontSize   = 26.sp,
                     fontWeight = FontWeight.Bold,
-                    color      = Color.White
+                    color      = Color.White,
+                    modifier   = Modifier
+                        .statusBarsPadding()
+                        .padding(horizontal = 20.dp, vertical = 20.dp)
                 )
-            }
 
-            // ── Thread list ──
-            LazyColumn(
-                modifier       = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(vertical = 8.dp)
-            ) {
-                items(MOCK_THREADS, key = { it.id }) { thread ->
-                    MessageThreadItem(
-                        thread  = thread,
-                        onClick = { onThreadClick(thread.id) }
-                    )
+                // ── Card wrapping the thread list, bg peeking from the sides ──
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(horizontal = 12.dp),
+                    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    LazyColumn(
+                        modifier       = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = 8.dp)
+                    ) {
+                        items(MOCK_THREADS, key = { it.id }) { thread ->
+                            MessageThreadItem(
+                                thread  = thread,
+                                onClick = { onThreadClick(thread.id) }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -191,9 +207,9 @@ private fun MessageThreadItem(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text     = thread.unreadCount.toString(),
-                        color    = Color.White,
-                        fontSize = 10.sp,
+                        text       = thread.unreadCount.toString(),
+                        color      = Color.White,
+                        fontSize   = 10.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }

@@ -108,7 +108,7 @@ fun BookingsScreen(
         Box(modifier = Modifier.fillMaxSize()) {
 
             Image(
-                painter            = painterResource(R.drawable.bg),
+                painter            = painterResource(R.drawable.bg1),
                 contentDescription = null,
                 contentScale       = ContentScale.FillBounds,
                 modifier           = Modifier.fillMaxSize()
@@ -124,7 +124,7 @@ fun BookingsScreen(
                 // ── Header ───────────────────────────────────────────────────
                 item {
                     Text(
-                        text       = "MY BOOKINGS",
+                        text       = "My Booking",
                         fontSize   = 26.sp,
                         fontWeight = FontWeight.Bold,
                         color      = Color.White,

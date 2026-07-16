@@ -30,7 +30,6 @@ import com.example.homiee.navigation.Routes
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
 import com.example.homiee.ui.theme.GreenDark
 import com.example.homiee.ui.theme.TextPrimary
-import com.example.homiee.ui.theme.White
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 //private val ChipSelectedText = Color.White
@@ -131,7 +130,7 @@ fun SearchScreen(
         Box(modifier = Modifier.fillMaxSize()) {
 
             Image(
-                painter            = painterResource(R.drawable.bg),
+                painter            = painterResource(R.drawable.bg1),
                 contentDescription = null,
                 contentScale       = ContentScale.FillBounds,
                 modifier           = Modifier.fillMaxSize()

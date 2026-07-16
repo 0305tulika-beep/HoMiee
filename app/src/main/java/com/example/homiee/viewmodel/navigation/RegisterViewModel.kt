@@ -17,8 +17,8 @@ data class RegisterUiState(
     val errorMessage: String? = null
 )
 
-class RegisterViewModel(
-    private val tokenManager: TokenManager? = null   // pass this in from the screen/DI
+class RegisterViewModel @JvmOverloads constructor(
+    private val tokenManager: TokenManager? = null
 ) : ViewModel() {
 
     private val repository = AuthRepository()

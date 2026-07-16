@@ -2,6 +2,7 @@ package com.example.homiee.ui.screens.auth
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,6 +26,11 @@ import com.example.homiee.ui.components.statusBarsPadding
 import com.example.homiee.ui.theme.GreenLight
 import com.example.homiee.ui.theme.White
 import com.example.homiee.viewmodel.RegisterViewModel
+import androidx.compose.ui.platform.LocalInspectionMode
+import com.example.homiee.ui.theme.CardBg
+import com.example.homiee.ui.theme.GreenMid
+import com.example.homiee.ui.theme.TextPrimary
+import com.example.homiee.viewmodel.RegisterUiState
 
 private val ErrorRed = Color(0xFFFF6B6B)
 
@@ -67,7 +73,11 @@ private fun requiredError(value: String, touched: Boolean, fieldLabel: String): 
 @Composable
 fun SignUpScreen(
     navController: NavController,
-    viewModel: RegisterViewModel = viewModel(),
+    // CHANGED: nullable + skipped in preview. RegisterViewModel constructs
+    // AuthRepository() unconditionally, which touches RetrofitClient.authApi —
+    // if that singleton builds real network/auth infrastructure at init time,
+    // it can throw inside the Preview sandbox. LocalInspectionMode guards it.
+    viewModel: RegisterViewModel? = if (LocalInspectionMode.current) null else viewModel(),
     onSignedUp: (String) -> Unit = {}
 )  {
     var firstName   by remember { mutableStateOf("") }
@@ -77,14 +87,15 @@ fun SignUpScreen(
     var confirmPass by remember { mutableStateOf("") }
     var agreed      by remember { mutableStateOf(false) }
 
-    // ── Touched tracking, one flag per field ──
     var firstNameTouched   by remember { mutableStateOf(false) }
     var lastNameTouched    by remember { mutableStateOf(false) }
     var emailTouched       by remember { mutableStateOf(false) }
     var passwordTouched    by remember { mutableStateOf(false) }
     var confirmPassTouched by remember { mutableStateOf(false) }
 
-    val uiState by viewModel.uiState.collectAsState()
+    // CHANGED: fall back to a default state when there's no real ViewModel (preview)
+    val uiState by viewModel?.uiState?.collectAsState()
+        ?: remember { mutableStateOf(RegisterUiState()) }
 
     val firstNameError = requiredError(firstName, firstNameTouched, "First name")
     val lastNameError  = requiredError(lastName,  lastNameTouched,  "Last name")
@@ -92,10 +103,6 @@ fun SignUpScreen(
     val passwordError  = passwordErrorMessage(password, passwordTouched)
     val confirmError = when {
         confirmPassTouched && confirmPass.isEmpty() -> "Please confirm your password"
-        // CHANGED: surface the same "no spaces" warning here too, so typing
-        // a space directly into Confirm Password (before Password has been
-        // validated) still gives immediate feedback instead of just a
-        // generic mismatch error.
         confirmPass.isNotEmpty() && confirmPass.any { it.isWhitespace() } -> "Password must not contain spaces"
         confirmPass.isNotEmpty() && confirmPass != password -> "Passwords do not match"
         else -> null
@@ -108,8 +115,8 @@ fun SignUpScreen(
 
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
-            navController.navigate(Routes.otpRoute(viewModel.registeredEmail, "signup"))
-            viewModel.resetState()
+            navController.navigate(Routes.otpRoute(viewModel?.registeredEmail ?: "", "signup"))
+            viewModel?.resetState()
         }
     }
 
@@ -134,7 +141,6 @@ fun SignUpScreen(
 
             Spacer(Modifier.height(32.dp))
 
-            // ── First + Last name side by side ──
             Row(
                 modifier              = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -250,7 +256,7 @@ fun SignUpScreen(
                     emailTouched       = true
                     passwordTouched    = true
                     confirmPassTouched = true
-                    viewModel.register(
+                    viewModel?.register(
                         firstName = firstName,
                         lastName  = lastName,
                         email     = email,
@@ -259,6 +265,58 @@ fun SignUpScreen(
                     )
                 }
             )
+
+            Spacer(Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    "Already a HoMiee Helper? ",
+                    color = White.copy(alpha = 0.8f),
+                    fontSize = 13.sp
+                )
+                Text(
+                    "Login here",
+                    color = White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    textDecoration = TextDecoration.Underline,
+                    modifier = Modifier.clickable { navController.navigate(Routes.LOGIN_ROUTE) }
+                )
+            }
+
+
+            Spacer(Modifier.height(20.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Divider(modifier = Modifier.weight(1f), color = White.copy(alpha = 0.4f))
+                Text("  OR  ", color = White.copy(alpha = 0.7f), fontSize = 13.sp)
+                Divider(modifier = Modifier.weight(1f), color = White.copy(alpha = 0.4f))
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            OutlinedButton(
+                onClick  = { /* TODO: Google sign-in */ },
+                shape    = RoundedCornerShape(12.dp),
+                colors   = ButtonDefaults.outlinedButtonColors(containerColor = White),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+            ) {
+                Icon(
+                    painter            = painterResource(id = R.drawable.img),
+                    contentDescription = null,
+                    tint               = Color.Unspecified,
+                    modifier           = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(10.dp))
+                Text("Sign In with Google", color = TextPrimary, fontWeight = FontWeight.Medium)
+            }
+
+            Spacer(Modifier.height(32.dp))
 
             Spacer(Modifier.height(18.dp))
 

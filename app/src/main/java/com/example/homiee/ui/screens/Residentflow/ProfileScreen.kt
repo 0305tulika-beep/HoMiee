@@ -9,6 +9,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -47,11 +48,15 @@ import com.example.homiee.ui.components.NavTab
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
 import com.example.homiee.ui.components.statusBarsPadding
 import com.example.homiee.ui.theme.GreenDark
+import com.example.homiee.ui.theme.GreenLight
 import com.example.homiee.ui.theme.TextMuted
 import com.example.homiee.ui.theme.TextPrimary
 import com.example.homiee.ui.theme.White
 import com.example.homiee.viewmodel.AccountViewModel
 import com.example.homiee.viewmodel.AccountViewModelFactory
+import androidx.compose.material.icons.filled.ChevronRight
+
+private val GreenPrimary  = Color(0xFF1A5C3A)
 
 @Composable
 fun ProfileScreen(
@@ -114,7 +119,7 @@ fun ProfileScreen(
         Box(modifier = Modifier.fillMaxSize()) {
 
             Image(
-                painter            = painterResource(id = R.drawable.bg),
+                painter            = painterResource(id = R.drawable.bg1),
                 contentDescription = null,
                 contentScale       = ContentScale.Crop,
                 modifier           = Modifier.fillMaxSize()
@@ -134,7 +139,7 @@ fun ProfileScreen(
                         .padding(horizontal = 20.dp, vertical = 16.dp)
                 ) {
                     Text(
-                        text       = "PROFILE",
+                        text       = "Profile",
                         fontSize   = 25.sp,
                         fontWeight = FontWeight.Bold,
                         color      = White,
@@ -234,12 +239,32 @@ fun ProfileScreen(
                         Row(
                             modifier              = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment     = Alignment.CenterVertically
                         ) {
-                            Text("Reviews you've given", fontSize = 14.sp, color = TextPrimary)
-                            Text("22", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = GreenDark)
+                            Text(
+                                "Reviews you've given",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = TextPrimary
+                            )
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    "22",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimary
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Icon(
+                                    imageVector        = Icons.Default.ChevronRight,
+                                    contentDescription = "Go to reviews",
+                                    tint               = TextPrimary,
+                                    modifier           = Modifier.size(20.dp)
+                                )
+                            }
                         }
                     }
                 }

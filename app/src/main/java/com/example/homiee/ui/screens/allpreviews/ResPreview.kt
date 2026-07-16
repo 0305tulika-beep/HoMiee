@@ -15,8 +15,11 @@ import com.example.homiee.ui.screens.Residentflow.NewBookingScreen
 import com.example.homiee.ui.screens.Residentflow.ProfileScreen
 import com.example.homiee.ui.screens.Residentflow.ResidentHomeScreen
 import com.example.homiee.ui.screens.Residentflow.SearchScreen
-import com.example.homiee.ui.screens.Residentflow.SettingsScreen
 import com.example.homiee.ui.theme.HomieeTheme
+import com.example.homiee.ui.screens.Residentflow.VerifiedDocumentsScreen
+import com.example.homiee.ui.screens.Residentflow.DocumentViewerScreen
+import com.example.homiee.ui.screens.Residentflow.VerifiedDocumentType
+import com.example.homiee.ui.screens.Residentflow.HelperReviewsScreen
 
 @Preview(showBackground = true, showSystemUi = true, name = "Resident Home")
 @Composable fun ResidentHomePreview() {
@@ -145,4 +148,43 @@ import com.example.homiee.ui.theme.HomieeTheme
             onBack = {}
         )
     }
+}
+
+@Preview(showBackground = true, showSystemUi = true, name = "Verified Documents")
+@Composable fun VerifiedDocumentsScreenPreview() {
+    HomieeTheme {
+        VerifiedDocumentsScreen(
+            onBack = {},
+            onDocumentClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true, name = "Document Viewer - Government ID")
+@Composable fun DocumentViewerGovIdPreview() {
+    HomieeTheme {
+        DocumentViewerScreen(
+            documentType = VerifiedDocumentType.GOVERNMENT_ID,
+            documentImageUrl = null,
+            isVerified = true,
+            onBack = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true, name = "Document Viewer - Police Verification")
+@Composable fun DocumentViewerPoliceVerificationPreview() {
+    HomieeTheme {
+        DocumentViewerScreen(
+            documentType = VerifiedDocumentType.POLICE_VERIFICATION,
+            documentImageUrl = null,
+            isVerified = true,
+            onBack = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true, name = "Helper Reviews Screen")
+@Composable fun HelperReviewsScreenPreview() {
+    HomieeTheme { HelperReviewsScreen(helperId = "test_001", onBack = {}) }
 }

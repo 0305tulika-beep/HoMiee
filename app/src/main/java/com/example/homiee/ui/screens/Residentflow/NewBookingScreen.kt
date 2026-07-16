@@ -251,7 +251,7 @@ fun NewBookingScreen(
                         }
                         Spacer(Modifier.width(12.dp))
                         Column {
-                            Text("NEW BOOKING", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text("New Booking", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
                             Text(helperName, fontSize = 14.sp, color = Color.White.copy(alpha = 0.85f))
                         }
                     }

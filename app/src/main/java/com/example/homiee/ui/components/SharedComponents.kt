@@ -31,7 +31,10 @@ import com.example.homiee.ui.theme.*
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.res.painterResource
 import androidx.core.view.WindowInsetsCompat
+import androidx.compose.foundation.Image
+import com.example.homiee.R
 
 
 @Composable
@@ -265,12 +268,10 @@ fun HomieeHeader() {
             .padding(horizontal = 24.dp, vertical = 32.dp),
         contentAlignment = Alignment.CenterStart
     ) {
-        Text(
-            text = "HoMiee",
-            color = White,
-            fontSize = 35.sp,
-            fontWeight = FontWeight.ExtraBold,
-            letterSpacing = 0.5.sp
+        Image(
+            painter = painterResource(id = R.drawable.logotext),
+            contentDescription = "HoMiee",
+            modifier = Modifier.height(35.dp)
         )
     }
 }
@@ -282,7 +283,8 @@ fun HomieeFormField(
     onValueChange: (String) -> Unit,
     placeholder: String,
     leadingIcon: ImageVector,
-    keyboardType: KeyboardType = KeyboardType.Text
+    keyboardType: KeyboardType = KeyboardType.Text,
+    maxLength: Int? = null   // NEW
 ) {
     Column(modifier = Modifier.padding(bottom = 20.dp)) {
         Text(
@@ -294,7 +296,12 @@ fun HomieeFormField(
         )
         OutlinedTextField(
             value = value,
-            onValueChange = onValueChange,
+            onValueChange = { newValue ->
+                // NEW: silently cap input length instead of letting it grow unbounded
+                if (maxLength == null || newValue.length <= maxLength) {
+                    onValueChange(newValue)
+                }
+            },
             placeholder = { Text(placeholder, color = HomieeColors.TextGray) },
             leadingIcon = { Icon(leadingIcon, contentDescription = null, tint = HomieeColors.PrimaryDark) },
             singleLine = true,

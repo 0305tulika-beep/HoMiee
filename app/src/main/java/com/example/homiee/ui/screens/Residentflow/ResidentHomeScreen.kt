@@ -15,7 +15,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -42,7 +41,6 @@ import com.example.homiee.ui.components.statusBarsPadding
 import com.example.homiee.ui.theme.GreenDark
 import com.example.homiee.ui.theme.TextMuted
 import com.example.homiee.ui.theme.TextPrimary
-import com.example.homiee.ui.theme.White
 
 // ── Shared colors ─────────────────────────────────────────────────────────
 private val ActiveDotColor = Color(0xFF2ECC71)
@@ -98,7 +96,7 @@ fun ResidentHomeScreen(
         Box(modifier = Modifier.fillMaxSize()) {
 
             Image(
-                painter            = painterResource(id = R.drawable.bg),
+                painter            = painterResource(id = R.drawable.bg1),
                 contentDescription = null,
                 contentScale       = ContentScale.Crop,
                 modifier           = Modifier.fillMaxSize()
@@ -110,7 +108,7 @@ fun ResidentHomeScreen(
                     .padding(innerPadding)
             ) {
 
-                // ── Green header: "Hi, <FirstName>" + profile icon ─────────
+                // ── Green header: logo + profile icon ─────────
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -119,11 +117,10 @@ fun ResidentHomeScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment     = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text       = "Hi, $residentFirstName",
-                        fontSize   = 26.sp,
-                        fontWeight = FontWeight.Bold,
-                        color      = White
+                    Image(
+                        painter            = painterResource(id = R.drawable.logotext),
+                        contentDescription = "HoMiee",
+                        modifier           = Modifier.height(50.dp)
                     )
                     Box(
                         modifier = Modifier

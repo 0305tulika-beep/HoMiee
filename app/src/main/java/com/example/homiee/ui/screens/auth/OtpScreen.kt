@@ -18,6 +18,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -35,8 +36,10 @@ import com.example.homiee.ui.theme.GreenTint
 import com.example.homiee.ui.theme.TextMuted
 import com.example.homiee.ui.theme.TextPrimary
 import com.example.homiee.ui.theme.White
+import com.example.homiee.viewmodel.OtpUiState
 import com.example.homiee.viewmodel.OtpViewModel
 import com.example.homiee.viewmodel.OtpViewModelFactory
+import com.example.homiee.viewmodel.ResendUiState
 
 private val ErrorRed = Color(0xFFFF6B6B)
 
@@ -44,9 +47,11 @@ private val ErrorRed = Color(0xFFFF6B6B)
 fun OtpScreen(
     email: String,
     onConfirm: () -> Unit,
-    viewModel: OtpViewModel = viewModel(
-        factory = OtpViewModelFactory(LocalContext.current)
-    )
+    // CHANGED: nullable + skipped entirely in preview, same reasoning as
+    // LoginScreen — OtpViewModelFactory also constructs TokenManager, which
+    // needs Android Keystore and crashes inside the preview sandbox.
+    viewModel: OtpViewModel? = if (LocalInspectionMode.current) null
+    else viewModel(factory = OtpViewModelFactory(LocalContext.current))
 ) {
     var otpValue by remember { mutableStateOf("") }
     var showTermsDialog by remember { mutableStateOf(false) }
@@ -55,8 +60,11 @@ fun OtpScreen(
 
     val otpIncompleteError = if (otpTouched && otpValue.length < 6) "Please enter the full 6-digit code" else null
 
-    val uiState by viewModel.uiState.collectAsState()
-    val resendState by viewModel.resendState.collectAsState()
+    // CHANGED: fall back to default states when there's no real ViewModel (preview)
+    val uiState by viewModel?.uiState?.collectAsState()
+        ?: remember { mutableStateOf(OtpUiState()) }
+    val resendState by viewModel?.resendState?.collectAsState()
+        ?: remember { mutableStateOf(ResendUiState()) }
 
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -70,7 +78,7 @@ fun OtpScreen(
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
             showTermsDialog = true
-            viewModel.resetState()
+            viewModel?.resetState()
         }
     }
 
@@ -199,7 +207,7 @@ fun OtpScreen(
                 enabled  = otpValue.length == 6 && !uiState.isLoading,
                 onClick  = {
                     otpTouched = true
-                    viewModel.verifyOtp(email = email, otp = otpValue)
+                    viewModel?.verifyOtp(email = email, otp = otpValue)
                 },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -218,7 +226,7 @@ fun OtpScreen(
                     fontWeight = FontWeight.Bold,
                     fontSize   = 14.sp,
                     modifier   = Modifier.clickable {
-                        viewModel.resendOtp(email = email)
+                        viewModel?.resendOtp(email = email)
                     }
                 )
             }
