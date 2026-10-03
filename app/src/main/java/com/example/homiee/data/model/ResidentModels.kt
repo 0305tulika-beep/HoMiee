@@ -19,17 +19,6 @@ data class ResidentAddressResponse(
     val longitude: String
 )
 
-// ── Emergency Contact (Step 2) ──
-data class EmergencyContactRequest(
-    val emergency_contact_name: String,
-    val emergency_contact_mobile: String
-)
-
-data class EmergencyContactResponse(
-    val emergency_contact_name: String,
-    val emergency_contact_mobile: String
-)
-
 // ── Photo (Step 3) ──
 data class ProfilePhotoResponse(
     val profile_photo: String

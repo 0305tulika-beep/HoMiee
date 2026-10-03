@@ -7,12 +7,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Card
@@ -32,7 +32,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.homiee.R
-import com.example.homiee.data.local.TokenManager
 import com.example.homiee.navigation.Routes
 import com.example.homiee.ui.components.BottomNavBar
 import com.example.homiee.ui.components.NavTab
@@ -43,15 +42,21 @@ import com.example.homiee.ui.theme.TextMuted
 import com.example.homiee.ui.theme.TextPrimary
 
 // ── Shared colors ─────────────────────────────────────────────────────────
-private val ActiveDotColor = Color(0xFF2ECC71)
-private val CardMint       = Color(0xFFEAF6F2)   // soft mint-green card background
-private val CardMintEdge   = Color(0xFFD7EEE6)   // subtle border
-private val TealAccent     = Color(0xFF1CA88C)   // "May" / location icon color
-private val StatusGreenBg  = Color(0xFFCDEFDD)
-private val StatusGreenFg  = Color(0xFF1E9E5A)
-private val SosRed         = Color(0xFFE6483A)
-private val SosCardBg      = Color(0xFFFDEDEC)
-private val SosCardEdge    = Color(0xFFF8D3CF)
+private val ActiveDotColor   = Color(0xFF2ECC71)
+private val CardMint         = Color(0xFFEAF6F2)   // soft mint-green card background
+private val CardMintEdge     = Color(0xFFD7EEE6)   // subtle border
+private val TealAccent       = Color(0xFF1CA88C)   // "May" / location icon color
+private val StatusGreenBg    = Color(0xFFCDEFDD)
+private val StatusGreenFg    = Color(0xFF1E9E5A)
+private val SosRed           = Color(0xFFE6483A)
+private val SosCardBg        = Color(0xFFFDEDEC)
+private val SosCardEdge      = Color(0xFFF8D3CF)
+private val SosBodyText      = Color(0xFF7A6E6C)
+private val AvatarGreen      = Color(0xFF2E7D67)
+private val CategoryCircleBg = Color(0xFFF0F5F2)
+private val ActivityTitle    = Color(0xFF16211D)
+private val ActivitySubtitle = Color(0xFF6B7570)
+private val ChevronGray      = Color(0xFF9AA6A1)
 
 @Composable
 fun ResidentHomeScreen(
@@ -62,15 +67,7 @@ fun ResidentHomeScreen(
     onActivityClick:  (String) -> Unit = {}
 ) {
     val context = LocalContext.current
-    val tokenManager = remember { TokenManager(context) }
 
-    // Pulled from TokenManager, which was populated at sign-up time
-    // (RegisterViewModel calls tokenManager.saveUserName(firstName, lastName) on success).
-    var residentFirstName by remember { mutableStateOf("Resident") }
-
-    LaunchedEffect(Unit) {
-        residentFirstName = tokenManager.getFirstName()?.takeIf { it.isNotBlank() } ?: "Resident"
-    }
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = true)
 
     Scaffold(
@@ -108,7 +105,7 @@ fun ResidentHomeScreen(
                     .padding(innerPadding)
             ) {
 
-                // ── Green header: logo + profile icon ─────────
+                // ── Green header: logo ─────────
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -122,19 +119,6 @@ fun ResidentHomeScreen(
                         contentDescription = "HoMiee",
                         modifier           = Modifier.height(50.dp)
                     )
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF2E7D67)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Image(
-                            painter            = painterResource(id = R.drawable.ic_profile_placeholder),
-                            contentDescription = "Profile",
-                            modifier           = Modifier.size(24.dp)
-                        )
-                    }
                 }
 
                 // ── Scrollable content ─────────────────────────────────────
@@ -281,8 +265,8 @@ private fun ActivityCard(
     onClick: () -> Unit = {}
 ) {
     val statusText = when (booking.status) {
-        BookingTab.ACTIVE   -> "In Progress"
-        BookingTab.UPCOMING -> "Confirmed"
+        BookingTab.ACTIVE    -> "In Progress"
+        BookingTab.UPCOMING  -> "Confirmed"
         BookingTab.COMPLETED -> "Completed" // shouldn't show here, but safe fallback
     }
 
@@ -321,20 +305,20 @@ private fun ActivityCard(
                 text = booking.service,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF16211D)
+                color = ActivityTitle
             )
             Spacer(Modifier.height(2.dp))
             Text(
                 text = booking.helperName,
                 fontSize = 13.sp,
-                color = Color(0xFF6B7570)
+                color = ActivitySubtitle
             )
             if (booking.status == BookingTab.UPCOMING && booking.bookingDate.isNotBlank()) {
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = "${booking.bookingDate} · ${booking.bookingTime}",
                     fontSize = 12.sp,
-                    color = Color(0xFF6B7570)
+                    color = ActivitySubtitle
                 )
             }
         }
@@ -360,12 +344,13 @@ private fun ActivityCard(
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = null,
-                tint = Color(0xFF9AA6A1),
+                tint = ChevronGray,
                 modifier = Modifier.size(18.dp)
             )
         }
     }
 }
+
 // ---------- Emergency SOS Card ----------
 @Composable
 private fun SosButton(onClick: () -> Unit) {
@@ -406,7 +391,7 @@ private fun SosButton(onClick: () -> Unit) {
             Spacer(Modifier.height(4.dp))
             Text(
                 text = "Tap to alert your emergency contacts in case of any urgent situation.",
-                color = Color(0xFF7A6E6C),
+                color = SosBodyText,
                 fontSize = 12.sp,
                 lineHeight = 16.sp
             )
@@ -452,7 +437,7 @@ private fun CategoryItem(
         Box(
             modifier = Modifier
                 .size(64.dp)
-                .background(Color(0xFFF0F5F2), shape = CircleShape),
+                .background(CategoryCircleBg, shape = CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Image(
@@ -501,7 +486,7 @@ private fun HelperCard(
                     modifier         = Modifier
                         .size(100.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF2E7D67)),
+                        .background(AvatarGreen),
                     contentAlignment = Alignment.Center
                 ) {
                     Image(

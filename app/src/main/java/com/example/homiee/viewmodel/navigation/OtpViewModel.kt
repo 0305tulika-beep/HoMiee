@@ -46,8 +46,9 @@ class OtpViewModel(private val tokenManager: TokenManager) : ViewModel() {
                     val tokens = result.data.data?.tokens
                     if (tokens != null) {
                         tokenManager.saveTokens(tokens.access, tokens.refresh)
-                        SessionManager.accessToken = tokens.access   // ADDED
+                        SessionManager.accessToken = tokens.access
                     }
+                    tokenManager.saveEmail(email)   // ADDED
                     _uiState.value = _uiState.value.copy(isLoading = false, isSuccess = true)
                 }
                 is ApiResult.Error -> {

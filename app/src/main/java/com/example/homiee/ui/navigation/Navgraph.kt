@@ -10,6 +10,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import com.example.homiee.viewmodel.RegisterViewModelFactory
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -208,7 +209,9 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
 
         // ── Signup ──────────────────────────────────────────────────────────
         composable(Routes.SIGNUP_ROUTE) {
-            val registerViewModel: RegisterViewModel = viewModel()
+            val registerViewModel: RegisterViewModel = viewModel(
+                factory = RegisterViewModelFactory(LocalContext.current)   // CHANGED
+            )
             SignUpScreen(
                 navController = navController,
                 viewModel = registerViewModel,

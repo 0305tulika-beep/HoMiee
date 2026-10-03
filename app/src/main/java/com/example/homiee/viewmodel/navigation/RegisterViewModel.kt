@@ -1,6 +1,8 @@
 package com.example.homiee.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.homiee.data.local.TokenManager
 import com.example.homiee.data.model.RegisterRequest
@@ -17,8 +19,8 @@ data class RegisterUiState(
     val errorMessage: String? = null
 )
 
-class RegisterViewModel @JvmOverloads constructor(
-    private val tokenManager: TokenManager? = null
+class RegisterViewModel(
+    private val tokenManager: TokenManager   // CHANGED: non-null, so the name is always saved
 ) : ViewModel() {
 
     private val repository = AuthRepository()
@@ -52,21 +54,25 @@ class RegisterViewModel @JvmOverloads constructor(
             return
         }
 
-        firstNameValue = firstName
-        lastNameValue  = lastName
+        val cleanFirst = firstName.trim()
+        val cleanLast  = lastName.trim()
+        val cleanEmail = email.trim()
+
+        firstNameValue = cleanFirst
+        lastNameValue  = cleanLast
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            attemptRegister(firstName, lastName, email, password, password2, retriesLeft = 2)
+            attemptRegister(cleanFirst, cleanLast, cleanEmail, password, password2, retriesLeft = 2)
         }
     }
 
     private suspend fun attemptRegister(
-        firstName: String,
-        lastName:  String,
-        email:     String,
-        password:  String,
-        password2: String,
+        firstName:   String,
+        lastName:    String,
+        email:       String,
+        password:    String,
+        password2:   String,
         retriesLeft: Int
     ) {
         val autoUsername = generateSafeUsername(firstName, lastName)
@@ -85,7 +91,9 @@ class RegisterViewModel @JvmOverloads constructor(
         when (result) {
             is ApiResult.Success -> {
                 registeredEmail = result.data.data?.identifier ?: email
-                tokenManager?.saveUserName(firstName, lastName)   // ← persist it here
+                // Persist for the Profile screen (GET /residents/profile/ doesn't return these)
+                tokenManager.saveUserName(firstName, lastName)
+                tokenManager.saveEmail(registeredEmail)
                 _uiState.value = _uiState.value.copy(isLoading = false, isSuccess = true)
             }
             is ApiResult.Error -> {
@@ -117,12 +125,22 @@ class RegisterViewModel @JvmOverloads constructor(
         val base = (firstName.take(4) + lastName.take(4))
             .filter { it.isLetter() }
             .lowercase()
-            .ifEmpty { "user" }   // absolute fallback if names are somehow all-symbols/empty
-        val suffix = Random.nextInt(100, 999)   // 3-digit suffix — shorter, still unique enough
+            .ifEmpty { "user" }
+        val suffix = Random.nextInt(100, 999)
         return "$base$suffix".take(14)
     }
 
     fun resetState() {
         _uiState.value = RegisterUiState()
+    }
+}
+
+// NEW: builds RegisterViewModel with a real TokenManager
+class RegisterViewModelFactory(
+    private val context: Context
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        @Suppress("UNCHECKED_CAST")
+        return RegisterViewModel(TokenManager(context.applicationContext)) as T
     }
 }

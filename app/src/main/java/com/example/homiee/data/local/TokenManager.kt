@@ -71,4 +71,14 @@ class TokenManager(private val context: Context) {
     suspend fun getLastName(): String? {
         return context.dataStore.data.first()[LAST_NAME_KEY]
     }
+
+    private val EMAIL_KEY = stringPreferencesKey("email")
+
+    suspend fun saveEmail(email: String) {
+        context.dataStore.edit { prefs -> prefs[EMAIL_KEY] = email }
+    }
+
+    suspend fun getEmail(): String? {
+        return context.dataStore.data.first()[EMAIL_KEY]
+    }
 }

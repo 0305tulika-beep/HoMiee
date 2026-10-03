@@ -30,6 +30,8 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import com.example.homiee.ui.theme.CardBg
 import com.example.homiee.ui.theme.GreenMid
 import com.example.homiee.ui.theme.TextPrimary
+import androidx.compose.ui.platform.LocalContext
+import com.example.homiee.viewmodel.RegisterViewModelFactory
 import com.example.homiee.viewmodel.RegisterUiState
 
 private val ErrorRed = Color(0xFFFF6B6B)
@@ -73,11 +75,8 @@ private fun requiredError(value: String, touched: Boolean, fieldLabel: String): 
 @Composable
 fun SignUpScreen(
     navController: NavController,
-    // CHANGED: nullable + skipped in preview. RegisterViewModel constructs
-    // AuthRepository() unconditionally, which touches RetrofitClient.authApi —
-    // if that singleton builds real network/auth infrastructure at init time,
-    // it can throw inside the Preview sandbox. LocalInspectionMode guards it.
-    viewModel: RegisterViewModel? = if (LocalInspectionMode.current) null else viewModel(),
+    viewModel: RegisterViewModel? = if (LocalInspectionMode.current) null
+    else viewModel(factory = RegisterViewModelFactory(LocalContext.current)),   // CHANGED
     onSignedUp: (String) -> Unit = {}
 )  {
     var firstName   by remember { mutableStateOf("") }

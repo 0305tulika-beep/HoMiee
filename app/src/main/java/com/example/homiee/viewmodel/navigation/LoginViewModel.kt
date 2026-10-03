@@ -46,7 +46,7 @@ class LoginViewModel(private val tokenManager: TokenManager) : ViewModel() {
                         tokenManager.saveTokens(tokens.access, tokens.refresh)
                         SessionManager.accessToken = tokens.access   // ADDED
                         tokenManager.markFormsCompleted()   // returning users already onboarded
-
+                        tokenManager.saveEmail(email.trim())   // ADDED
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
                             isSuccess = true
