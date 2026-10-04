@@ -40,6 +40,11 @@ import com.example.homiee.ui.components.statusBarsPadding
 import com.example.homiee.ui.theme.GreenDark
 import com.example.homiee.ui.theme.TextMuted
 import com.example.homiee.ui.theme.TextPrimary
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.TextButton
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import com.example.homiee.viewmodel.NearbyHelpersViewModel
 
 // ── Shared colors ─────────────────────────────────────────────────────────
 private val ActiveDotColor   = Color(0xFF2ECC71)
@@ -67,6 +72,8 @@ fun ResidentHomeScreen(
     onActivityClick:  (String) -> Unit = {}
 ) {
     val context = LocalContext.current
+    val nearbyViewModel: NearbyHelpersViewModel = viewModel()
+    val nearbyState by nearbyViewModel.uiState.collectAsState()
 
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = true)
 
@@ -187,16 +194,52 @@ fun ResidentHomeScreen(
                     )
                     Spacer(Modifier.height(10.dp))
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        HelperCard(name = "Ramesh Kumar", service = "Cleaning", rating = "4.9", isActive = true,  onClick = { onBookClick("001") })
-                        HelperCard(name = "Sunita Devi",  service = "Cooking",  rating = "4.8", isActive = false, onClick = { onBookClick("002") })
-                        HelperCard(name = "Priya Singh",  service = "Laundry",  rating = "4.7", isActive = true,  onClick = { onBookClick("003") })
-                        HelperCard(name = "Anita Rao",    service = "Laundry",  rating = "4.8", isActive = false, onClick = { onBookClick("004") })
+                    when {
+                        nearbyState.isLoading -> {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().height(120.dp),
+                                contentAlignment = Alignment.Center
+                            ) { CircularProgressIndicator(color = GreenDark) }
+                        }
+                        nearbyState.errorMessage != null -> {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = nearbyState.errorMessage ?: "",
+                                    fontSize = 13.sp,
+                                    color = TextMuted,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                TextButton(onClick = { nearbyViewModel.load() }) {
+                                    Text("Retry", color = GreenDark, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                        nearbyState.helpers.isEmpty() -> {
+                            Text("No helpers found nearby yet", fontSize = 13.sp, color = TextMuted)
+                        }
+                        else -> {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                nearbyState.helpers.forEach { helper ->
+                                    HelperCard(
+                                        name     = helper.name,
+                                        service  = helper.services,
+                                        rating   = helper.rating,
+                                        photoUrl = helper.photoUrl,
+                                        isActive = false,
+                                        onClick  = { onBookClick(helper.id) }
+                                    )
+                                }
+                            }
+                        }
                     }
 
                     Spacer(Modifier.height(20.dp))
@@ -461,6 +504,7 @@ private fun HelperCard(
     name: String,
     service: String,
     rating: String,
+    photoUrl: String? = null,
     isActive: Boolean = true,
     onClick: () -> Unit = {}
 ) {
@@ -489,12 +533,23 @@ private fun HelperCard(
                         .background(AvatarGreen),
                     contentAlignment = Alignment.Center
                 ) {
-                    Image(
-                        painter            = painterResource(id = R.drawable.ic_profile_placeholder),
-                        contentDescription = "Profile",
-                        contentScale       = ContentScale.Crop,
-                        modifier           = Modifier.fillMaxSize()
-                    )
+                    if (photoUrl != null) {
+                        AsyncImage(
+                            model              = photoUrl,
+                            contentDescription = "Profile",
+                            contentScale       = ContentScale.Crop,
+                            placeholder        = painterResource(id = R.drawable.ic_profile_placeholder),
+                            error              = painterResource(id = R.drawable.ic_profile_placeholder),
+                            modifier           = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Image(
+                            painter            = painterResource(id = R.drawable.ic_profile_placeholder),
+                            contentDescription = "Profile",
+                            contentScale       = ContentScale.Crop,
+                            modifier           = Modifier.fillMaxSize()
+                        )
+                    }
                 }
 
                 if (isActive) {

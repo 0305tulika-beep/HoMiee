@@ -74,6 +74,7 @@ object RetrofitClient {
     // CHANGED: val -> by lazy
     val authApi: AuthApiService by lazy { retrofit.create(AuthApiService::class.java) }
     val residentApi: ResidentApiService by lazy { retrofit.create(ResidentApiService::class.java) }
+    val bookingApi: BookingApiService by lazy { retrofit.create(BookingApiService::class.java) }
 
     private val refreshOkHttpClient = OkHttpClient.Builder()
         .addInterceptor(loggingInterceptor)
