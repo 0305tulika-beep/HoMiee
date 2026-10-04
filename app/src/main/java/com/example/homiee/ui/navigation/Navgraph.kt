@@ -26,6 +26,7 @@ import com.example.homiee.ui.screens.auth.*
 import com.example.homiee.ui.screens.resident.*
 import com.example.homiee.viewmodel.BookingViewModel
 import com.example.homiee.viewmodel.BookingViewModelFactory
+import com.example.homiee.viewmodel.HelperProfileViewModel
 import com.example.homiee.viewmodel.RegisterViewModel
 import com.example.homiee.viewmodel.navigation.ResidentOnboardingViewModel
 import java.net.URLDecoder
@@ -411,27 +412,35 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             MyReviewsScreen(onBack = { navController.popBackStack() })
         }
 
-        // ── Helper Profile ────────────────────────────────────────────────────
+        // ── Helper Profile (loaded from GET /api/bookings/helpers/{helper_id}/) ──
         composable(
             route = Routes.HELPER_PROFILE,
             arguments = listOf(navArgument("helperId") { type = NavType.StringType })
         ) { backStackEntry ->
             val helperId = backStackEntry.arguments?.getString("helperId") ?: ""
-            HelperProfileScreen(
+            val helperProfileViewModel: HelperProfileViewModel = viewModel(
+                key = "helper_profile_$helperId",
+                factory = HelperProfileViewModel.Factory(helperId)
+            )
+
+            // Real data once loaded (fallbacks only matter before it arrives).
+            val helper = helperProfileViewModel.helper
+            val helperName = helper?.name?.takeIf { it.isNotBlank() } ?: "Helper"
+            val helperService = helper?.services?.firstOrNull()?.name
+                ?.takeIf { it.isNotBlank() } ?: "Service"
+
+            HelperProfileRoute(
                 helperId = helperId,
+                viewModel = helperProfileViewModel,
                 onBookNow = {
                     navController.navigate(
-                        Routes.newBookingRoute(
-                            "Ramesh Kumar",
-                            "Cleaning",
-                            4.9f
-                        )
+                        Routes.newBookingRoute(helperName, helperService, helper?.rating ?: 0f)
                     )
                 },
                 onBack = { navController.popBackStack() },
                 onChat = {
                     navController.navigate(
-                        Routes.chatRoute(helperId, "Ramesh Kumar", "Cleaning")
+                        Routes.chatRoute(helperId, helperName, helperService)
                     )
                 },
                 onViewReviews = {

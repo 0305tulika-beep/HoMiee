@@ -1,6 +1,6 @@
 package com.example.homiee.ui.screens.Residentflow
 
-import androidx.compose.foundation.Image
+import coil.compose.AsyncImage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -47,24 +47,25 @@ data class ServiceWithPrice(val name: String, val price: String)
 
 data class HelperProfileData(
     val name: String,
-    val email: String,
+    val email: String = "",
     val distance: String,
     val rating: Float,
-    val isActive: Boolean,
+    val isActive: Boolean = false,   // API doesn't return online status yet
     val about: String,
     val services: List<ServiceWithPrice>,
     val experience: String,
     val languages: String,
     val availabilityStart: String,
     val availabilityEnd: String,
-    val dob: String,
-    val address: String,
-    val isPoliceVerified: Boolean,
-    val reviews: List<HelperReview>,
+    val dob: String = "",
+    val address: String = "",
+    val isPoliceVerified: Boolean = false,
+    val reviews: List<HelperReview> = emptyList(),
     val reviewCount: Int,          // number of reviews, shown next to the rating
     val workingDays: List<String>,
     val area: String = "",         // shown in the one-line location
-    val city: String = ""          // shown in the one-line location
+    val city: String = "",         // shown in the one-line location
+    val photoUrl: String? = null   // full image URL, loaded with Coil
 )
 
 val MOCK_HELPER = HelperProfileData(
@@ -172,10 +173,13 @@ fun HelperProfileScreen(
                                         .background(GreenPrimary),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Image(
-                                        painter            = painterResource(R.drawable.ic_profile_placeholder),
+                                    AsyncImage(
+                                        model              = helper.photoUrl,
                                         contentDescription = "Helper",
                                         contentScale       = ContentScale.Crop,
+                                        placeholder        = painterResource(R.drawable.ic_profile_placeholder),
+                                        error              = painterResource(R.drawable.ic_profile_placeholder),
+                                        fallback           = painterResource(R.drawable.ic_profile_placeholder),
                                         modifier           = Modifier.fillMaxSize()
                                     )
                                 }
@@ -246,7 +250,7 @@ fun HelperProfileScreen(
                                 )
                                 Spacer(Modifier.width(4.dp))
                                 Text(
-                                    text     = "${helper.area}, ${helper.city} • ${helper.distance}",
+                                    text     = listOf(listOf(helper.area, helper.city).filter { it.isNotBlank() }.joinToString(", "), helper.distance).filter { it.isNotBlank() }.joinToString(" • "),
                                     fontSize = 13.sp,
                                     color    = TextSecondary,
                                     maxLines = 1,

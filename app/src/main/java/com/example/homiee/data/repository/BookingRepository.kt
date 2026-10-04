@@ -1,5 +1,6 @@
 package com.example.homiee.data.repository
 
+import com.example.homiee.data.model.HelperDetailResponse
 import com.example.homiee.data.model.NearbyHelpersResponse
 import com.example.homiee.data.model.ResidentApiErrorResponse
 import com.example.homiee.data.remote.RetrofitClient
@@ -12,6 +13,9 @@ class BookingRepository {
 
     suspend fun nearbyHelpers(radiusKm: Double? = null, service: String? = null): ApiResult<NearbyHelpersResponse> =
         safeApiCall { api.nearbyHelpers(radiusKm, service) }
+
+    suspend fun helperDetail(helperId: Int): ApiResult<HelperDetailResponse> =
+        safeApiCall { api.helperDetail(helperId) }
 
     private suspend fun <T> safeApiCall(call: suspend () -> Response<T>): ApiResult<T> {
         return try {

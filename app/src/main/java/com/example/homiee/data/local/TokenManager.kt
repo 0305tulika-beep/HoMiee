@@ -17,6 +17,9 @@ class TokenManager(private val context: Context) {
     private val CURRENT_STEP_KEY   = stringPreferencesKey("current_form_step")
     private val FIRST_NAME_KEY     = stringPreferencesKey("first_name")
     private val LAST_NAME_KEY      = stringPreferencesKey("last_name")
+    private val EMAIL_KEY          = stringPreferencesKey("email")
+
+    // ── Tokens ────────────────────────────────────────────────────────────────
 
     suspend fun saveTokens(access: String, refresh: String) {
         context.dataStore.edit { prefs ->
@@ -25,16 +28,9 @@ class TokenManager(private val context: Context) {
         }
     }
 
-    suspend fun saveCurrentStep(route: String) {
-        context.dataStore.edit { prefs ->
-            prefs[CURRENT_STEP_KEY] = route
-        }
-    }
-
-    suspend fun markFormsCompleted() {
-        context.dataStore.edit { prefs ->
-            prefs[FORMS_COMPLETE_KEY] = true
-        }
+    /** For refresh responses that return only a new access token (rotation off). */
+    suspend fun saveAccessToken(access: String) {
+        context.dataStore.edit { prefs -> prefs[ACCESS_TOKEN_KEY] = access }
     }
 
     suspend fun getAccessToken(): String? {
@@ -45,17 +41,67 @@ class TokenManager(private val context: Context) {
         return context.dataStore.data.first()[REFRESH_TOKEN_KEY]
     }
 
+    /**
+     * True while the user still holds a session. An expired ACCESS token does not
+     * mean logged out - the refresh token can get a new one - so check both.
+     */
+    suspend fun isLoggedIn(): Boolean {
+        val prefs = context.dataStore.data.first()
+        return prefs[ACCESS_TOKEN_KEY] != null || prefs[REFRESH_TOKEN_KEY] != null
+    }
+
+    // ── Clearing ──────────────────────────────────────────────────────────────
+
+    /**
+     * Removes ONLY the access + refresh tokens. The user's name, email and
+     * "forms completed" flag stay, so after logging back in nothing is lost.
+     * Use this when a session dies on its own (refresh token rejected).
+     */
+    suspend fun clearSessionTokens() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(ACCESS_TOKEN_KEY)
+            prefs.remove(REFRESH_TOKEN_KEY)
+        }
+    }
+
+    /**
+     * Wipes EVERYTHING (tokens, name, email, form progress).
+     * Use ONLY for a manual logout or account deletion.
+     */
+    suspend fun clearAll() {
+        context.dataStore.edit { it.clear() }
+    }
+
+    @Deprecated(
+        "Wipes everything. Use clearSessionTokens() for an expired session, " +
+                "or clearAll() for a manual logout / account deletion.",
+        ReplaceWith("clearAll()")
+    )
+    suspend fun clearTokens() = clearAll()
+
+    // ── Forms / onboarding ────────────────────────────────────────────────────
+
+    suspend fun saveCurrentStep(route: String) {
+        context.dataStore.edit { prefs ->
+            prefs[CURRENT_STEP_KEY] = route
+        }
+    }
+
     suspend fun getCurrentStep(): String? {
         return context.dataStore.data.first()[CURRENT_STEP_KEY]
+    }
+
+    suspend fun markFormsCompleted() {
+        context.dataStore.edit { prefs ->
+            prefs[FORMS_COMPLETE_KEY] = true
+        }
     }
 
     suspend fun areFormsCompleted(): Boolean {
         return context.dataStore.data.first()[FORMS_COMPLETE_KEY] ?: false
     }
 
-    suspend fun clearTokens() {
-        context.dataStore.edit { it.clear() }
-    }
+    // ── User details ──────────────────────────────────────────────────────────
 
     suspend fun saveUserName(firstName: String, lastName: String) {
         context.dataStore.edit { prefs ->
@@ -71,8 +117,6 @@ class TokenManager(private val context: Context) {
     suspend fun getLastName(): String? {
         return context.dataStore.data.first()[LAST_NAME_KEY]
     }
-
-    private val EMAIL_KEY = stringPreferencesKey("email")
 
     suspend fun saveEmail(email: String) {
         context.dataStore.edit { prefs -> prefs[EMAIL_KEY] = email }
