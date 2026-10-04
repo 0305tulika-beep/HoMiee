@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,19 +20,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.homiee.R
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
+import java.util.Locale
 
-private val GreenPrimary  = Color(0xFF1A5C3A)
-private val GreenLight    = Color(0xFFE8F5EE)
-private val GreenText     = Color(0xFF1A5C3A)
-private val TextPrimary   = Color(0xFF1A1A1A)
-private val TextSecondary = Color(0xFF7A7A7A)
-private val StarColor     = Color(0xFFF4B400)
-private val CardBg        = Color.White
+private val GreenPrimary   = Color(0xFF1A5C3A)
+private val GreenLight     = Color(0xFFE8F5EE)
+private val GreenText      = Color(0xFF1A5C3A)
+private val TextPrimary    = Color(0xFF1A1A1A)
+private val TextSecondary  = Color(0xFF7A7A7A)
+private val StarColor      = Color(0xFFF4B400)
 private val ActiveDotColor = Color(0xFF2ECC71)
+private val CardBg         = Color.White
 
 data class HelperReview(
     val reviewerName: String,
@@ -58,8 +61,10 @@ data class HelperProfileData(
     val address: String,
     val isPoliceVerified: Boolean,
     val reviews: List<HelperReview>,
-    val reviewCount: Int,
-    val workingDays: List<String>
+    val reviewCount: Int,          // number of reviews, shown next to the rating
+    val workingDays: List<String>,
+    val area: String = "",         // shown in the one-line location
+    val city: String = ""          // shown in the one-line location
 )
 
 val MOCK_HELPER = HelperProfileData(
@@ -86,23 +91,25 @@ val MOCK_HELPER = HelperProfileData(
         HelperReview("Arun M.",  4, "Cooked amazing food. My family loved it.", "1 week ago"),
     ),
     reviewCount       = 22,
-    workingDays       = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+    workingDays       = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat"),
+    area              = "Indira Nagar",
+    city              = "Lucknow"
 )
 
 @Composable
 fun HelperProfileScreen(
     helperId:  String  = "",
+    helper:    HelperProfileData = MOCK_HELPER,
     onBookNow: (String) -> Unit = {},
     onBack:    () -> Unit = {},
     onChat:    () -> Unit = {},
-    onViewVerifiedDocuments: () -> Unit = {},
     onViewReviews: (String) -> Unit = {}
 ) {
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = false)
 
     Column(modifier = Modifier.fillMaxSize()) {
 
-        // ── Header: back arrow + title — outside the card, top of screen ──
+        // ── Header: back arrow + title ──
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier          = Modifier
@@ -140,7 +147,7 @@ fun HelperProfileScreen(
                 contentPadding = PaddingValues(bottom = 110.dp)
             ) {
 
-                // ── Hero card: photo + name + about + personal details + verification ──
+                // ── Top card: photo (+ online dot), name, location, rating, About ──
                 item {
                     Card(
                         modifier  = Modifier
@@ -150,204 +157,153 @@ fun HelperProfileScreen(
                         colors    = CardDefaults.cardColors(containerColor = CardBg),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-
-                            // Photo + name + email + distance + rating
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            // Photo with the online dot on its bottom-right corner
+                            Box(modifier = Modifier.size(96.dp)) {
                                 Box(
-                                    modifier = Modifier.size(72.dp),
+                                    modifier         = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape)
+                                        .background(GreenPrimary),
                                     contentAlignment = Alignment.Center
                                 ) {
+                                    Image(
+                                        painter            = painterResource(R.drawable.ic_profile_placeholder),
+                                        contentDescription = "Helper",
+                                        contentScale       = ContentScale.Crop,
+                                        modifier           = Modifier.fillMaxSize()
+                                    )
+                                }
+
+                                if (helper.isActive) {
                                     Box(
-                                        modifier         = Modifier
-                                            .size(72.dp)
+                                        modifier = Modifier
+                                            .align(Alignment.BottomEnd)
+                                            .size(26.dp)
                                             .clip(CircleShape)
-                                            .background(GreenPrimary),
+                                            .background(Color.White),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Image(
-                                            painter            = painterResource(R.drawable.ic_profile_placeholder),
-                                            contentDescription = "Helper",
-                                            contentScale       = ContentScale.Crop,
-                                            modifier           = Modifier.fillMaxSize()
-                                        )
-                                    }
-
-                                    if (MOCK_HELPER.isActive) {
                                         Box(
                                             modifier = Modifier
-                                                .align(Alignment.BottomEnd)
-                                                .size(20.dp)
+                                                .size(18.dp)
                                                 .clip(CircleShape)
-                                                .background(Color.White),
-                                            contentAlignment = Alignment.Center
-                                        ) {
+                                                .background(ActiveDotColor)
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Name + "Online" badge
+                            Spacer(Modifier.height(12.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text       = helper.name,
+                                    fontSize   = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color      = TextPrimary
+                                )
+                                if (helper.isActive) {
+                                    Spacer(Modifier.width(8.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(ActiveDotColor.copy(alpha = 0.12f))
+                                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
                                             Box(
                                                 modifier = Modifier
-                                                    .size(13.dp)
+                                                    .size(6.dp)
                                                     .clip(CircleShape)
                                                     .background(ActiveDotColor)
+                                            )
+                                            Spacer(Modifier.width(4.dp))
+                                            Text(
+                                                text       = "Online",
+                                                fontSize   = 11.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color      = ActiveDotColor
                                             )
                                         }
                                     }
                                 }
-                                Spacer(Modifier.width(14.dp))
-                                Column {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text       = MOCK_HELPER.name,
-                                            fontSize   = 18.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color      = TextPrimary
-                                        )
-                                        if (MOCK_HELPER.isActive) {
-                                            Spacer(Modifier.width(8.dp))
-                                            Box(
-                                                modifier = Modifier
-                                                    .clip(RoundedCornerShape(8.dp))
-                                                    .background(ActiveDotColor.copy(alpha = 0.12f))
-                                                    .padding(horizontal = 8.dp, vertical = 3.dp)
-                                            ) {
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .size(6.dp)
-                                                            .clip(CircleShape)
-                                                            .background(ActiveDotColor)
-                                                    )
-                                                    Spacer(Modifier.width(4.dp))
-                                                    Text(
-                                                        "Online",
-                                                        fontSize   = 11.sp,
-                                                        fontWeight = FontWeight.SemiBold,
-                                                        color      = ActiveDotColor
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                    Spacer(Modifier.height(2.dp))
-                                    Text(
-                                        text     = MOCK_HELPER.email,
-                                        fontSize = 12.sp,
-                                        color    = TextSecondary
-                                    )
-                                    Spacer(Modifier.height(4.dp))
-                                    Text(
-                                        text     = MOCK_HELPER.distance,
-                                        fontSize = 12.sp,
-                                        color    = TextSecondary
-                                    )
-                                    Spacer(Modifier.height(4.dp))
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            painter            = painterResource(R.drawable.star),
-                                            contentDescription = null,
-                                            tint               = StarColor,
-                                            modifier           = Modifier.size(14.dp)
-                                        )
-                                        Spacer(Modifier.width(4.dp))
-                                        Text(
-                                            text     = String.format("%.1f", MOCK_HELPER.rating),
-                                            fontSize = 13.sp,
-                                            color    = TextSecondary
-                                        )
-                                    }
-                                }
                             }
 
-                            // About text merged directly below
-                            Spacer(Modifier.height(14.dp))
-                            HorizontalDivider(color = Color(0xFFF0F0F0))
-                            Spacer(Modifier.height(12.dp))
-                            Text(
-                                text          = "About",
-                                fontSize      = 13.sp,
-                                fontWeight    = FontWeight.Bold,
-                                color         = GreenPrimary,
-                                letterSpacing = 0.5.sp
-                            )
+                            // Area, city and distance - all on one line
                             Spacer(Modifier.height(6.dp))
-                            Text(
-                                text       = MOCK_HELPER.about,
-                                fontSize   = 13.sp,
-                                color      = TextSecondary,
-                                lineHeight = 20.sp
-                            )
-
-                            // ── Personal Details merged directly below About ──────────
-                            Spacer(Modifier.height(14.dp))
-                            HorizontalDivider(color = Color(0xFFF0F0F0))
-                            Spacer(Modifier.height(12.dp))
-                            Text(
-                                text          = "Personal Details",
-                                fontSize      = 13.sp,
-                                fontWeight    = FontWeight.Bold,
-                                color         = GreenPrimary,
-                                letterSpacing = 0.5.sp
-                            )
-                            Spacer(Modifier.height(10.dp))
-                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Row(
-                                    modifier              = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text("Date of Birth", fontSize = 13.sp, color = TextSecondary)
-                                    Text(
-                                        text       = MOCK_HELPER.dob,
-                                        fontSize   = 13.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color      = TextPrimary
-                                    )
-                                }
-                                Column {
-                                    Text("Address", fontSize = 13.sp, color = TextSecondary)
-                                    Spacer(Modifier.height(4.dp))
-                                    Text(
-                                        text       = MOCK_HELPER.address,
-                                        fontSize   = 13.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color      = TextPrimary,
-                                        lineHeight = 18.sp
-                                    )
-                                }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector        = Icons.Default.LocationOn,
+                                    contentDescription = null,
+                                    tint               = TextSecondary,
+                                    modifier           = Modifier.size(14.dp)
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text     = "${helper.area}, ${helper.city} • ${helper.distance}",
+                                    fontSize = 13.sp,
+                                    color    = TextSecondary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                             }
 
-                            // ── Verified Documents merged directly below Personal Details ──
-                            Spacer(Modifier.height(14.dp))
+                            // Rating + number of reviews (tap to open the reviews screen)
+                            Spacer(Modifier.height(12.dp))
                             Row(
+                                verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(RoundedCornerShape(20.dp))
                                     .background(GreenLight)
-                                    .border(1.dp, GreenPrimary, RoundedCornerShape(12.dp))
-                                    .clickable { onViewVerifiedDocuments() }
-                                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment     = Alignment.CenterVertically
+                                    .clickable { onViewReviews(helperId) }
+                                    .padding(horizontal = 14.dp, vertical = 7.dp)
                             ) {
-                                Column {
-                                    Text(
-                                        text       = "View Verified Documents",
-                                        fontSize   = 13.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color      = GreenText
-                                    )
-                                    if (MOCK_HELPER.isPoliceVerified) {
-                                        Spacer(Modifier.height(2.dp))
-                                        Text(
-                                            text       = "2 documents verified",
-                                            fontSize   = 11.sp,
-                                            color      = ActiveDotColor,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                    }
-                                }
+                                Icon(
+                                    painter            = painterResource(R.drawable.star),
+                                    contentDescription = null,
+                                    tint               = StarColor,
+                                    modifier           = Modifier.size(15.dp)
+                                )
+                                Spacer(Modifier.width(5.dp))
                                 Text(
-                                    text       = "View →",
-                                    fontSize   = 13.sp,
+                                    text       = String.format(Locale.US, "%.1f", helper.rating),
+                                    fontSize   = 14.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color      = GreenPrimary
+                                    color      = TextPrimary
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text       = "• ${helper.reviewCount} reviews",
+                                    fontSize   = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color      = GreenText
+                                )
+                            }
+
+                            // About - merged into this same card
+                            Spacer(Modifier.height(16.dp))
+                            HorizontalDivider(color = Color(0xFFF0F0F0))
+                            Spacer(Modifier.height(12.dp))
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    text          = "ABOUT",
+                                    fontSize      = 13.sp,
+                                    fontWeight    = FontWeight.Bold,
+                                    color         = GreenPrimary,
+                                    letterSpacing = 0.5.sp
+                                )
+                                Spacer(Modifier.height(6.dp))
+                                Text(
+                                    text       = helper.about,
+                                    fontSize   = 13.sp,
+                                    color      = TextSecondary,
+                                    lineHeight = 20.sp
                                 )
                             }
                         }
@@ -356,9 +312,9 @@ fun HelperProfileScreen(
 
                 // ── Services with prices ─────────────────────────────────────
                 item {
-                    SectionCard(title = "SERVICES OFFERED") {
+                    SectionCard(title = "SERVICES & PRICE") {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            MOCK_HELPER.services.forEach { service ->
+                            helper.services.forEach { service ->
                                 Row(
                                     modifier              = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -398,12 +354,12 @@ fun HelperProfileScreen(
                             .padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        InfoBox(label = "EXPERIENCE", value = MOCK_HELPER.experience, modifier = Modifier.weight(1f))
-                        InfoBox(label = "LANGUAGES",  value = MOCK_HELPER.languages,  modifier = Modifier.weight(1f))
+                        InfoBox(label = "EXPERIENCE", value = helper.experience, modifier = Modifier.weight(1f))
+                        InfoBox(label = "LANGUAGES",  value = helper.languages,  modifier = Modifier.weight(1f))
                     }
                 }
 
-                // ── Availability ─────────────────────────────────────────────
+                // ── Availability (days + time) ───────────────────────────────
                 item {
                     SectionCard(title = "AVAILABILITY") {
                         val allDays = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
@@ -412,7 +368,7 @@ fun HelperProfileScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             allDays.forEach { day ->
-                                val isWorking = MOCK_HELPER.workingDays.contains(day)
+                                val isWorking = helper.workingDays.contains(day)
                                 Box(
                                     modifier = Modifier
                                         .size(34.dp)
@@ -435,8 +391,7 @@ fun HelperProfileScreen(
                             }
                         }
                         Spacer(Modifier.height(14.dp))
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
+                        Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(20.dp))
                                 .background(GreenLight)
@@ -444,67 +399,17 @@ fun HelperProfileScreen(
                                 .padding(horizontal = 14.dp, vertical = 8.dp)
                         ) {
                             Text(
-                                text       = "${MOCK_HELPER.availabilityStart} – ${MOCK_HELPER.availabilityEnd}",
+                                text       = "${helper.availabilityStart} – ${helper.availabilityEnd}",
                                 fontSize   = 13.sp,
                                 color      = GreenText,
                                 fontWeight = FontWeight.Medium
                             )
                         }
-                        Spacer(Modifier.height(8.dp))
-                    }
-                }
-
-                // ── View Helper's Reviews (links to separate screen) ─────────
-                item {
-                    Card(
-                        modifier  = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 6.dp)
-                            .clickable { onViewReviews(helperId) },
-                        shape     = RoundedCornerShape(14.dp),
-                        colors    = CardDefaults.cardColors(containerColor = CardBg),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment     = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text(
-                                    text       = "View Helper's Reviews",
-                                    fontSize   = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color      = TextPrimary
-                                )
-                                Spacer(Modifier.height(4.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        painter            = painterResource(R.drawable.star),
-                                        contentDescription = null,
-                                        tint               = StarColor,
-                                        modifier           = Modifier.size(13.dp)
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        text     = "${String.format("%.1f", MOCK_HELPER.rating)} · ${MOCK_HELPER.reviewCount} reviews",
-                                        fontSize = 12.sp,
-                                        color    = TextSecondary
-                                    )
-                                }
-                            }
-                            Text(
-                                text       = "View →",
-                                fontSize   = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color      = GreenPrimary
-                            )
-                        }
                     }
                 }
             }
+
+            // ── Bottom actions ───────────────────────────────────────────────
             Row(
                 modifier              = Modifier
                     .align(Alignment.BottomCenter)
@@ -513,9 +418,8 @@ fun HelperProfileScreen(
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)
             ) {
-                // Chat button
                 OutlinedButton(
-                    onClick = onChat,
+                    onClick  = onChat,
                     shape    = RoundedCornerShape(14.dp),
                     border   = androidx.compose.foundation.BorderStroke(1.5.dp, GreenPrimary),
                     colors   = ButtonDefaults.outlinedButtonColors(
@@ -529,7 +433,6 @@ fun HelperProfileScreen(
                     Text("Chat", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = GreenPrimary)
                 }
 
-                // Book Now button
                 Button(
                     onClick  = { onBookNow(helperId) },
                     shape    = RoundedCornerShape(14.dp),
@@ -567,11 +470,11 @@ private fun SectionCard(title: String, content: @Composable ColumnScope.() -> Un
 private fun InfoBox(label: String, value: String, modifier: Modifier = Modifier) {
     Card(
         modifier  = modifier.padding(vertical = 6.dp),
-        shape     = RoundedCornerShape(10.dp),
+        shape     = RoundedCornerShape(14.dp),
         colors    = CardDefaults.cardColors(containerColor = CardBg),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Text(label, fontSize = 10.sp, color = TextSecondary, letterSpacing = 0.5.sp)
             Spacer(Modifier.height(4.dp))
             Text(value, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)

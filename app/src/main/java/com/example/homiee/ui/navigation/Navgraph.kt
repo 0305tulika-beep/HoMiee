@@ -56,8 +56,6 @@ object Routes {
     const val MY_REVIEWS         = "my_reviews"
     const val HELPER_PROFILE     = "helper_profile/{helperId}"
     const val HELPER_REVIEWS     = "helper_reviews/{helperId}"
-    const val VERIFIED_DOCUMENTS = "verified_documents/{helperId}"
-    const val DOCUMENT_VIEWER    = "document_viewer/{helperId}/{documentType}"
 
     // Booking flow
     const val NEW_BOOKING       = "new_booking/{helperName}/{service}/{rating}"
@@ -87,9 +85,6 @@ object Routes {
     }
     fun helperProfileRoute(helperId: String)     = "helper_profile/$helperId"
     fun helperReviewsRoute(helperId: String)     = "helper_reviews/$helperId"
-    fun verifiedDocumentsRoute(helperId: String) = "verified_documents/$helperId"
-    fun documentViewerRoute(helperId: String, documentType: VerifiedDocumentType): String =
-        "document_viewer/$helperId/${documentType.name}"
     fun bookingConfirmedRoute(bookingId: String) = "booking_confirmed/$bookingId"
     fun bookingDetailsRoute(bookingId: String)   = "booking_details/$bookingId"
     fun chatRoute(threadId: String, helperName: String, service: String): String {
@@ -439,9 +434,6 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                         Routes.chatRoute(helperId, "Ramesh Kumar", "Cleaning")
                     )
                 },
-                onViewVerifiedDocuments = {
-                    navController.navigate(Routes.verifiedDocumentsRoute(helperId))
-                },
                 onViewReviews = {
                     navController.navigate(Routes.helperReviewsRoute(helperId))
                 }
@@ -456,42 +448,6 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             val helperId = backStackEntry.arguments?.getString("helperId") ?: ""
             HelperReviewsScreen(
                 helperId = helperId,
-                onBack = { navController.popBackStack() }
-            )
-        }
-
-        // ── Verified Documents (list) ───────────────────────────────────────────
-        composable(
-            route = Routes.VERIFIED_DOCUMENTS,
-            arguments = listOf(navArgument("helperId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val helperId = backStackEntry.arguments?.getString("helperId") ?: ""
-            VerifiedDocumentsScreen(
-                onBack = { navController.popBackStack() },
-                onDocumentClick = { documentType ->
-                    navController.navigate(
-                        Routes.documentViewerRoute(helperId, documentType)
-                    )
-                }
-            )
-        }
-
-        // ── Document Viewer (single document) ───────────────────────────────────
-        composable(
-            route = Routes.DOCUMENT_VIEWER,
-            arguments = listOf(
-                navArgument("helperId") { type = NavType.StringType },
-                navArgument("documentType") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val documentTypeArg = backStackEntry.arguments?.getString("documentType")
-                ?: VerifiedDocumentType.GOVERNMENT_ID.name
-            val documentType = VerifiedDocumentType.valueOf(documentTypeArg)
-
-            DocumentViewerScreen(
-                documentType = documentType,
-                documentImageUrl = null, // TODO: wire real URL from helper data once backend provides it
-                isVerified = true,
                 onBack = { navController.popBackStack() }
             )
         }
