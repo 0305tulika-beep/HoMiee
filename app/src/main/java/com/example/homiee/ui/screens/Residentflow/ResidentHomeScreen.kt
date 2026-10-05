@@ -1082,127 +1082,68 @@ private fun ActivityCard(
 }
 
 
-// ---------- Emergency SOS card ----------
-
 @Composable
 private fun SosButton(
     onClick: () -> Unit
 ) {
 
+    val shape = RoundedCornerShape(16.dp)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(
-                RoundedCornerShape(18.dp)
-            )
+            .clip(shape)
             .background(SosCardBg)
-            .border(
-                1.dp,
-                SosCardEdge,
-                RoundedCornerShape(18.dp)
-            )
-            .padding(
-                vertical = 14.dp,
-                horizontal = 16.dp
-            ),
+            .border(1.dp, SosCardEdge, shape)
+            .padding(vertical = 20.dp),
 
-        verticalAlignment =
-            Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically
     ) {
 
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(SosRed),
-
-            contentAlignment =
-                Alignment.Center
-        ) {
-
-            Text(
-                text = "SOS",
-                color = Color.White,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-
-        Spacer(
-            Modifier.width(14.dp)
-        )
-
-
         Column(
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 16.dp)
         ) {
 
             Text(
                 text = "Emergency SOS",
                 color = SosRed,
-                fontSize = 18.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
 
-
-            Spacer(
-                Modifier.height(4.dp)
-            )
-
+            Spacer(Modifier.height(3.dp))
 
             Text(
-                text =
-                    "Tap to alert your emergency contacts in case of any urgent situation.",
-
+                text = "Instantly send alert in case of emergency.",
                 color = SosBodyText,
-
                 fontSize = 12.sp,
-
                 lineHeight = 16.sp
             )
         }
 
-
-        Spacer(
-            Modifier.width(12.dp)
-        )
-
-
         Box(
             modifier = Modifier
-                .clip(
-                    RoundedCornerShape(24.dp)
-                )
-                .border(
-                    1.5.dp,
-                    SosRed,
-                    RoundedCornerShape(24.dp)
-                )
+                .padding(start = 8.dp, end = 12.dp)
+                .height(40.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(SosRed)
                 .clickable(
-
-                    interactionSource =
-                        remember {
-                            MutableInteractionSource()
-                        },
-
+                    interactionSource = remember { MutableInteractionSource() },
                     indication = null
+                ) { onClick() }
+                .padding(horizontal = 18.dp),
 
-                ) {
-                    onClick()
-                }
-
-                .padding(
-                    horizontal = 20.dp,
-                    vertical = 12.dp
-                )
+            contentAlignment = Alignment.Center
         ) {
 
             Text(
-                text = "Tap to SOS",
-                color = SosRed,
+                text = "Send SOS",
+                color = Color.White,
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp
             )
         }
     }

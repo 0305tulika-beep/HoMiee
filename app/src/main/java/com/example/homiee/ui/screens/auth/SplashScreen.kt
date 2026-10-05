@@ -17,6 +17,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -90,7 +91,7 @@ fun SplashScreen(onFinished: (String) -> Unit) {
         modifier         = Modifier.fillMaxSize()
     ) {
         Image(
-            painter            = painterResource(id = R.drawable.bg4),
+            painter            = painterResource(id = R.drawable.bg_splash),
             contentDescription = null,
             contentScale       = ContentScale.Crop,
             modifier           = Modifier.fillMaxSize()
@@ -117,6 +118,17 @@ fun SplashScreen(onFinished: (String) -> Unit) {
                     fontSize   = 40.sp,
                     fontWeight = FontWeight.Bold,
                     color      = Color(0xFF7ED4C9)
+                )
+
+                Spacer(Modifier.height(4.dp))
+
+                Text(
+                    text          = "Comfort, Just one Tap Away.",
+                    fontSize      = 14.sp,
+                    fontWeight    = FontWeight.Medium,
+                    fontStyle     = FontStyle.Italic,
+                    letterSpacing = 0.6.sp,
+                    color         = Color.White.copy(alpha = 0.88f)
                 )
             }
         }
