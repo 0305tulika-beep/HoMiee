@@ -78,7 +78,7 @@ val MOCK_HELPER = HelperProfileData(
     services          = listOf(
         ServiceWithPrice("Cooking",  "₹250/hr"),
         ServiceWithPrice("Cleaning", "₹200/hr"),
-        ServiceWithPrice("Laundry",  "₹150/hr")
+        ServiceWithPrice("Eldercare",  "₹150/hr")
     ),
     experience        = "5 years",
     languages         = "Hindi, English",

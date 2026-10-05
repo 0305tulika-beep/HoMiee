@@ -143,9 +143,9 @@ fun ProfileScreen(
         Box(modifier = Modifier.fillMaxSize()) {
 
             Image(
-                painter            = painterResource(id = R.drawable.bg1),
+                painter            = painterResource(R.drawable.bg1),
                 contentDescription = null,
-                contentScale       = ContentScale.Crop,
+                contentScale       = ContentScale.FillBounds,
                 modifier           = Modifier.fillMaxSize()
             )
 

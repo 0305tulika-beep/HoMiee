@@ -62,13 +62,13 @@ enum class SortOption(val label: String) {
 }
 
 private val SERVICE_FILTERS = listOf(
-    "All", "Cleaning", "Cooking", "Laundry", "Babysitting", "Other"
+    "All", "Cleaning", "Cooking", "Eldercare", "Babysitting", "Other"
 )
 
 private val TEST_HELPERS = listOf(
     HelperCard("001", "Priya Sharma", "Cleaning",    4.9f, isActive = true),
     HelperCard("002", "Sunita Devi",  "Cooking",     4.8f, isActive = false),
-    HelperCard("003", "Meena Verma",  "Laundry",     4.8f, isActive = true),
+    HelperCard("003", "Meena Verma",  "Eldercare",     4.8f, isActive = true),
     HelperCard("004", "Ramesh Kumar", "Babysitting", 4.7f, isActive = true),
     HelperCard("005", "Kavita Singh", "Cooking",     4.6f, isActive = false),
     HelperCard("006", "Anita Patel",  "Cleaning",    4.5f, isActive = true),

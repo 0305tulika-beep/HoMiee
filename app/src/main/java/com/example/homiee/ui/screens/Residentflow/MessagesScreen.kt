@@ -44,7 +44,7 @@ data class MessageThread(
 private val MOCK_THREADS = listOf(
     MessageThread("t001", "Ramesh Kumar", "Cleaning", "I'm on my way, will reach by 10!", "8:02 AM", unreadCount = 2, isOnline = true),
     MessageThread("t002", "Sunita Devi",  "Cooking",  "I'm on my way, will reach by 10!", "8:01 AM", isOnline = true),
-    MessageThread("t003", "Priya Singh",  "Laundry",  "I'm on my way, will reach by 10!", "8:02 AM"),
+    MessageThread("t003", "Priya Singh",  "Eldercare",  "I'm on my way, will reach by 10!", "8:02 AM"),
     MessageThread("t004", "Anita Rao",    "Cleaning", "I'm on my way, will reach by 10!", "8:02 AM"),
     MessageThread("t005", "Kavita Singh", "Babysit",  "I'm on my way, will reach by 10!", "8:02 AM"),
 )
@@ -83,10 +83,10 @@ fun MessagesScreen(
         ) {
             // ── Background image ──
             Image(
-                painter           = painterResource(id = R.drawable.bg1),
+                painter            = painterResource(R.drawable.bg1),
                 contentDescription = null,
-                modifier           = Modifier.fillMaxSize(),
-                contentScale       = ContentScale.Crop
+                contentScale       = ContentScale.FillBounds,
+                modifier           = Modifier.fillMaxSize()
             )
 
             Column(modifier = Modifier.fillMaxSize()) {

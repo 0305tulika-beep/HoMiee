@@ -40,7 +40,7 @@ You are responsible for maintaining the confidentiality of your login credential
 
 4. BOOKING OF HOUSEHOLD SERVICES
 
-HoMiee connects Residents with verified household Helpers for services including but not limited to cleaning, cooking, laundry, and babysitting. HoMiee acts as an intermediary platform and is not the direct employer of any Helper.
+HoMiee connects Residents with verified household Helpers for services including but not limited to cleaning, cooking, Eldercare, and babysitting. HoMiee acts as an intermediary platform and is not the direct employer of any Helper.
 
 5. HELPER VERIFICATION
 

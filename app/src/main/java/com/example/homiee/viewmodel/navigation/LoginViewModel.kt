@@ -43,14 +43,13 @@ class LoginViewModel(private val tokenManager: TokenManager) : ViewModel() {
                     val tokens = result.data.data?.tokens
 
                     if (tokens != null) {
+                        val user = result.data.data?.user
                         tokenManager.saveTokens(tokens.access, tokens.refresh)
-                        SessionManager.accessToken = tokens.access   // ADDED
+                        SessionManager.accessToken = tokens.access
                         tokenManager.markFormsCompleted()   // returning users already onboarded
-                        tokenManager.saveEmail(email.trim())   // ADDED
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            isSuccess = true
-                        )
+                        tokenManager.saveEmail(user?.email ?: email.trim())
+                        if (user != null) tokenManager.saveUserName(user.fname, user.lname)
+                        _uiState.value = _uiState.value.copy(isLoading = false, isSuccess = true)
                     } else {
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,

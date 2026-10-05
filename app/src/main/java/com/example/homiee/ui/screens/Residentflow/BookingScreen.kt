@@ -62,9 +62,9 @@ private val MOCK_BOOKINGS = listOf(
     BookingItem("b002", "Ramesh Kumar", "Cleaning", 4.9f, BookingTab.ACTIVE),
     BookingItem("b003", "Sunita Devi",  "Cooking",  4.8f, BookingTab.UPCOMING,
         isPending = true,  bookingDate = "Jun 15, 2026", bookingTime = "10:00 AM"),
-    BookingItem("b004", "Kavita Singh", "Laundry",  4.6f, BookingTab.UPCOMING,
+    BookingItem("b004", "Kavita Singh", "Eldercare",  4.6f, BookingTab.UPCOMING,
         isPending = false, bookingDate = "Jun 16, 2026", bookingTime = "2:00 PM"),
-    BookingItem("b005", "Meena Verma",  "Laundry",  4.7f, BookingTab.COMPLETED),
+    BookingItem("b005", "Meena Verma",  "Eldercare",  4.7f, BookingTab.COMPLETED),
 )
 
 // ── Screen ─────────────────────────────────────────────────────────────────────

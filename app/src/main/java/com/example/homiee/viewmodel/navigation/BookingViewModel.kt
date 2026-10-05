@@ -19,9 +19,9 @@ class BookingViewModel(
         mutableListOf(
             BookingItem("b001", "Ramesh Kumar", "Cleaning", 4.9f, BookingTab.ACTIVE),
             BookingItem("b002", "Ramesh Kumar", "Cleaning", 4.9f, BookingTab.ACTIVE),
-            BookingItem("b004", "Kavita Singh", "Laundry", 4.6f, BookingTab.UPCOMING,
+            BookingItem("b004", "Kavita Singh", "Eldercare", 4.6f, BookingTab.UPCOMING,
                 isPending = false, bookingDate = "Jun 16, 2026", bookingTime = "2:00 PM"),
-            BookingItem("b005", "Meena Verma", "Laundry", 4.7f, BookingTab.COMPLETED)
+            BookingItem("b005", "Meena Verma", "Eldercare", 4.7f, BookingTab.COMPLETED)
         )
     )
     val bookings: StateFlow<List<BookingItem>> = _bookings.asStateFlow()
