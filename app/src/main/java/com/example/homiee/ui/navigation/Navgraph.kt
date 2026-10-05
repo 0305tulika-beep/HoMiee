@@ -108,6 +108,13 @@ fun NavTab.toRoute() = when (this) {
 }
 
 private fun NavHostController.navigateMain(route: String) {
+    if (route == Routes.HOME_RES) {
+        // Home is the root of the back stack: just unwind to it
+        if (!popBackStack(Routes.HOME_RES, inclusive = false)) {
+            navigate(Routes.HOME_RES) { popUpTo(0) }
+        }
+        return
+    }
     navigate(route) {
         popUpTo(Routes.HOME_RES) { saveState = true }
         launchSingleTop = true
@@ -166,7 +173,10 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                     navController.navigate(Routes.helperProfileRoute(helperId))
                 },
                 onCategoryClick = { category ->
-                    navController.navigate(Routes.searchFilteredRoute(category))
+                    navController.navigate(Routes.searchFilteredRoute(category)) {
+                        popUpTo(Routes.HOME_RES)      // Home → Search, never Home → Search → Search
+                        launchSingleTop = true
+                    }
                 },
                 onActivityClick = { bookingId ->
                     navController.navigate(Routes.bookingDetailsRoute(bookingId))
@@ -320,23 +330,23 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         // ── Search (unfiltered) ───────────────────────────────────────────────
         composable(Routes.SEARCH) {
             SearchScreen(
-                initialFilter = "All",
+                initialQuery = "",
                 onViewProfile = { id: String -> navController.navigate(Routes.helperProfileRoute(id)) },
                 onBook = { id: String -> navController.navigate(Routes.helperProfileRoute(id)) },
                 onNavItemClick = { route: String -> navController.navigateMain(route) }
             )
         }
 
-        // ── Search (pre-filtered from category tap) ───────────────────────────
+        // ── Search (pre-filled from category tap) ─────────────────────────────
         composable(
             route = Routes.SEARCH_FILTERED,
             arguments = listOf(navArgument("category") { type = NavType.StringType })
         ) { backStackEntry ->
             val category = URLDecoder.decode(
-                backStackEntry.arguments?.getString("category") ?: "All", "UTF-8"
+                backStackEntry.arguments?.getString("category") ?: "", "UTF-8"
             )
             SearchScreen(
-                initialFilter = category,
+                initialQuery = category,
                 onViewProfile = { id: String -> navController.navigate(Routes.helperProfileRoute(id)) },
                 onBook = { id: String -> navController.navigate(Routes.helperProfileRoute(id)) },
                 onNavItemClick = { route: String -> navController.navigateMain(route) }

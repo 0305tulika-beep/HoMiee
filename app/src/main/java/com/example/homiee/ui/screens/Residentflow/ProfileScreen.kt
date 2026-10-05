@@ -169,12 +169,12 @@ fun ProfileScreen(
                         color      = White,
                         modifier   = Modifier.align(Alignment.CenterStart)
                     )
-                    Text(
-                        text     = "⚙",
-                        fontSize = 22.sp,
-                        color    = White,
+                    Image(
+                        painter = painterResource(id = R.drawable.setting),
+                        contentDescription = "Settings",
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
+                            .size(35.dp)
                             .clickable { showSettings = true }
                     )
                 }

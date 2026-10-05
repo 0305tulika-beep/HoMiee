@@ -21,11 +21,12 @@ import kotlinx.coroutines.launch
 data class SearchHelperUi(
     val id: String,
     val name: String,
-    val service: String,
+    val service: String,              // "Cleaning, Laundry" (display)
     val rating: Float,
     val photoUrl: String?,
     val distanceKm: Double?,
-    val minPrice: Double?
+    val minPrice: Double?,
+    val services: List<String> = emptyList()   // ["Cleaning", "Laundry"] (filtering)
 )
 
 data class HelperSearchUiState(
@@ -45,55 +46,37 @@ class HelperSearchViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(HelperSearchUiState())
     val uiState: StateFlow<HelperSearchUiState> = _uiState.asStateFlow()
 
-    private val filter    = MutableStateFlow("All")
     private val query     = MutableStateFlow("")
     private val retryTick = MutableStateFlow(0)
 
     init {
         viewModelScope.launch {
             combine(
-                filter,
                 // debounce only while typing; clearing the box fires immediately
                 query.map { it.trim() }
                     .debounce { if (it.isEmpty()) 0L else 400L }
                     .distinctUntilChanged(),
                 retryTick
-            ) { f, q, _ -> f to q }
-                // collectLatest cancels the in-flight request when inputs change
-                .collectLatest { (f, q) -> fetch(f, q) }
+            ) { q, _ -> q }
+                // collectLatest cancels the in-flight request when the query changes
+                .collectLatest { q -> fetch(q) }
         }
     }
 
-    fun setFilter(value: String) { filter.value = value }
-    fun setQuery(value: String)  { query.value = value }
-    fun retry()                  { retryTick.value++ }
+    fun setQuery(value: String) { query.value = value }
+    fun retry()                 { retryTick.value++ }
 
-    /** Old API: kept so existing callers of load(filter) still work. */
-    fun load(filterValue: String) = setFilter(filterValue)
-
-    /**
-     * q not blank  -> /helpers/search/?q=
-     * "All"        -> nearby endpoint
-     * else         -> category endpoint (slug)
-     */
-    private suspend fun fetch(filter: String, q: String) {
+    /** blank -> nearby endpoint, otherwise -> /helpers/search/?q= */
+    private suspend fun fetch(q: String) {
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
-        val result = when {
-            q.isNotEmpty()             -> repo.search(q)
-            filter.equals("All", true) -> repo.nearbyHelpers()
-            else                       -> repo.helpersByCategory(service = filter.lowercase())
-        }
+        val result = if (q.isEmpty()) repo.nearbyHelpers() else repo.search(q)
 
         _uiState.value = when (result) {
-            is ApiResult.Success -> {
-                var list = result.data.data.orEmpty().map { it.toUi() }
-                // /search/ has no category param, so apply the chip client-side
-                if (q.isNotEmpty() && !filter.equals("All", true)) {
-                    list = list.filter { it.service.contains(filter, ignoreCase = true) }
-                }
-                HelperSearchUiState(isLoading = false, helpers = list)
-            }
+            is ApiResult.Success -> HelperSearchUiState(
+                isLoading = false,
+                helpers = result.data.data.orEmpty().map { it.toUi() }
+            )
             is ApiResult.Error -> HelperSearchUiState(
                 isLoading = false,
                 errorMessage = result.message
@@ -102,18 +85,20 @@ class HelperSearchViewModel : ViewModel() {
     }
 
     private fun NearbyHelperDto.toUi(): SearchHelperUi {
+        val serviceNames = services.orEmpty().mapNotNull { it.name }
         val prices = services.orEmpty().mapNotNull { it.price_per_hour?.toDoubleOrNull() }
         return SearchHelperUi(
             id = helper_id.toString(),
             name = "${fname.orEmpty()} ${lname.orEmpty()}".trim().ifBlank { username ?: "Helper" },
-            service = services.orEmpty().mapNotNull { it.name }.joinToString(", "),
+            service = serviceNames.joinToString(", "),
             rating = avg_rating?.toFloatOrNull() ?: 0f,
             photoUrl = profile_photo?.let {
                 if (it.startsWith("http")) it
                 else RetrofitClient.BASE_URL.trimEnd('/') + it
             },
             distanceKm = distance_km,
-            minPrice = prices.minOrNull()
+            minPrice = prices.minOrNull(),
+            services = serviceNames
         )
     }
 }

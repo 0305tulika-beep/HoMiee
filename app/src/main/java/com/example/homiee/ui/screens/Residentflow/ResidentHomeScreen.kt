@@ -188,7 +188,7 @@ fun ResidentHomeScreen(
                     )
 
                     Text(
-                        text = "Care. Comfort. Community.",
+                        text = "Comfort, Just one Tap Away.",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
                         fontStyle = FontStyle.Italic,

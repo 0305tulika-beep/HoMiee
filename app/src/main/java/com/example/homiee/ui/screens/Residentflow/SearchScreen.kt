@@ -52,14 +52,10 @@ enum class SortOption(val label: String) {
     LOWEST_COST("Lowest Cost")
 }
 
-private val SERVICE_FILTERS = listOf(
-    "All", "Cleaning", "Cooking", "Eldercare", "Babysitting", "Laundry"
-)
-
 // ── Screen ─────────────────────────────────────────────────────────────────────
 @Composable
 fun SearchScreen(
-    initialFilter: String = "All",
+    initialQuery: String = "",
     onViewProfile: (String) -> Unit = {},
     onBook: (String) -> Unit = {},
     onNavItemClick: (String) -> Unit = {},
@@ -67,16 +63,14 @@ fun SearchScreen(
 ) {
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = false)
 
-    var searchQuery    by remember { mutableStateOf("") }
-    var selectedSort   by remember { mutableStateOf(SortOption.NEAREST) }
-    var selectedFilter by remember { mutableStateOf(initialFilter) }
+    var searchQuery  by remember { mutableStateOf(initialQuery) }
+    var selectedSort by remember { mutableStateOf(SortOption.NEAREST) }
 
     val state by viewModel.uiState.collectAsState()
 
-    // Apply the initial category once; later changes go through the chip onClick
-    LaunchedEffect(Unit) { viewModel.setFilter(initialFilter) }
+    // Send the category tapped on Home to the API as a search
+    LaunchedEffect(Unit) { viewModel.setQuery(initialQuery) }
 
-    // Text matching is done by the server; only sorting stays local.
     val displayedHelpers = remember(state.helpers, selectedSort) {
         when (selectedSort) {
             SortOption.NEAREST       -> state.helpers.sortedBy { it.distanceKm ?: Double.MAX_VALUE }
@@ -171,22 +165,7 @@ fun SearchScreen(
                     }
                 }
 
-                // ── Fixed: service filter chips ────────────────────────────
-                LazyRow(
-                    contentPadding        = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(SERVICE_FILTERS) { filter ->
-                        FilterChipItem(
-                            label      = filter,
-                            isSelected = selectedFilter.equals(filter, ignoreCase = true),
-                            onClick    = {
-                                selectedFilter = filter
-                                viewModel.setFilter(filter)
-                            }
-                        )
-                    }
-                }
+                Spacer(Modifier.height(14.dp))
 
                 // ── Fixed: sort by ─────────────────────────────────────────
                 Column(
