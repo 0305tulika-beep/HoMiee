@@ -19,4 +19,19 @@ interface BookingApiService {
     // helper id ki api
     @GET("api/bookings/helpers/{helper_id}/")
     suspend fun helperDetail(@Path("helper_id") helperId: Int): Response<HelperDetailResponse>
+
+    //search me profiles ki api
+    @GET("api/bookings/helpers/category/")
+    suspend fun helpersByCategory(
+        @Query("service") service: String,
+        @Query("radius_km") radiusKm: Double? = null
+    ): Response<NearbyHelpersResponse>
+
+    //search ki api
+    @GET("api/bookings/helpers/search/")
+    suspend fun search(
+        @Query("q") q: String? =null,
+    ): Response<NearbyHelpersResponse>
+
+
 }

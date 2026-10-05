@@ -1,16 +1,14 @@
 package com.example.homiee.navigation
 
 import android.app.Activity
-import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import com.example.homiee.viewmodel.RegisterViewModelFactory
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -20,6 +18,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.homiee.data.local.SessionManager
 import com.example.homiee.ui.components.NavTab
 import com.example.homiee.ui.screens.Residentflow.*
 import com.example.homiee.ui.screens.auth.*
@@ -28,6 +27,7 @@ import com.example.homiee.viewmodel.BookingViewModel
 import com.example.homiee.viewmodel.BookingViewModelFactory
 import com.example.homiee.viewmodel.HelperProfileViewModel
 import com.example.homiee.viewmodel.RegisterViewModel
+import com.example.homiee.viewmodel.RegisterViewModelFactory
 import com.example.homiee.viewmodel.navigation.ResidentOnboardingViewModel
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -39,11 +39,10 @@ object Routes {
     const val OTP_ROUTE          = "otp/{email}/{flow}"   // flow = "login" | "signup"
     const val FORGOT_PASSWORD    = "forgot_password"
 
-    // Resident forms — nested graph + 2 steps
-    // (Emergency Contact + its OTP step, and Identity form, both removed)
-    const val RES_ONBOARDING_GRAPH = "res_onboarding"     // parent graph route
+    // Resident forms - nested graph + 2 steps
+    const val RES_ONBOARDING_GRAPH = "res_onboarding"
     const val RES_FORM_1 = "res_form_address"
-    const val RES_FORM_2 = "res_form_photo"               // was RES_FORM_3
+    const val RES_FORM_2 = "res_form_photo"
 
     // Main tabs
     const val HOME_RES        = "home_resident"
@@ -124,14 +123,12 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         factory = BookingViewModelFactory(context)
     )
 
-    // NEW: whenever any API call 401s with an expired/invalid token,
-    // TokenAuthenticator clears the session and flips this flag — react by
-    // sending the user cleanly back to login instead of leaving them stuck
-    // on a screen where every request silently keeps failing.
-    val sessionExpired by com.example.homiee.data.local.SessionManager.sessionExpired.collectAsState()
-    androidx.compose.runtime.LaunchedEffect(sessionExpired) {
+    // When TokenAuthenticator can't recover from a 401 it flips this flag;
+    // send the user back to login with a clean back stack.
+    val sessionExpired by SessionManager.sessionExpired.collectAsState()
+    LaunchedEffect(sessionExpired) {
         if (sessionExpired) {
-            com.example.homiee.data.local.SessionManager.consumeSessionExpired()
+            SessionManager.consumeSessionExpired()
             navController.navigate(Routes.LOGIN_ROUTE) {
                 popUpTo(0) { inclusive = true }
             }
@@ -197,16 +194,14 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         composable(Routes.FORGOT_PASSWORD) {
             ForgotPasswordScreen(
                 onBack = { navController.popBackStack() },
-                onContinue = { _ ->
-                    navController.popBackStack()
-                }
+                onContinue = { _ -> navController.popBackStack() }
             )
         }
 
         // ── Signup ──────────────────────────────────────────────────────────
         composable(Routes.SIGNUP_ROUTE) {
             val registerViewModel: RegisterViewModel = viewModel(
-                factory = RegisterViewModelFactory(LocalContext.current)   // CHANGED
+                factory = RegisterViewModelFactory(LocalContext.current)
             )
             SignUpScreen(
                 navController = navController,
@@ -219,7 +214,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             )
         }
 
-        // ── OTP (signup / login email verification) ───────────────────────────
+        // ── OTP ───────────────────────────────────────────────────────────────
         composable(
             route = Routes.OTP_ROUTE,
             arguments = listOf(
@@ -249,8 +244,6 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         }
 
         // ── Resident Onboarding (nested graph, shared ViewModel) ───────────────
-        // 2 steps: Address -> Photo
-        // (Emergency Contact + its OTP verification, and Identity form, removed)
         navigation(
             startDestination = Routes.RES_FORM_1,
             route = Routes.RES_ONBOARDING_GRAPH
@@ -261,7 +254,10 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                 val parentEntry = remember(backStackEntry) {
                     navController.getBackStackEntry(Routes.RES_ONBOARDING_GRAPH)
                 }
-                val vm: ResidentOnboardingViewModel = viewModel(parentEntry)
+                // Owner passed BY NAME - fixes "Argument type mismatch: NavBackStackEntry"
+                val vm: ResidentOnboardingViewModel =
+                    viewModel(viewModelStoreOwner = parentEntry)
+
                 val formContext = LocalContext.current
                 val showErrors by vm.addressShowErrors.collectAsState()
                 val loading by vm.addressLoading.collectAsState()
@@ -276,9 +272,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                     onCityChange = vm::onCityChange,
                     pincode = vm.pincode,
                     onPincodeChange = vm::onPincodeChange,
-                    onUseCurrentLocation = { lat, lng ->
-                        vm.updateLocation(lat, lng)
-                    },
+                    onUseCurrentLocation = { lat, lng -> vm.updateLocation(lat, lng) },
                     onNext = {
                         vm.submitAddress(formContext, Routes.RES_FORM_2) {
                             navController.navigate(Routes.RES_FORM_2)
@@ -290,27 +284,20 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                 )
             }
 
-            // NOTE: Emergency Contact form + its OTP verification step, and the
-            // Identity (Aadhaar/PAN) form, have all been removed per request.
-            // ResFormEmergencyScreen.kt, ResFormEmergencyOtpScreen.kt, and
-            // ResFormIdentityScreen.kt are no longer referenced anywhere and
-            // can be deleted from the project.
-
             composable(Routes.RES_FORM_2) { backStackEntry ->
                 BackHandler { navController.popBackStack() }
 
                 val parentEntry = remember(backStackEntry) {
                     navController.getBackStackEntry(Routes.RES_ONBOARDING_GRAPH)
                 }
-                val vm: ResidentOnboardingViewModel = viewModel(parentEntry)
+                val vm: ResidentOnboardingViewModel =
+                    viewModel(viewModelStoreOwner = parentEntry)
+
                 val formContext = LocalContext.current
                 val showErrors by vm.photoShowErrors.collectAsState()
                 val loading by vm.photoLoading.collectAsState()
                 val error by vm.photoError.collectAsState()
 
-                // Pure navigation — TokenManager.markFormsCompleted() is now called
-                // from inside the ViewModel (submitPhoto on success, or
-                // skipOnboarding), which is the actual source of truth Splash reads.
                 val goHome: () -> Unit = {
                     navController.navigate(Routes.HOME_RES) {
                         popUpTo(Routes.RES_ONBOARDING_GRAPH) { inclusive = true }
@@ -322,24 +309,21 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                         vm.submitPhoto(formContext, pickedUri) { goHome() }
                     },
                     onBack = { navController.popBackStack() },
-                    onSkip = {
-                        // Pure local skip: no API call, just marks onboarding
-                        // complete and goes home immediately.
-                        vm.skipOnboarding(formContext) { goHome() }
-                    },
+                    onSkip = { vm.skipOnboarding(formContext) { goHome() } },
                     showValidationError = showErrors,
                     isLoading = loading,
                     errorMessage = error
                 )
             }
-        } // ← closes navigation(RES_ONBOARDING_GRAPH)
+        }
 
         // ── Search (unfiltered) ───────────────────────────────────────────────
         composable(Routes.SEARCH) {
             SearchScreen(
-                onViewProfile = { navController.navigate(Routes.helperProfileRoute(it)) },
-                onBook = { navController.navigate(Routes.helperProfileRoute(it)) },
-                onNavItemClick = { navController.navigateMain(it) }
+                initialFilter = "All",
+                onViewProfile = { id: String -> navController.navigate(Routes.helperProfileRoute(id)) },
+                onBook = { id: String -> navController.navigate(Routes.helperProfileRoute(id)) },
+                onNavItemClick = { route: String -> navController.navigateMain(route) }
             )
         }
 
@@ -353,9 +337,9 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             )
             SearchScreen(
                 initialFilter = category,
-                onViewProfile = { navController.navigate(Routes.helperProfileRoute(it)) },
-                onBook = { navController.navigate(Routes.helperProfileRoute(it)) },
-                onNavItemClick = { navController.navigateMain(it) }
+                onViewProfile = { id: String -> navController.navigate(Routes.helperProfileRoute(id)) },
+                onBook = { id: String -> navController.navigate(Routes.helperProfileRoute(id)) },
+                onNavItemClick = { route: String -> navController.navigateMain(route) }
             )
         }
 
@@ -369,9 +353,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                     navController.navigate(Routes.bookingDetailsRoute(bookingId))
                 },
                 onChatClick = { bookingId ->
-                    navController.navigate(
-                        Routes.chatRoute(bookingId, "Ramesh Kumar", "Cleaning")
-                    )
+                    navController.navigate(Routes.chatRoute(bookingId, "Ramesh Kumar", "Cleaning"))
                 },
                 onActivityClick = { bookingId ->
                     navController.navigate(Routes.activityRoute(bookingId, "Ramesh Kumar"))
@@ -387,9 +369,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             MessagesScreen(
                 onNavItemClick = { navController.navigateMain(it) },
                 onThreadClick = { threadId ->
-                    navController.navigate(
-                        Routes.chatRoute(threadId, "Ramesh Kumar", "Cleaning")
-                    )
+                    navController.navigate(Routes.chatRoute(threadId, "Ramesh Kumar", "Cleaning"))
                 }
             )
         }
@@ -401,7 +381,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                 onMyReviewsClick = { navController.navigate(Routes.MY_REVIEWS) },
                 onLoggedOut = {
                     navController.navigate(Routes.SIGNUP_ROUTE) {
-                        popUpTo(0) { inclusive = true }   // clear entire back stack
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
@@ -412,7 +392,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             MyReviewsScreen(onBack = { navController.popBackStack() })
         }
 
-        // ── Helper Profile (loaded from GET /api/bookings/helpers/{helper_id}/) ──
+        // ── Helper Profile ───────────────────────────────────────────────────
         composable(
             route = Routes.HELPER_PROFILE,
             arguments = listOf(navArgument("helperId") { type = NavType.StringType })
@@ -423,7 +403,6 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                 factory = HelperProfileViewModel.Factory(helperId)
             )
 
-            // Real data once loaded (fallbacks only matter before it arrives).
             val helper = helperProfileViewModel.helper
             val helperName = helper?.name?.takeIf { it.isNotBlank() } ?: "Helper"
             val helperService = helper?.services?.firstOrNull()?.name
@@ -439,9 +418,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                 },
                 onBack = { navController.popBackStack() },
                 onChat = {
-                    navController.navigate(
-                        Routes.chatRoute(helperId, helperName, helperService)
-                    )
+                    navController.navigate(Routes.chatRoute(helperId, helperName, helperService))
                 },
                 onViewReviews = {
                     navController.navigate(Routes.helperReviewsRoute(helperId))
@@ -449,7 +426,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             )
         }
 
-        // ── Helper Reviews (full reviews list) ──────────────────────────────────
+        // ── Helper Reviews ───────────────────────────────────────────────────
         composable(
             route = Routes.HELPER_REVIEWS,
             arguments = listOf(navArgument("helperId") { type = NavType.StringType })
@@ -471,11 +448,11 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             )
         ) { backStackEntry ->
             val helperName = URLDecoder.decode(
-                backStackEntry.arguments?.getString("helperName") ?: "",
-                "UTF-8"
+                backStackEntry.arguments?.getString("helperName") ?: "", "UTF-8"
             )
-            val service =
-                URLDecoder.decode(backStackEntry.arguments?.getString("service") ?: "", "UTF-8")
+            val service = URLDecoder.decode(
+                backStackEntry.arguments?.getString("service") ?: "", "UTF-8"
+            )
             val rating = backStackEntry.arguments?.getFloat("rating") ?: 0f
 
             NewBookingScreen(
@@ -552,16 +529,13 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         ) { backStackEntry ->
             val threadId = backStackEntry.arguments?.getString("threadId") ?: ""
             val helperName = URLDecoder.decode(
-                backStackEntry.arguments?.getString("helperName") ?: "",
-                "UTF-8"
+                backStackEntry.arguments?.getString("helperName") ?: "", "UTF-8"
             )
-            val service =
-                URLDecoder.decode(backStackEntry.arguments?.getString("service") ?: "", "UTF-8")
 
             ChatScreen(
                 threadId = threadId,
                 helperName = helperName,
-                onBack = { navController.popBackStack() },
+                onBack = { navController.popBackStack() }
             )
         }
 
@@ -573,14 +547,12 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                 navArgument("helperName") { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
             val helperName = URLDecoder.decode(
-                backStackEntry.arguments?.getString("helperName") ?: "",
-                "UTF-8"
+                backStackEntry.arguments?.getString("helperName") ?: "", "UTF-8"
             )
             ActivityScreen(
                 helperName = helperName,
-                onBack = { navController.popBackStack() },
+                onBack = { navController.popBackStack() }
             )
         }
 
@@ -592,10 +564,8 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                 navArgument("helperName") { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
             val helperName = URLDecoder.decode(
-                backStackEntry.arguments?.getString("helperName") ?: "",
-                "UTF-8"
+                backStackEntry.arguments?.getString("helperName") ?: "", "UTF-8"
             )
             FeedbackScreen(
                 helperName = helperName,

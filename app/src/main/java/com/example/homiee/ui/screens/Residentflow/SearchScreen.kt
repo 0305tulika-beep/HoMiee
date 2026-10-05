@@ -22,17 +22,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.homiee.R
+import com.example.homiee.navigation.Routes
 import com.example.homiee.ui.components.BottomNavBar
 import com.example.homiee.ui.components.NavTab
-import com.example.homiee.navigation.Routes
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
 import com.example.homiee.ui.theme.GreenDark
-import com.example.homiee.ui.theme.TextPrimary
+import com.example.homiee.viewmodel.navigation.HelperSearchViewModel
+import com.example.homiee.viewmodel.navigation.SearchHelperUi
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-//private val ChipSelectedText = Color.White
 private val ChipSelectedBg   = Color(0xFFE0F2EF)
 private val ChipSelectedText = Color(0xFF0F766E)
 private val ChipUnselBg      = Color.White
@@ -45,16 +46,6 @@ private val CardBg           = Color.White
 private val ActiveDotColor   = Color(0xFF2ECC71)
 
 // ── Data ───────────────────────────────────────────────────────────────────────
-data class HelperCard(
-    val id: String,
-    val name: String,
-    val service: String,
-    val rating: Float,
-    val photoUrl: String? = null,
-    val isActive: Boolean = true,
-    val initials: String = name.take(2).uppercase()
-)
-
 enum class SortOption(val label: String) {
     NEAREST("Nearest"),
     HIGHEST_RATED("Highest Rated"),
@@ -62,16 +53,7 @@ enum class SortOption(val label: String) {
 }
 
 private val SERVICE_FILTERS = listOf(
-    "All", "Cleaning", "Cooking", "Eldercare", "Babysitting", "Other"
-)
-
-private val TEST_HELPERS = listOf(
-    HelperCard("001", "Priya Sharma", "Cleaning",    4.9f, isActive = true),
-    HelperCard("002", "Sunita Devi",  "Cooking",     4.8f, isActive = false),
-    HelperCard("003", "Meena Verma",  "Eldercare",     4.8f, isActive = true),
-    HelperCard("004", "Ramesh Kumar", "Babysitting", 4.7f, isActive = true),
-    HelperCard("005", "Kavita Singh", "Cooking",     4.6f, isActive = false),
-    HelperCard("006", "Anita Patel",  "Cleaning",    4.5f, isActive = true),
+    "All", "Cleaning", "Cooking", "Eldercare", "Babysitting", "Laundry"
 )
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
@@ -80,7 +62,8 @@ fun SearchScreen(
     initialFilter: String = "All",
     onViewProfile: (String) -> Unit = {},
     onBook: (String) -> Unit = {},
-    onNavItemClick: (String) -> Unit = {}
+    onNavItemClick: (String) -> Unit = {},
+    viewModel: HelperSearchViewModel = viewModel()
 ) {
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = false)
 
@@ -88,23 +71,18 @@ fun SearchScreen(
     var selectedSort   by remember { mutableStateOf(SortOption.NEAREST) }
     var selectedFilter by remember { mutableStateOf(initialFilter) }
 
-    val displayedHelpers = remember(searchQuery, selectedSort, selectedFilter) {
-        TEST_HELPERS
-            .filter { h ->
-                val matchFilter = selectedFilter == "All" ||
-                        h.service.equals(selectedFilter, ignoreCase = true)
-                val matchQuery = searchQuery.isBlank() ||
-                        h.name.contains(searchQuery, ignoreCase = true) ||
-                        h.service.contains(searchQuery, ignoreCase = true)
-                matchFilter && matchQuery
-            }
-            .let { list ->
-                when (selectedSort) {
-                    SortOption.NEAREST       -> list
-                    SortOption.HIGHEST_RATED -> list.sortedByDescending { it.rating }
-                    SortOption.LOWEST_COST   -> list
-                }
-            }
+    val state by viewModel.uiState.collectAsState()
+
+    // Apply the initial category once; later changes go through the chip onClick
+    LaunchedEffect(Unit) { viewModel.setFilter(initialFilter) }
+
+    // Text matching is done by the server; only sorting stays local.
+    val displayedHelpers = remember(state.helpers, selectedSort) {
+        when (selectedSort) {
+            SortOption.NEAREST       -> state.helpers.sortedBy { it.distanceKm ?: Double.MAX_VALUE }
+            SortOption.HIGHEST_RATED -> state.helpers.sortedByDescending { it.rating }
+            SortOption.LOWEST_COST   -> state.helpers.sortedBy { it.minPrice ?: Double.MAX_VALUE }
+        }
     }
 
     Scaffold(
@@ -142,7 +120,7 @@ fun SearchScreen(
                     .padding(innerPadding)
             ) {
 
-                // ── Fixed: Green header + search bar ──────────────────────
+                // ── Fixed: header + search bar ─────────────────────────────
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -160,10 +138,13 @@ fun SearchScreen(
                         Spacer(Modifier.height(16.dp))
                         OutlinedTextField(
                             value         = searchQuery,
-                            onValueChange = { searchQuery = it },
+                            onValueChange = {
+                                searchQuery = it
+                                viewModel.setQuery(it)
+                            },
                             placeholder   = {
                                 Text(
-                                    "Search for helpers...",
+                                    "Search by name or service...",
                                     color    = TextSecondary,
                                     fontSize = 14.sp
                                 )
@@ -190,7 +171,7 @@ fun SearchScreen(
                     }
                 }
 
-                // ── Fixed: Service filter chips ────────────────────────────
+                // ── Fixed: service filter chips ────────────────────────────
                 LazyRow(
                     contentPadding        = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -198,13 +179,16 @@ fun SearchScreen(
                     items(SERVICE_FILTERS) { filter ->
                         FilterChipItem(
                             label      = filter,
-                            isSelected = selectedFilter == filter,
-                            onClick    = { selectedFilter = filter }
+                            isSelected = selectedFilter.equals(filter, ignoreCase = true),
+                            onClick    = {
+                                selectedFilter = filter
+                                viewModel.setFilter(filter)
+                            }
                         )
                     }
                 }
 
-                // ── Fixed: Sort by ──────────────────────────────────────────
+                // ── Fixed: sort by ─────────────────────────────────────────
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -229,52 +213,94 @@ fun SearchScreen(
                     }
                 }
 
-                // ── Scrollable: result count + helper cards ─────────────────
+                // ── Scrollable: results ────────────────────────────────────
                 LazyColumn(
                     modifier       = Modifier
                         .fillMaxWidth()
                         .weight(1f),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
+                    when {
+                        state.isLoading -> {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 60.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(color = GreenDark)
+                                }
+                            }
+                        }
 
-                    item {
-                        Text(
-                            text       = "${displayedHelpers.size} HELPERS FOUND",
-                            fontSize   = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color      = TextPrimary,
-                            modifier   = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
-                        )
-                    }
-
-                    items(displayedHelpers, key = { it.id }) { helper ->
-                        SearchHelperCard(
-                            helper   = helper,
-                            onBook   = { onBook(helper.id) },
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                        )
-                    }
-
-                    if (displayedHelpers.isEmpty()) {
-                        item {
-                            Box(
-                                modifier         = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 60.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        state.errorMessage != null -> {
+                            item {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 60.dp, start = 24.dp, end = 24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
                                     Text(
-                                        "No helpers found",
+                                        text     = state.errorMessage ?: "",
                                         color    = TextSecondary,
-                                        fontSize = 16.sp
+                                        fontSize = 14.sp
                                     )
                                     Spacer(Modifier.height(4.dp))
-                                    Text(
-                                        "Try a different service or clear your search",
-                                        color    = TextSecondary,
-                                        fontSize = 13.sp
-                                    )
+                                    TextButton(onClick = { viewModel.retry() }) {
+                                        Text(
+                                            "Retry",
+                                            color      = GreenDark,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        else -> {
+                            item {
+                                Text(
+                                    text       = "${displayedHelpers.size} HELPERS FOUND",
+                                    fontSize   = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color      = TextPrimary,
+                                    modifier   = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                                )
+                            }
+
+                            items(displayedHelpers, key = { it.id }) { helper ->
+                                SearchHelperCard(
+                                    helper   = helper,
+                                    onClick  = { onViewProfile(helper.id) },
+                                    onBook   = { onBook(helper.id) },
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                )
+                            }
+
+                            if (displayedHelpers.isEmpty()) {
+                                item {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 60.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                "No helpers found",
+                                                color    = TextSecondary,
+                                                fontSize = 16.sp
+                                            )
+                                            Spacer(Modifier.height(4.dp))
+                                            Text(
+                                                "Try a different service or clear your search",
+                                                color    = TextSecondary,
+                                                fontSize = 13.sp
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -288,12 +314,15 @@ fun SearchScreen(
 // ── Helper card ────────────────────────────────────────────────────────────────
 @Composable
 private fun SearchHelperCard(
-    helper: HelperCard,
+    helper: SearchHelperUi,
+    onClick: () -> Unit,
     onBook: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier  = modifier.fillMaxWidth(),
+        modifier  = modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         shape     = RoundedCornerShape(16.dp),
         colors    = CardDefaults.cardColors(containerColor = CardBg),
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
@@ -305,29 +334,28 @@ private fun SearchHelperCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             HelperInitialsAvatar(
-                initials = helper.initials,
+                initials = helper.name.take(2).uppercase(),
                 photoUrl = helper.photoUrl,
-                isActive = helper.isActive
+                isActive = true
             )
 
             Spacer(Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text       = helper.name,
-                        fontSize   = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color      = TextPrimary,
-                        maxLines   = 1,
-                        overflow   = TextOverflow.Ellipsis,
-                        modifier   = Modifier.weight(1f, fill = false)
-                    )
-                }
+                Text(
+                    text       = helper.name,
+                    fontSize   = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color      = TextPrimary,
+                    maxLines   = 1,
+                    overflow   = TextOverflow.Ellipsis
+                )
                 Text(
                     text     = helper.service,
                     fontSize = 13.sp,
-                    color    = TextSecondary
+                    color    = TextSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -342,6 +370,22 @@ private fun SearchHelperCard(
                         text     = String.format("%.1f", helper.rating),
                         fontSize = 13.sp,
                         color    = TextSecondary
+                    )
+                    helper.distanceKm?.let { km ->
+                        Text(
+                            text     = "  •  ${String.format("%.1f", km)} km",
+                            fontSize = 13.sp,
+                            color    = TextSecondary
+                        )
+                    }
+                }
+                helper.minPrice?.let { price ->
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text       = "From ₹${price.toInt()}/hr",
+                        fontSize   = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color      = GreenDark
                     )
                 }
             }
@@ -381,6 +425,8 @@ private fun HelperInitialsAvatar(initials: String, photoUrl: String?, isActive: 
                 model              = photoUrl,
                 contentDescription = initials,
                 contentScale       = ContentScale.Crop,
+                placeholder        = painterResource(R.drawable.ic_profile_placeholder),
+                error              = painterResource(R.drawable.ic_profile_placeholder),
                 modifier           = Modifier
                     .size(52.dp)
                     .clip(CircleShape)

@@ -17,6 +17,12 @@ class BookingRepository {
     suspend fun helperDetail(helperId: Int): ApiResult<HelperDetailResponse> =
         safeApiCall { api.helperDetail(helperId) }
 
+    suspend fun helpersByCategory(service: String, radiusKm: Double? = null): ApiResult<NearbyHelpersResponse> =
+        safeApiCall { api.helpersByCategory(service, radiusKm) }
+
+    suspend fun search(q: String? =null): ApiResult<NearbyHelpersResponse> =
+        safeApiCall { api.search(q)}
+
     private suspend fun <T> safeApiCall(call: suspend () -> Response<T>): ApiResult<T> {
         return try {
             val response = call()
