@@ -54,6 +54,7 @@ private val TextSecondary = Color(0xFF7A7A7A)
 private val CardBg        = Color.White
 private val WarningRed    = Color(0xFFD32F2F)
 private val BorderGray    = Color(0xFFCCCCCC)
+private val DisabledGray  = Color(0xFFBDBDBD)
 private val ALL_HOURS = (1..12).map { it.toString() }
 
 private const val SPECIAL_INSTRUCTIONS_LIMIT = 300
@@ -73,20 +74,86 @@ private fun toMinutesOfDay(hour: String, period: String): Int {
 private fun toApiTime(hour: String, period: String): String =
     String.format(Locale.ENGLISH, "%02d:00:00", toMinutesOfDay(hour, period) / 60)
 
-// Midnight today, expressed in UTC millis — matches how Material3's DatePicker represents dates internally.
+// Midnight of the user's LOCAL date, expressed in UTC millis — matches how Material3's DatePicker
+// represents dates internally. Using the local date (not the UTC date) means "yesterday" can never
+// be selectable, even in the hours after local midnight when UTC is still on the previous day.
 private fun todayUtcMidnightMillis(): Long {
-    val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-    cal.set(Calendar.HOUR_OF_DAY, 0)
-    cal.set(Calendar.MINUTE, 0)
-    cal.set(Calendar.SECOND, 0)
-    cal.set(Calendar.MILLISECOND, 0)
-    return cal.timeInMillis
+    val local = Calendar.getInstance()
+    return Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+        clear()
+        set(local.get(Calendar.YEAR), local.get(Calendar.MONTH), local.get(Calendar.DAY_OF_MONTH))
+    }.timeInMillis
 }
 
 private fun currentMinutesOfDay(): Int {
     val cal = Calendar.getInstance()
     return cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)
 }
+
+// ── Helper availability parsing ────────────────────────────────────────────────
+
+/** "Monday" / "Mon" / "mon" -> Calendar.MONDAY, or null if it isn't a day name. */
+private fun dayOfWeekOf(name: String): Int? = when (name.trim().lowercase().take(3)) {
+    "mon" -> Calendar.MONDAY
+    "tue" -> Calendar.TUESDAY
+    "wed" -> Calendar.WEDNESDAY
+    "thu" -> Calendar.THURSDAY
+    "fri" -> Calendar.FRIDAY
+    "sat" -> Calendar.SATURDAY
+    "sun" -> Calendar.SUNDAY
+    else  -> null
+}
+
+private val WEEK_ORDER = listOf(
+    Calendar.MONDAY, Calendar.TUESDAY, Calendar.WEDNESDAY, Calendar.THURSDAY,
+    Calendar.FRIDAY, Calendar.SATURDAY, Calendar.SUNDAY
+)
+
+private fun shortDayName(day: Int): String = when (day) {
+    Calendar.MONDAY    -> "Mon"
+    Calendar.TUESDAY   -> "Tue"
+    Calendar.WEDNESDAY -> "Wed"
+    Calendar.THURSDAY  -> "Thu"
+    Calendar.FRIDAY    -> "Fri"
+    Calendar.SATURDAY  -> "Sat"
+    else               -> "Sun"
+}
+
+private fun fullDayName(day: Int): String = when (day) {
+    Calendar.MONDAY    -> "Monday"
+    Calendar.TUESDAY   -> "Tuesday"
+    Calendar.WEDNESDAY -> "Wednesday"
+    Calendar.THURSDAY  -> "Thursday"
+    Calendar.FRIDAY    -> "Friday"
+    Calendar.SATURDAY  -> "Saturday"
+    else               -> "Sunday"
+}
+
+private val TIME_REGEX = Regex("""(\d{1,2})(?::(\d{2}))?(?::\d{2})?\s*([AaPp][Mm])?""")
+
+/** Accepts "09:00", "09:00:00", "9:30 AM", "6 PM" ... and returns minutes since midnight (null if unparseable). */
+private fun parseTimeToMinutes(raw: String): Int? {
+    val m = TIME_REGEX.matchEntire(raw.trim()) ?: return null
+    var hour = m.groupValues[1].toIntOrNull() ?: return null
+    val minute = m.groupValues[2].toIntOrNull() ?: 0
+    val period = m.groupValues[3].uppercase()
+    if (period == "AM" && hour == 12) hour = 0
+    if (period == "PM" && hour != 12) hour += 12
+    if (hour !in 0..24 || minute !in 0..59) return null
+    return hour * 60 + minute
+}
+
+private fun minutesToLabel(totalMinutes: Int): String {
+    val h24 = (totalMinutes / 60) % 24
+    val m = totalMinutes % 60
+    val period = if (h24 < 12) "AM" else "PM"
+    val h12 = when (val h = h24 % 12) { 0 -> 12 else -> h }
+    return String.format(Locale.ENGLISH, "%d:%02d %s", h12, m, period)
+}
+
+private fun utcMillisToDayOfWeek(utcMillis: Long): Int =
+    Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = utcMillis }
+        .get(Calendar.DAY_OF_WEEK)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,7 +163,10 @@ fun NewBookingScreen(
     services: List<ServiceOption>,
     onBookingConfirmed: (bookingId: String) -> Unit,
     onBack: () -> Unit,
-    viewModel: BookingViewModel
+    viewModel: BookingViewModel,
+    workingDays: List<String> = emptyList(),   // e.g. ["Monday", "Wednesday"]; empty = no restriction
+    availabilityStart: String = "",            // e.g. "09:00:00" or "9:00 AM"; blank = no restriction
+    availabilityEnd: String = ""               // e.g. "18:00:00" or "6:00 PM"
 ) {
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = false)
 
@@ -110,13 +180,29 @@ fun NewBookingScreen(
 
     val todayMillis = remember { todayUtcMidnightMillis() }
 
-    // ── Date picker: past dates are disabled in the UI itself ──
-    val selectableDates = remember {
+    // ── Helper's schedule ──
+    val allowedDays: Set<Int> = remember(workingDays) {
+        workingDays.mapNotNull { dayOfWeekOf(it) }.toSet()      // empty set = no day restriction
+    }
+    val availStartMin: Int? = remember(availabilityStart) { parseTimeToMinutes(availabilityStart) }
+    val availEndMin: Int?   = remember(availabilityEnd)   { parseTimeToMinutes(availabilityEnd) }
+    val hasAvailabilityWindow = availStartMin != null && availEndMin != null && availEndMin > availStartMin
+
+    val workingDaysLabel = remember(allowedDays) {
+        WEEK_ORDER.filter { it in allowedDays }.joinToString(", ") { shortDayName(it) }
+    }
+    val availabilityLabel = if (hasAvailabilityWindow)
+        "${minutesToLabel(availStartMin!!)} – ${minutesToLabel(availEndMin!!)}" else ""
+
+    // ── Date picker: past dates AND days the helper doesn't work are disabled in the UI itself ──
+    val selectableDates = remember(allowedDays, todayMillis) {
         object : SelectableDates {
             override fun isSelectableDate(utcTimeMillis: Long): Boolean =
-                utcTimeMillis >= todayMillis
+                utcTimeMillis >= todayMillis &&
+                        (allowedDays.isEmpty() || utcMillisToDayOfWeek(utcTimeMillis) in allowedDays)
+
             override fun isSelectableYear(year: Int): Boolean =
-                year >= Calendar.getInstance(TimeZone.getTimeZone("UTC")).get(Calendar.YEAR)
+                year >= Calendar.getInstance().get(Calendar.YEAR)
         }
     }
 
@@ -139,9 +225,11 @@ fun NewBookingScreen(
     val selectedDateLabel = selectedDateMillis?.let { displayDateFormat.format(Date(it)) }
         ?: "Select a date"
 
-    // Fallback safety-net check, in case a past date ever slips through
+    // Safety-net checks, in case an invalid date ever slips through the picker
     val isDateInPast = selectedDateMillis != null && selectedDateMillis < todayMillis
     val isSelectedDateToday = selectedDateMillis != null && selectedDateMillis == todayMillis
+    val isNotWorkingDay = selectedDateMillis != null && allowedDays.isNotEmpty() &&
+            utcMillisToDayOfWeek(selectedDateMillis) !in allowedDays
 
     var startHour    by remember { mutableStateOf("") }
     var startPeriod  by remember { mutableStateOf("") }
@@ -160,6 +248,10 @@ fun NewBookingScreen(
     val nowMinutes = currentMinutesOfDay()
     val isPastTimeInvalid = isSelectedDateToday && allTimeFieldsFilled &&
             (startMinutes < nowMinutes || endMinutes < nowMinutes)
+
+    // The chosen slot must sit fully inside the helper's availability window
+    val isOutsideAvailability = hasAvailabilityWindow && allTimeFieldsFilled &&
+            (startMinutes < availStartMin!! || endMinutes > availEndMin!!)
 
     // ── GPS location + human-readable address ──
     var latitude by remember { mutableStateOf("") }
@@ -229,9 +321,11 @@ fun NewBookingScreen(
     val isFormValid = selectedService != null &&
             selectedDateMillis != null &&
             !isDateInPast &&
+            !isNotWorkingDay &&
             allTimeFieldsFilled &&
             !isTimeRangeInvalid &&
-            !isPastTimeInvalid
+            !isPastTimeInvalid &&
+            !isOutsideAvailability
 
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -286,6 +380,14 @@ fun NewBookingScreen(
 
                     Spacer(Modifier.height(20.dp))
                     SectionLabel("SELECT DATE")
+                    if (workingDaysLabel.isNotBlank()) {
+                        Text(
+                            text     = "$helperName works on: $workingDaysLabel",
+                            fontSize = 12.sp,
+                            color    = TextSecondary
+                        )
+                        Spacer(Modifier.height(6.dp))
+                    }
                     Card(
                         shape     = RoundedCornerShape(14.dp),
                         colors    = CardDefaults.cardColors(containerColor = CardBg),
@@ -315,10 +417,17 @@ fun NewBookingScreen(
                         }
                     }
 
-                    // Safety-net warning (shouldn't normally trigger since the picker disables past days)
+                    // Safety-net warnings (shouldn't normally trigger since the picker disables these days)
                     if (isDateInPast) {
                         Spacer(Modifier.height(10.dp))
                         WarningBanner("Please enter a valid date (today or later)")
+                    } else if (isNotWorkingDay) {
+                        Spacer(Modifier.height(10.dp))
+                        WarningBanner(
+                            "$helperName doesn't work on " +
+                                    "${fullDayName(utcMillisToDayOfWeek(selectedDateMillis!!))}s. " +
+                                    "Please pick another day."
+                        )
                     }
 
                     if (showDatePicker) {
@@ -348,6 +457,14 @@ fun NewBookingScreen(
 
                     Spacer(Modifier.height(20.dp))
                     SectionLabel("SELECT TIME")
+                    if (hasAvailabilityWindow) {
+                        Text(
+                            text     = "Available between $availabilityLabel",
+                            fontSize = 12.sp,
+                            color    = TextSecondary
+                        )
+                        Spacer(Modifier.height(6.dp))
+                    }
 
                     Text("Starting Time", fontSize = 16.sp, color = GreenDark)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -372,6 +489,15 @@ fun NewBookingScreen(
                     if (!isTimeRangeInvalid && isPastTimeInvalid) {
                         Spacer(Modifier.height(10.dp))
                         WarningBanner("Selected time has already passed today. Please choose a future time.")
+                    }
+
+                    // ── Warning shown when the slot is outside the helper's availability ──
+                    if (!isTimeRangeInvalid && isOutsideAvailability) {
+                        Spacer(Modifier.height(10.dp))
+                        WarningBanner(
+                            "$helperName is only available between $availabilityLabel. " +
+                                    "Please choose a time within this window."
+                        )
                     }
 
                     Spacer(Modifier.height(20.dp))
@@ -478,7 +604,12 @@ fun NewBookingScreen(
                             }
                         },
                         shape    = RoundedCornerShape(12.dp),
-                        colors   = ButtonDefaults.buttonColors(containerColor = GreenDark),
+                        colors   = ButtonDefaults.buttonColors(
+                            containerColor         = GreenDark,
+                            contentColor           = Color.White,
+                            disabledContainerColor = DisabledGray,
+                            disabledContentColor   = Color.White
+                        ),
                         enabled  = isFormValid && !isSubmitting,
                         modifier = Modifier
                             .fillMaxWidth()

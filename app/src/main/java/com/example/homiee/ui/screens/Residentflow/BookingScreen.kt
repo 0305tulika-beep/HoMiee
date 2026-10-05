@@ -23,6 +23,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.homiee.R
@@ -42,6 +43,10 @@ private val TextSecondary = Color(0xFF7A7A7A)
 private val StarColor     = Color(0xFFF4B400)
 private val CardBg        = Color.White
 private val CancelRed     = Color(0xFFD32F2F)
+
+// Pending card palette
+private val PendingOrange = Color(0xFFF57C1F)
+private val PendingTint   = Color(0xFFFFF4E0)
 
 // ── Data ───────────────────────────────────────────────────────────────────────
 enum class BookingTab { UPCOMING, ACTIVE, COMPLETED }
@@ -152,7 +157,7 @@ fun BookingsScreen(
                         color      = Color.White,
                         modifier   = Modifier
                             .statusBarsPadding()
-                            .padding(horizontal = 20.dp, vertical = 20.dp)
+                            .padding(horizontal = 20.dp, vertical = 12.dp)
                     )
                 }
 
@@ -173,7 +178,7 @@ fun BookingsScreen(
                             )
                         }
                     }
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(12.dp))
                 }
 
                 when {
@@ -218,9 +223,10 @@ fun BookingsScreen(
                         items(filteredBookings, key = { it.id }) { booking ->
                             if (booking.isPending) {
                                 PendingBookingCard(
-                                    booking       = booking,
-                                    onCancelClick = { cancelTargetId = it },
-                                    modifier      = Modifier.padding(horizontal = 16.dp, vertical = 5.dp)
+                                    booking        = booking,
+                                    onDetailsClick = onDetailsClick,
+                                    onCancelClick  = { cancelTargetId = it },
+                                    modifier       = Modifier.padding(horizontal = 16.dp, vertical = 5.dp)
                                 )
                             } else {
                                 BookingCard(
@@ -285,87 +291,151 @@ private fun BookingTabChip(
     }
 }
 
-// ── Pending booking card (narrow, amber) ───────────────────────────────────────
+// ── Pending booking card ───────────────────────────────────────────────────────
+// Top row : avatar | name + service | "Pending" chip
+// Footer  : date · time on the left, outlined Cancel pill on the right
 @Composable
 private fun PendingBookingCard(
     booking: BookingItem,
+    onDetailsClick: (String) -> Unit,
     onCancelClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier  = modifier.fillMaxWidth(),
-        shape     = RoundedCornerShape(12.dp),
-        colors    = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape     = RoundedCornerShape(16.dp),
+        colors    = CardDefaults.cardColors(containerColor = PendingTint),
+        border    = BorderStroke(1.dp, PendingOrange.copy(alpha = 0.25f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
-            modifier              = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment     = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier
+                .height(IntrinsicSize.Min)
+                .clickable { onDetailsClick(booking.id) }
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier          = Modifier.weight(1f)
-            ) {
-                Box(
-                    modifier         = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFF57F17)),
-                    contentAlignment = Alignment.Center
+            // accent bar
+            Box(
+                modifier = Modifier
+                    .width(5.dp)
+                    .fillMaxHeight()
+                    .background(PendingOrange)
+            )
+
+            Column(modifier = Modifier.weight(1f)) {
+
+                // ── Top row ──────────────────────────────────────────────────
+                Row(
+                    modifier          = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text       = booking.initials,
-                        color      = Color.White,
-                        fontSize   = 13.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Spacer(Modifier.width(10.dp))
-                Column {
-                    Text(
-                        text       = booking.helperName,
-                        fontSize   = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color      = TextPrimary
-                    )
-                    Text(
-                        text     = "${booking.service} · ${booking.bookingDate} · ${booking.bookingTime}",
-                        fontSize = 11.sp,
-                        color    = TextSecondary
-                    )
-                }
-            }
+                    Box(
+                        modifier         = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(PendingOrange),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text       = booking.initials,
+                            color      = Color.White,
+                            fontSize   = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
 
-            Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(10.dp))
 
-            Column(horizontalAlignment = Alignment.End) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text       = booking.helperName,
+                            fontSize   = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color      = TextPrimary,
+                            maxLines   = 1,
+                            overflow   = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text     = booking.service,
+                            fontSize = 12.5.sp,
+                            color    = TextSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    Spacer(Modifier.width(8.dp))
+
+                    // status chip
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(PendingOrange)
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(Color.White)
+                        )
+                        Spacer(Modifier.width(5.dp))
+                        Text(
+                            text       = "Pending",
+                            color      = Color.White,
+                            fontSize   = 11.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
+                // divider
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Color(0xFFF57F17))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(PendingOrange.copy(alpha = 0.15f))
+                )
+
+                // ── Footer: date/time + Cancel ───────────────────────────────
+                Row(
+                    modifier              = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text       = "Pending",
-                        color      = Color.White,
-                        fontSize   = 11.sp,
-                        fontWeight = FontWeight.Bold
+                        text       = if (booking.bookingDate.isBlank()) ""
+                        else "${booking.bookingDate} · ${booking.bookingTime}",
+                        fontSize   = 12.5.sp,
+                        fontWeight = FontWeight.Medium,
+                        color      = TextPrimary,
+                        maxLines   = 1,
+                        overflow   = TextOverflow.Ellipsis,
+                        modifier   = Modifier.weight(1f)
                     )
+
+                    Box(
+                        modifier         = Modifier
+                            .height(30.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(Color.White)
+                            .border(1.dp, CancelRed, RoundedCornerShape(50))
+                            .clickable { onCancelClick(booking.id) }
+                            .padding(horizontal = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text       = "Cancel",
+                            color      = CancelRed,
+                            fontSize   = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text       = "Cancel",
-                    color      = CancelRed,
-                    fontSize   = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier   = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .clickable { onCancelClick(booking.id) }
-                        .padding(horizontal = 4.dp, vertical = 2.dp)
-                )
             }
         }
     }

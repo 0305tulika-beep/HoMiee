@@ -103,7 +103,7 @@ fun BookingDetailsScreen(
                     color      = TextPrimary
                 )
             }
-            Spacer(Modifier.height(100.dp))
+            Spacer(Modifier.height(4.dp))
 
             when {
                 // ── Nothing to show yet ──────────────────────────────────────

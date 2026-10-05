@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -49,6 +50,8 @@ import com.example.homiee.ui.components.NavTab
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
 import com.example.homiee.ui.components.statusBarsPadding
 import com.example.homiee.ui.theme.GreenDark
+import com.example.homiee.ui.theme.GreenLight
+import com.example.homiee.ui.theme.GreenTint
 import com.example.homiee.ui.theme.TextMuted
 import com.example.homiee.ui.theme.TextPrimary
 import com.example.homiee.viewmodel.NearbyHelpersViewModel
@@ -58,19 +61,20 @@ import com.example.homiee.viewmodel.NearbyHelpersViewModel
 
 private val CategoryCircleBg   = Color(0xFFE4F3EC)
 private val CategoryCircleEdge = Color(0xFFCFE8DD)
-private val CardMint           = Color(0xFFEAF6F2)
-private val CardMintEdge       = Color(0xFFD7EEE6)
-private val StatusGreenBg      = Color(0xFFCDEFDD)
-private val StatusGreenFg      = Color(0xFF1E9E5A)
 private val SosRed             = Color(0xFFE6483A)
 private val SosCardBg          = Color(0xFFFDEDEC)
 private val SosCardEdge        = Color(0xFFF8D3CF)
 private val SosBodyText        = Color(0xFF7A6E6C)
 private val AvatarGreen        = Color(0xFF2E7D67)
-private val VerifiedGreen      = Color(0xFF1E9E5A)
-private val ActivityTitle      = Color(0xFF16211D)
-private val ActivitySubtitle   = Color(0xFF6B7570)
-private val ChevronGray        = Color(0xFF9AA6A1)
+
+// Recent-activity status palettes (one distinct look per status)
+private val PendingOrange  = Color(0xFFF57C1F)
+private val PendingTint    = Color(0xFFFFF4E0)
+private val PendingDark    = Color(0xFF9A4A00)
+private val UpcomingBlue   = Color(0xFF2F6FDE)
+private val UpcomingTint   = Color(0xFFE8F0FD)
+private val CompletedSlate = Color(0xFF6B7C85)
+private val CompletedTint  = Color(0xFFEEF2F1)
 
 
 // ── Quick categories data ─────────────────────────────────────────────────
@@ -116,21 +120,11 @@ fun ResidentHomeScreen(
                 onTabSelected = { tab ->
 
                     val route = when (tab) {
-
-                        NavTab.HOME ->
-                            Routes.HOME_RES
-
-                        NavTab.SEARCH ->
-                            Routes.SEARCH
-
-                        NavTab.BOOKINGS ->
-                            Routes.BOOKINGS
-
-                        NavTab.MESSAGE ->
-                            Routes.MESSAGES
-
-                        NavTab.ACCOUNT ->
-                            Routes.ACCOUNT
+                        NavTab.HOME     -> Routes.HOME_RES
+                        NavTab.SEARCH   -> Routes.SEARCH
+                        NavTab.BOOKINGS -> Routes.BOOKINGS
+                        NavTab.MESSAGE  -> Routes.MESSAGES
+                        NavTab.ACCOUNT  -> Routes.ACCOUNT
                     }
 
                     onNavItemClick(route)
@@ -170,7 +164,7 @@ fun ResidentHomeScreen(
                         .padding(statusBarsPadding())
                         .padding(
                             horizontal = 20.dp,
-                            vertical = 16.dp
+                            vertical = 10.dp
                         ),
                     horizontalAlignment = Alignment.Start
                 ) {
@@ -217,7 +211,7 @@ fun ResidentHomeScreen(
                     )
 
                     Spacer(
-                        Modifier.height(24.dp)
+                        Modifier.height(16.dp)
                     )
 
 
@@ -232,7 +226,7 @@ fun ResidentHomeScreen(
                     )
 
                     Spacer(
-                        Modifier.height(12.dp)
+                        Modifier.height(8.dp)
                     )
 
 
@@ -357,7 +351,7 @@ fun ResidentHomeScreen(
 
 
                     Spacer(
-                        Modifier.height(24.dp)
+                        Modifier.height(16.dp)
                     )
 
 
@@ -369,7 +363,7 @@ fun ResidentHomeScreen(
                     )
 
                     Spacer(
-                        Modifier.height(12.dp)
+                        Modifier.height(8.dp)
                     )
 
 
@@ -394,7 +388,7 @@ fun ResidentHomeScreen(
 
                         Column(
                             verticalArrangement =
-                                Arrangement.spacedBy(12.dp)
+                                Arrangement.spacedBy(8.dp)
                         ) {
 
                             recentToShow.forEach { booking ->
@@ -412,7 +406,7 @@ fun ResidentHomeScreen(
 
 
                     Spacer(
-                        Modifier.height(24.dp)
+                        Modifier.height(16.dp)
                     )
 
 
@@ -424,7 +418,7 @@ fun ResidentHomeScreen(
                     )
 
                     Spacer(
-                        Modifier.height(12.dp)
+                        Modifier.height(8.dp)
                     )
 
 
@@ -444,7 +438,7 @@ fun ResidentHomeScreen(
 
 
                     Spacer(
-                        Modifier.height(24.dp)
+                        Modifier.height(8.dp)
                     )
                 }
             }
@@ -471,16 +465,16 @@ private fun SectionHeader(
             imageVector = icon,
             contentDescription = null,
             tint = GreenDark,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(22.dp)
         )
 
         Spacer(
-            Modifier.width(10.dp)
+            Modifier.width(8.dp)
         )
 
         Text(
             text = title,
-            fontSize = 20.sp,
+            fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             color = TextPrimary,
             modifier = Modifier.weight(1f)
@@ -853,7 +847,19 @@ private fun HelperCard(
 }
 
 
-// ---------- Activity card ----------
+// ---------- Activity card (compact, one distinct style per status) ----------
+
+private data class ActivityStyle(
+    val container: Color,
+    val border: Color?,
+    val title: Color,
+    val sub: Color,
+    val avatarBg: Color,
+    val avatarFg: Color,
+    val chipBg: Color,
+    val chipFg: Color,
+    val chipBorder: Color?
+)
 
 @Composable
 private fun ActivityCard(
@@ -868,25 +874,87 @@ private fun ActivityCard(
         else                                   -> "Completed"
     }
 
+    val style = when {
+
+        // Pending: amber tint, solid orange chip
+        booking.isPending -> ActivityStyle(
+            container  = PendingTint,
+            border     = PendingOrange.copy(alpha = 0.45f),
+            title      = TextPrimary,
+            sub        = PendingDark,
+            avatarBg   = PendingOrange,
+            avatarFg   = Color.White,
+            chipBg     = PendingOrange,
+            chipFg     = Color.White,
+            chipBorder = null
+        )
+
+        // Active: solid dark green card, light text
+        booking.status == BookingTab.ACTIVE -> ActivityStyle(
+            container  = GreenDark,
+            border     = null,
+            title      = Color.White,
+            sub        = GreenTint,
+            avatarBg   = GreenLight,
+            avatarFg   = GreenDark,
+            chipBg     = GreenLight,
+            chipFg     = GreenDark,
+            chipBorder = null
+        )
+
+        // Upcoming / confirmed: blue tint, white outlined chip
+        booking.status == BookingTab.UPCOMING -> ActivityStyle(
+            container  = UpcomingTint,
+            border     = UpcomingBlue.copy(alpha = 0.30f),
+            title      = TextPrimary,
+            sub        = TextMuted,
+            avatarBg   = UpcomingBlue,
+            avatarFg   = Color.White,
+            chipBg     = Color.White,
+            chipFg     = UpcomingBlue,
+            chipBorder = UpcomingBlue
+        )
+
+        // Completed: muted grey
+        else -> ActivityStyle(
+            container  = CompletedTint,
+            border     = null,
+            title      = TextPrimary,
+            sub        = TextMuted,
+            avatarBg   = CompletedSlate,
+            avatarFg   = Color.White,
+            chipBg     = Color.White,
+            chipFg     = CompletedSlate,
+            chipBorder = CompletedSlate.copy(alpha = 0.5f)
+        )
+    }
+
+    val shape = RoundedCornerShape(14.dp)
+
+    val subtitle =
+        if (booking.bookingDate.isNotBlank())
+            "${booking.helperName} · ${booking.bookingDate} · ${booking.bookingTime}"
+        else
+            booking.helperName
+
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(
-                RoundedCornerShape(18.dp)
-            )
-            .background(CardMint)
-            .border(
-                1.dp,
-                CardMintEdge,
-                RoundedCornerShape(18.dp)
+            .clip(shape)
+            .background(style.container)
+            .then(
+                if (style.border != null)
+                    Modifier.border(1.dp, style.border, shape)
+                else
+                    Modifier
             )
             .clickable {
                 onClick()
             }
             .padding(
-                vertical = 16.dp,
-                horizontal = 16.dp
+                horizontal = 12.dp,
+                vertical = 9.dp
             ),
 
         verticalAlignment =
@@ -895,9 +963,9 @@ private fun ActivityCard(
 
         Box(
             modifier = Modifier
-                .size(52.dp)
+                .size(36.dp)
                 .clip(CircleShape)
-                .background(GreenDark),
+                .background(style.avatarBg),
 
             contentAlignment =
                 Alignment.Center
@@ -905,15 +973,15 @@ private fun ActivityCard(
 
             Text(
                 text = booking.initials,
-                color = Color.White,
-                fontSize = 16.sp,
+                color = style.avatarFg,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Bold
             )
         }
 
 
         Spacer(
-            Modifier.width(14.dp)
+            Modifier.width(10.dp)
         )
 
 
@@ -923,43 +991,20 @@ private fun ActivityCard(
 
             Text(
                 text = booking.service,
-                fontSize = 17.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = ActivityTitle
+                color = style.title,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-
-
-            Spacer(
-                Modifier.height(2.dp)
-            )
-
 
             Text(
-                text = booking.helperName,
-                fontSize = 13.sp,
-                color = ActivitySubtitle
+                text = subtitle,
+                fontSize = 12.sp,
+                color = style.sub,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-
-
-            if (
-                booking.status == BookingTab.UPCOMING &&
-                booking.bookingDate.isNotBlank()
-            ) {
-
-                Spacer(
-                    Modifier.height(4.dp)
-                )
-
-
-                Text(
-                    text =
-                        "${booking.bookingDate} · ${booking.bookingTime}",
-
-                    fontSize = 12.sp,
-
-                    color = ActivitySubtitle
-                )
-            }
         }
 
 
@@ -973,29 +1018,51 @@ private fun ActivityCard(
                 Alignment.CenterVertically
         ) {
 
-            Box(
+            Row(
                 modifier = Modifier
-                    .clip(
-                        RoundedCornerShape(20.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(style.chipBg)
+                    .then(
+                        if (style.chipBorder != null)
+                            Modifier.border(
+                                1.dp,
+                                style.chipBorder,
+                                RoundedCornerShape(50)
+                            )
+                        else
+                            Modifier
                     )
-                    .background(StatusGreenBg)
                     .padding(
-                        horizontal = 14.dp,
-                        vertical = 7.dp
-                    )
+                        horizontal = 10.dp,
+                        vertical = 4.dp
+                    ),
+
+                verticalAlignment =
+                    Alignment.CenterVertically
             ) {
+
+                Box(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(style.chipFg)
+                )
+
+                Spacer(
+                    Modifier.width(5.dp)
+                )
 
                 Text(
                     text = statusText,
-                    color = StatusGreenFg,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold
+                    color = style.chipFg,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
 
 
             Spacer(
-                Modifier.width(4.dp)
+                Modifier.width(2.dp)
             )
 
 
@@ -1005,7 +1072,7 @@ private fun ActivityCard(
 
                 contentDescription = null,
 
-                tint = ChevronGray,
+                tint = style.sub,
 
                 modifier =
                     Modifier.size(20.dp)
@@ -1035,8 +1102,8 @@ private fun SosButton(
                 RoundedCornerShape(18.dp)
             )
             .padding(
-                vertical = 18.dp,
-                horizontal = 18.dp
+                vertical = 14.dp,
+                horizontal = 16.dp
             ),
 
         verticalAlignment =
@@ -1045,7 +1112,7 @@ private fun SosButton(
 
         Box(
             modifier = Modifier
-                .size(56.dp)
+                .size(48.dp)
                 .clip(CircleShape)
                 .background(SosRed),
 
@@ -1063,7 +1130,7 @@ private fun SosButton(
 
 
         Spacer(
-            Modifier.width(16.dp)
+            Modifier.width(14.dp)
         )
 
 

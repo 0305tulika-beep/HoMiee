@@ -479,7 +479,10 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                 helperId = helperId.toIntOrNull() ?: 0,
                 helperName = helperName,
                 services = services,
-                viewModel = bookingViewModel,            // the shared one, not a new instance
+                viewModel = bookingViewModel,
+                workingDays = profileViewModel.helper?.workingDays.orEmpty(),
+                availabilityStart = profileViewModel.helper?.availabilityStart.orEmpty(),
+                availabilityEnd = profileViewModel.helper?.availabilityEnd.orEmpty(),
                 onBookingConfirmed = {
                     navController.navigate(Routes.BOOKINGS) {
                         popUpTo(Routes.HOME_RES) { inclusive = false }
