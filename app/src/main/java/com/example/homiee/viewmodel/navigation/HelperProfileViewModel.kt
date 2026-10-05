@@ -67,7 +67,11 @@ private fun HelperDetailDto.toProfileData(): HelperProfileData = HelperProfileDa
     rating            = avg_rating?.toFloatOrNull() ?: 0f,
     about             = about.orEmpty(),
     services          = services.orEmpty().map {
-        ServiceWithPrice(it.name.orEmpty(), formatPrice(it.price_per_hour))
+        ServiceWithPrice(
+            name = it.name.orEmpty(),
+            price = formatPrice(it.price_per_hour),
+            serviceId = it.service_id
+        )
     },
     experience        = formatExperience(years_of_experience),
     languages         = languages_spoken.orEmpty().joinToString(", "),

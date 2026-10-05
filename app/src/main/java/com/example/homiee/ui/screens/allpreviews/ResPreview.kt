@@ -17,6 +17,15 @@ import com.example.homiee.ui.screens.Residentflow.ResidentHomeScreen
 import com.example.homiee.ui.screens.Residentflow.SearchScreen
 import com.example.homiee.ui.theme.HomieeTheme
 import com.example.homiee.ui.screens.Residentflow.HelperReviewsScreen
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.homiee.viewmodel.BookingViewModel
+import com.example.homiee.viewmodel.BookingViewModelFactory
+import com.example.homiee.ui.screens.Residentflow.ServiceOption
+
+@Composable
+private fun previewBookingViewModel(): BookingViewModel =
+    viewModel(factory = BookingViewModelFactory(LocalContext.current))
 
 @Preview(showBackground = true, showSystemUi = true, name = "Resident Home")
 @Composable fun ResidentHomePreview() {
@@ -39,7 +48,7 @@ import com.example.homiee.ui.screens.Residentflow.HelperReviewsScreen
 @Composable fun BookingsScreenPreview() {
     HomieeTheme {
         BookingsScreen(
-            bookings = emptyList(),
+            viewModel = previewBookingViewModel(),
             onNavItemClick = {},
             onDetailsClick = {},
             onChatClick = {},
@@ -111,9 +120,13 @@ import com.example.homiee.ui.screens.Residentflow.HelperReviewsScreen
 @Composable fun NewBookingScreenPreview() {
     HomieeTheme {
         NewBookingScreen(
+            helperId = 1,
             helperName = "Ramesh Kumar",
-            helperService = "House Cleaning",
-            helperRating = 4.9f,
+            services = listOf(
+                ServiceOption(id = 1, name = "House Cleaning"),
+                ServiceOption(id = 2, name = "Cooking")
+            ),
+            viewModel = previewBookingViewModel(),
             onBookingConfirmed = {},
             onBack = {}
         )
@@ -138,10 +151,7 @@ import com.example.homiee.ui.screens.Residentflow.HelperReviewsScreen
     HomieeTheme {
         BookingDetailsScreen(
             bookingId = "dfgfjhadg",
-            helperName = "Ramesh Kumar",
-            service = "Cleaning",
-            bookingDate = "Jun 12, 2026",
-            bookingTime = "10:00 AM",
+            viewModel = previewBookingViewModel(),
             onBack = {}
         )
     }

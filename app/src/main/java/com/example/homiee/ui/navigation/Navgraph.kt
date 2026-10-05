@@ -58,7 +58,7 @@ object Routes {
     const val HELPER_REVIEWS     = "helper_reviews/{helperId}"
 
     // Booking flow
-    const val NEW_BOOKING       = "new_booking/{helperName}/{service}/{rating}"
+    const val NEW_BOOKING       = "new_booking/{helperId}/{helperName}"
     const val BOOKING_CONFIRMED = "booking_confirmed/{bookingId}"
     const val BOOKING_DETAILS   = "booking_details/{bookingId}"
 
@@ -92,10 +92,9 @@ object Routes {
         val encodedService = URLEncoder.encode(service,    "UTF-8")
         return "chat/$threadId/$encodedName/$encodedService"
     }
-    fun newBookingRoute(helperName: String, service: String, rating: Float): String {
-        val encodedName    = URLEncoder.encode(helperName, "UTF-8")
-        val encodedService = URLEncoder.encode(service,    "UTF-8")
-        return "new_booking/$encodedName/$encodedService/$rating"
+    fun newBookingRoute(helperId: String, helperName: String): String {
+        val encodedName = URLEncoder.encode(helperName, "UTF-8")
+        return "new_booking/$helperId/$encodedName"
     }
 }
 
@@ -165,6 +164,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             BackHandler { (context as? Activity)?.finish() }
 
             val bookings by bookingViewModel.bookings.collectAsState()
+            LaunchedEffect(Unit) { bookingViewModel.refresh() }
 
             ResidentHomeScreen(
                 recentActivities = bookings,
@@ -355,21 +355,25 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
 
         // ── Bookings ─────────────────────────────────────────────────────────
         composable(Routes.BOOKINGS) {
-            val bookings by bookingViewModel.bookings.collectAsState()
             BookingsScreen(
-                bookings = bookings,
+                viewModel = bookingViewModel,
                 onNavItemClick = { navController.navigateMain(it) },
                 onDetailsClick = { bookingId ->
                     navController.navigate(Routes.bookingDetailsRoute(bookingId))
                 },
                 onChatClick = { bookingId ->
-                    navController.navigate(Routes.chatRoute(bookingId, "Ramesh Kumar", "Cleaning"))
+                    val b = bookingViewModel.getBookingById(bookingId)
+                    navController.navigate(
+                        Routes.chatRoute(bookingId, b?.helperName ?: "Helper", b?.service ?: "")
+                    )
                 },
                 onActivityClick = { bookingId ->
-                    navController.navigate(Routes.activityRoute(bookingId, "Ramesh Kumar"))
+                    val b = bookingViewModel.getBookingById(bookingId)
+                    navController.navigate(Routes.activityRoute(bookingId, b?.helperName ?: "Helper"))
                 },
                 onReviewClick = { bookingId ->
-                    navController.navigate(Routes.feedbackRoute(bookingId, "Ramesh Kumar"))
+                    val b = bookingViewModel.getBookingById(bookingId)
+                    navController.navigate(Routes.feedbackRoute(bookingId, b?.helperName ?: "Helper"))
                 }
             )
         }
@@ -422,9 +426,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                 helperId = helperId,
                 viewModel = helperProfileViewModel,
                 onBookNow = {
-                    navController.navigate(
-                        Routes.newBookingRoute(helperName, helperService, helper?.rating ?: 0f)
-                    )
+                    navController.navigate(Routes.newBookingRoute(helperId, helperName))
                 },
                 onBack = { navController.popBackStack() },
                 onChat = {
@@ -452,23 +454,32 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
         composable(
             route = Routes.NEW_BOOKING,
             arguments = listOf(
-                navArgument("helperName") { type = NavType.StringType },
-                navArgument("service") { type = NavType.StringType },
-                navArgument("rating") { type = NavType.FloatType }
+                navArgument("helperId") { type = NavType.StringType },
+                navArgument("helperName") { type = NavType.StringType }
             )
         ) { backStackEntry ->
+            val helperId = backStackEntry.arguments?.getString("helperId") ?: ""
             val helperName = URLDecoder.decode(
                 backStackEntry.arguments?.getString("helperName") ?: "", "UTF-8"
             )
-            val service = URLDecoder.decode(
-                backStackEntry.arguments?.getString("service") ?: "", "UTF-8"
+
+            // Reuse the profile screen's (already loaded) ViewModel to get this helper's services
+            val profileEntry = remember(backStackEntry) {
+                runCatching { navController.getBackStackEntry(Routes.HELPER_PROFILE) }.getOrNull()
+            }
+            val profileViewModel: HelperProfileViewModel = viewModel(
+                viewModelStoreOwner = profileEntry ?: backStackEntry,
+                key = "helper_profile_$helperId",
+                factory = HelperProfileViewModel.Factory(helperId)
             )
-            val rating = backStackEntry.arguments?.getFloat("rating") ?: 0f
+            val services = profileViewModel.helper?.services.orEmpty()
+                .map { ServiceOption(id = it.serviceId, name = it.name) }   // ← check the id field name
 
             NewBookingScreen(
+                helperId = helperId.toIntOrNull() ?: 0,
                 helperName = helperName,
-                helperService = service,
-                helperRating = rating,
+                services = services,
+                viewModel = bookingViewModel,            // the shared one, not a new instance
                 onBookingConfirmed = {
                     navController.navigate(Routes.BOOKINGS) {
                         popUpTo(Routes.HOME_RES) { inclusive = false }
@@ -491,6 +502,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                 helperName = booking?.helperName ?: "Helper",
                 bookingDate = booking?.bookingDate ?: "",
                 bookingTime = booking?.bookingTime ?: "",
+                totalAmount = booking?.totalAmount?.takeIf { it.isNotBlank() }?.let { "₹$it" } ?: "",
                 onTimeout = {
                     bookingViewModel.dismissConfirmation()
                     navController.navigate(Routes.bookingDetailsRoute(bookingId)) {
@@ -506,23 +518,12 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             arguments = listOf(navArgument("bookingId") { type = NavType.StringType })
         ) { backStackEntry ->
             val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
-            val booking = bookingViewModel.getBookingById(bookingId)
 
             BookingDetailsScreen(
                 bookingId = bookingId,
-                helperName = booking?.helperName ?: "Helper",
-                service = booking?.service ?: "",
-                bookingDate = booking?.bookingDate ?: "",
-                bookingTime = booking?.bookingTime ?: "",
-                address = booking?.address ?: "",
-                onChat = {
-                    navController.navigate(
-                        Routes.chatRoute(
-                            bookingId,
-                            booking?.helperName ?: "Helper",
-                            booking?.service ?: ""
-                        )
-                    )
+                viewModel = bookingViewModel,
+                onChat = { b ->
+                    navController.navigate(Routes.chatRoute(bookingId, b.helperName, b.service))
                 },
                 onBack = { navController.popBackStack() }
             )

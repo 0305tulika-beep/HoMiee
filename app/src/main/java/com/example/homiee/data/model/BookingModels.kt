@@ -1,5 +1,7 @@
 package com.example.homiee.data.model
 
+import com.google.gson.annotations.SerializedName
+
 // ── GET /api/bookings/helpers/nearby/ ─────────────────────────────────────────
 
 data class NearbyHelpersResponse(
@@ -68,4 +70,45 @@ data class HelperRatingDto(
     val score: Int?,
     val feedback: String?,
     val created_at: String?
+)
+
+data class CreateBookingRequest(
+    @SerializedName("helper_id") val helperId: Int,
+    @SerializedName("service_id") val serviceId: Int,
+    @SerializedName("booking_date") val bookingDate: String,   // yyyy-MM-dd
+    @SerializedName("start_time") val startTime: String,       // HH:mm:ss
+    @SerializedName("end_time") val endTime: String,           // HH:mm:ss
+    @SerializedName("special_instructions") val specialInstructions: String? = null
+)
+
+data class BookingDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("resident_id") val residentId: Int = 0,
+    @SerializedName("resident_name") val residentName: String = "",
+    @SerializedName("helper_id") val helperId: Int = 0,
+    @SerializedName("helper_name") val helperName: String = "",
+    @SerializedName("service_id") val serviceId: Int = 0,
+    @SerializedName("service") val service: String = "",
+    @SerializedName("booking_date") val bookingDate: String = "",
+    @SerializedName("start_time") val startTime: String = "",
+    @SerializedName("end_time") val endTime: String = "",
+    @SerializedName("special_instructions") val specialInstructions: String? = null,
+    @SerializedName("total_amount") val totalAmount: String = "",
+    @SerializedName("status") val status: String = "",
+    @SerializedName("created_at") val createdAt: String = "",
+    @SerializedName("updated_at") val updatedAt: String = ""
+)
+
+// create / detail / cancel
+data class BookingResponse(
+    val status: String? = null,
+    val message: String? = null,
+    val data: BookingDto? = null
+)
+
+// mine
+data class BookingListResponse(
+    val status: String? = null,
+    val message: String? = null,
+    val data: List<BookingDto>? = null
 )

@@ -1,5 +1,6 @@
 package com.example.homiee.ui.screens.Residentflow
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -19,18 +20,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import com.example.homiee.R
 import com.example.homiee.navigation.Routes
 import com.example.homiee.ui.components.BottomNavBar
 import com.example.homiee.ui.components.NavTab
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
 import com.example.homiee.ui.theme.GreenDark
+import com.example.homiee.viewmodel.BookingViewModel
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 private val Teal   = Color(0xFFE0F2EF)
@@ -40,6 +41,7 @@ private val TextPrimary   = Color(0xFF1A1A1A)
 private val TextSecondary = Color(0xFF7A7A7A)
 private val StarColor     = Color(0xFFF4B400)
 private val CardBg        = Color.White
+private val CancelRed     = Color(0xFFD32F2F)
 
 // ── Data ───────────────────────────────────────────────────────────────────────
 enum class BookingTab { UPCOMING, ACTIVE, COMPLETED }
@@ -54,35 +56,55 @@ data class BookingItem(
     val bookingDate: String = "",
     val bookingTime: String = "",
     val address: String = "",
-    val initials: String = helperName.take(2).uppercase()
-)
-
-private val MOCK_BOOKINGS = listOf(
-    BookingItem("b001", "Ramesh Kumar", "Cleaning", 4.9f, BookingTab.ACTIVE),
-    BookingItem("b002", "Ramesh Kumar", "Cleaning", 4.9f, BookingTab.ACTIVE),
-    BookingItem("b003", "Sunita Devi",  "Cooking",  4.8f, BookingTab.UPCOMING,
-        isPending = true,  bookingDate = "Jun 15, 2026", bookingTime = "10:00 AM"),
-    BookingItem("b004", "Kavita Singh", "Eldercare",  4.6f, BookingTab.UPCOMING,
-        isPending = false, bookingDate = "Jun 16, 2026", bookingTime = "2:00 PM"),
-    BookingItem("b005", "Meena Verma",  "Eldercare",  4.7f, BookingTab.COMPLETED),
+    val initials: String = helperName.take(2).uppercase(),
+    // ── added for the booking API ──
+    val helperId: String = "",
+    val endTime: String = "",
+    val durationLabel: String = "",
+    val totalAmount: String = "",
+    val specialInstructions: String = "",
+    val rawStatus: String = ""          // pending | confirmed | completed | rejected | cancelled
 )
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
 @Composable
 fun BookingsScreen(
-    bookings:        List<BookingItem>,
+    viewModel:       BookingViewModel,
     onNavItemClick:  (String) -> Unit = {},
     onDetailsClick:  (String) -> Unit = {},
     onChatClick:     (String) -> Unit = {},
     onActivityClick: (String) -> Unit = {},
     onReviewClick:   (String) -> Unit = {}
-){
+) {
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = false)
 
-    var selectedTab by remember { mutableStateOf(BookingTab.UPCOMING) }
+    val context = LocalContext.current
 
-    val filteredBookings = remember(selectedTab) {
-        MOCK_BOOKINGS.filter { it.status == selectedTab }
+    val bookings     by viewModel.bookings.collectAsState()
+    val isLoading    by viewModel.isLoading.collectAsState()
+    val loadError    by viewModel.loadError.collectAsState()
+    val isCancelling by viewModel.isCancelling.collectAsState()
+
+    var selectedTab    by remember { mutableStateOf(BookingTab.UPCOMING) }
+    var cancelTargetId by remember { mutableStateOf<String?>(null) }
+
+    // Fetch fresh bookings every time this screen opens
+    LaunchedEffect(Unit) { viewModel.refresh() }
+
+    LaunchedEffect(Unit) {
+        viewModel.messages.collect { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+    }
+
+    val filteredBookings = remember(bookings, selectedTab) {
+        bookings.filter { it.status == selectedTab }
+    }
+
+    cancelTargetId?.let { id ->
+        CancelBookingDialog(
+            isCancelling = isCancelling,
+            onConfirm    = { viewModel.cancelBooking(id) { cancelTargetId = null } },
+            onDismiss    = { cancelTargetId = null }
+        )
     }
 
     Scaffold(
@@ -154,40 +176,81 @@ fun BookingsScreen(
                     Spacer(Modifier.height(16.dp))
                 }
 
-                // ── Cards ────────────────────────────────────────────────────
-                items(filteredBookings, key = { it.id }) { booking ->
-                    if (booking.isPending) {
-                        PendingBookingCard(
-                            booking  = booking,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 5.dp)
-                        )
-                    } else {
-                        BookingCard(
-                            booking         = booking,
-                            onDetailsClick  = onDetailsClick,
-                            onChatClick     = onChatClick,
-                            onActivityClick = onActivityClick,
-                            onReviewClick   = onReviewClick,
-                            modifier        = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                        )
+                when {
+                    // ── First load ───────────────────────────────────────────
+                    isLoading && bookings.isEmpty() -> {
+                        item {
+                            Box(
+                                modifier         = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 60.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(color = GreenDark)
+                            }
+                        }
                     }
-                }
 
+                    // ── Failed with nothing to show ──────────────────────────
+                    loadError != null && bookings.isEmpty() -> {
+                        item {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 60.dp, start = 24.dp, end = 24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text     = loadError ?: "",
+                                    color    = TextSecondary,
+                                    fontSize = 14.sp
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                TextButton(onClick = { viewModel.refresh() }) {
+                                    Text("Retry", color = GreenDark, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
 
-                // ── Empty state ──────────────────────────────────────────────
-                if (filteredBookings.isEmpty()) {
-                    item {
-                        Box(
-                            modifier         = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 60.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                "No ${selectedTab.name.lowercase()} bookings",
-                                color    = TextSecondary,
-                                fontSize = 16.sp
-                            )
+                    else -> {
+                        // ── Cards ────────────────────────────────────────────
+                        items(filteredBookings, key = { it.id }) { booking ->
+                            if (booking.isPending) {
+                                PendingBookingCard(
+                                    booking       = booking,
+                                    onCancelClick = { cancelTargetId = it },
+                                    modifier      = Modifier.padding(horizontal = 16.dp, vertical = 5.dp)
+                                )
+                            } else {
+                                BookingCard(
+                                    booking         = booking,
+                                    onDetailsClick  = onDetailsClick,
+                                    onChatClick     = onChatClick,
+                                    onActivityClick = onActivityClick,
+                                    onReviewClick   = onReviewClick,
+                                    onCancelClick   = { cancelTargetId = it },
+                                    modifier        = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+
+                        // ── Empty state ──────────────────────────────────────
+                        if (filteredBookings.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier         = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 60.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        "No ${selectedTab.name.lowercase()} bookings",
+                                        color    = TextSecondary,
+                                        fontSize = 16.sp
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -226,6 +289,7 @@ private fun BookingTabChip(
 @Composable
 private fun PendingBookingCard(
     booking: BookingItem,
+    onCancelClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -277,17 +341,30 @@ private fun PendingBookingCard(
 
             Spacer(Modifier.width(8.dp))
 
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color(0xFFF57F17))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            ) {
+            Column(horizontalAlignment = Alignment.End) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color(0xFFF57F17))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text       = "Pending",
+                        color      = Color.White,
+                        fontSize   = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(Modifier.height(6.dp))
                 Text(
-                    text       = "Pending",
-                    color      = Color.White,
-                    fontSize   = 11.sp,
-                    fontWeight = FontWeight.Bold
+                    text       = "Cancel",
+                    color      = CancelRed,
+                    fontSize   = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier   = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable { onCancelClick(booking.id) }
+                        .padding(horizontal = 4.dp, vertical = 2.dp)
                 )
             }
         }
@@ -302,8 +379,9 @@ private fun BookingCard(
     onChatClick:     (String) -> Unit = {},
     onActivityClick: (String) -> Unit = {},
     onReviewClick:   (String) -> Unit = {},
+    onCancelClick:   (String) -> Unit = {},
     modifier:        Modifier = Modifier
-){
+) {
     Card(
         modifier  = modifier.fillMaxWidth(),
         shape     = RoundedCornerShape(16.dp),
@@ -343,20 +421,30 @@ private fun BookingCard(
                         fontSize = 13.sp,
                         color    = TextSecondary
                     )
-                    Spacer(Modifier.height(3.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            painter            = painterResource(R.drawable.star),
-                            contentDescription = null,
-                            tint               = StarColor,
-                            modifier           = Modifier.size(13.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
+                    if (booking.bookingDate.isNotBlank()) {
                         Text(
-                            text     = String.format("%.1f", booking.rating),
+                            text     = "${booking.bookingDate} · ${booking.bookingTime}",
                             fontSize = 12.sp,
                             color    = TextSecondary
                         )
+                    }
+                    // The bookings API doesn't return the helper's rating, so only show a star when we have one
+                    if (booking.rating > 0f) {
+                        Spacer(Modifier.height(3.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                painter            = painterResource(R.drawable.star),
+                                contentDescription = null,
+                                tint               = StarColor,
+                                modifier           = Modifier.size(13.dp)
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text     = String.format("%.1f", booking.rating),
+                                fontSize = 12.sp,
+                                color    = TextSecondary
+                            )
+                        }
                     }
                 }
 
@@ -407,7 +495,7 @@ private fun BookingCard(
                 }
 
                 OutlinedButton(
-                    onClick        = { onDetailsClick(booking.id)},
+                    onClick        = { onDetailsClick(booking.id) },
                     shape          = RoundedCornerShape(10.dp),
                     border         = BorderStroke(1.5.dp, GreenPrimary),
                     colors         = ButtonDefaults.outlinedButtonColors(contentColor = GreenPrimary),
@@ -429,7 +517,7 @@ private fun BookingCard(
                     }
 
                     BookingTab.UPCOMING -> Button(
-                        onClick        = { },
+                        onClick        = { onCancelClick(booking.id) },
                         shape          = RoundedCornerShape(10.dp),
                         colors         = ButtonDefaults.buttonColors(containerColor = Color(0xFF7A7A7A)),
                         modifier       = Modifier.weight(1f).height(44.dp),
@@ -439,7 +527,7 @@ private fun BookingCard(
                     }
 
                     BookingTab.COMPLETED -> Button(
-                        onClick        = {onReviewClick(booking.id) },
+                        onClick        = { onReviewClick(booking.id) },
                         shape          = RoundedCornerShape(10.dp),
                         colors         = ButtonDefaults.buttonColors(containerColor = GreenDark),
                         modifier       = Modifier.weight(1f).height(44.dp),
@@ -460,7 +548,7 @@ private fun BookingCard(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(10.dp))
                         .background(Color(0xFFE8F5EE))
-                        .clickable {onActivityClick(booking.id) }
+                        .clickable { onActivityClick(booking.id) }
                         .padding(horizontal = 14.dp, vertical = 10.dp)
                 ) {
                     Row(

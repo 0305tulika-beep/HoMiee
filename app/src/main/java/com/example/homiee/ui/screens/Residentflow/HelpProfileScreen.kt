@@ -43,7 +43,11 @@ data class HelperReview(
     val timeAgo: String
 )
 
-data class ServiceWithPrice(val name: String, val price: String)
+data class ServiceWithPrice(
+    val name: String,
+    val price: String,
+    val serviceId: Int = 0
+)
 
 data class HelperProfileData(
     val name: String,

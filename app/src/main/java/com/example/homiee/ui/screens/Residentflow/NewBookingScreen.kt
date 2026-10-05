@@ -34,18 +34,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
 import com.example.homiee.ui.theme.GreenDark
 import com.example.homiee.viewmodel.BookingViewModel
-import com.example.homiee.viewmodel.BookingViewModelFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
+
+/** One bookable service of the helper. [id] is what the create-booking API expects as service_id. */
+data class ServiceOption(val id: Int, val name: String)
 
 private val GreenPrimary  = Color(0xFF1A5C3A)
 private val TextPrimary   = Color(0xFF1A1A1A)
@@ -68,6 +69,10 @@ private fun toMinutesOfDay(hour: String, period: String): Int {
     return hour24 * 60
 }
 
+// "10" + "AM" -> "10:00:00" (the format the API expects)
+private fun toApiTime(hour: String, period: String): String =
+    String.format(Locale.ENGLISH, "%02d:00:00", toMinutesOfDay(hour, period) / 60)
+
 // Midnight today, expressed in UTC millis — matches how Material3's DatePicker represents dates internally.
 private fun todayUtcMidnightMillis(): Long {
     val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
@@ -86,19 +91,22 @@ private fun currentMinutesOfDay(): Int {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewBookingScreen(
+    helperId: Int,
     helperName: String,
-    helperService: String,
-    helperRating: Float,
+    services: List<ServiceOption>,
     onBookingConfirmed: (bookingId: String) -> Unit,
     onBack: () -> Unit,
-    viewModel: BookingViewModel = viewModel(
-        factory = BookingViewModelFactory(LocalContext.current)
-    )
+    viewModel: BookingViewModel
 ) {
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = false)
 
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+
+    val isSubmitting by viewModel.isSubmitting.collectAsState()
+    val submitError by viewModel.submitError.collectAsState()
+
+    LaunchedEffect(Unit) { viewModel.clearSubmitError() }
 
     val todayMillis = remember { todayUtcMidnightMillis() }
 
@@ -113,7 +121,7 @@ fun NewBookingScreen(
     }
 
     // ── All fields start empty; nothing is pre-filled ──
-    var serviceType by remember { mutableStateOf("") }
+    var selectedService by remember { mutableStateOf<ServiceOption?>(null) }
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = null,
         selectableDates = selectableDates
@@ -121,7 +129,13 @@ fun NewBookingScreen(
     var showDatePicker by remember { mutableStateOf(false) }
     val selectedDateMillis = datePickerState.selectedDateMillis
 
-    val displayDateFormat = remember { SimpleDateFormat("MMM d, yyyy", Locale.getDefault()) }
+    // The picker returns UTC-midnight millis, so both formatters use UTC to avoid off-by-one days
+    val displayDateFormat = remember {
+        SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).apply { timeZone = TimeZone.getTimeZone("UTC") }
+    }
+    val apiDateFormat = remember {
+        SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH).apply { timeZone = TimeZone.getTimeZone("UTC") }
+    }
     val selectedDateLabel = selectedDateMillis?.let { displayDateFormat.format(Date(it)) }
         ?: "Select a date"
 
@@ -139,7 +153,7 @@ fun NewBookingScreen(
     val allTimeFieldsFilled = startHour.isNotBlank() && startPeriod.isNotBlank() &&
             endHour.isNotBlank() && endPeriod.isNotBlank()
     val startMinutes = remember(startHour, startPeriod) { toMinutesOfDay(startHour, startPeriod) }
-    val endMinutes    = remember(endHour, endPeriod)    { toMinutesOfDay(endHour, endPeriod) }
+    val endMinutes   = remember(endHour, endPeriod)     { toMinutesOfDay(endHour, endPeriod) }
     val isTimeRangeInvalid = allTimeFieldsFilled && endMinutes <= startMinutes
 
     // If the booking is for today, neither start nor end time may already have passed
@@ -212,9 +226,9 @@ fun NewBookingScreen(
         }
     }
 
-    val isFormValid = selectedDateMillis != null &&
+    val isFormValid = selectedService != null &&
+            selectedDateMillis != null &&
             !isDateInPast &&
-            serviceType.isNotBlank() &&
             allTimeFieldsFilled &&
             !isTimeRangeInvalid &&
             !isPastTimeInvalid
@@ -261,20 +275,14 @@ fun NewBookingScreen(
             item {
                 Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
 
+                    // ── Service: picked from the helper's own services (API needs service_id) ──
                     SectionLabel("SERVICE TYPE")
-                    OutlinedTextField(
-                        value           = serviceType,
-                        onValueChange   = { serviceType = it },
-                        placeholder     = { Text("Enter service type", color = TextSecondary) },
-                        modifier        = Modifier.fillMaxWidth(),
-                        shape           = RoundedCornerShape(10.dp),
-                        colors          = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor   = GreenPrimary,
-                            unfocusedBorderColor = Color(0xFFCCCCCC),
-                            focusedTextColor     = TextPrimary,
-                            unfocusedTextColor   = TextPrimary
-                        )
-                    )
+                    DropdownBox(
+                        value       = selectedService?.name.orEmpty(),
+                        options     = services.map { it.name },
+                        placeholder = if (services.isEmpty()) "No services available" else "Select a service",
+                        modifier    = Modifier.fillMaxWidth()
+                    ) { name -> selectedService = services.firstOrNull { it.name == name } }
 
                     Spacer(Modifier.height(20.dp))
                     SectionLabel("SELECT DATE")
@@ -390,11 +398,11 @@ fun NewBookingScreen(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text          = "${specialInstructions.length}/$SPECIAL_INSTRUCTIONS_LIMIT",
-                        fontSize      = 11.sp,
-                        color         = TextSecondary,
-                        modifier      = Modifier.fillMaxWidth(),
-                        textAlign     = androidx.compose.ui.text.style.TextAlign.End
+                        text      = "${specialInstructions.length}/$SPECIAL_INSTRUCTIONS_LIMIT",
+                        fontSize  = 11.sp,
+                        color     = TextSecondary,
+                        modifier  = Modifier.fillMaxWidth(),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.End
                     )
 
                     Spacer(Modifier.height(20.dp))
@@ -444,30 +452,47 @@ fun NewBookingScreen(
                         )
                     }
 
+                    // ── Server error from the create-booking call ──
+                    submitError?.let { message ->
+                        Spacer(Modifier.height(16.dp))
+                        WarningBanner(message)
+                    }
+
                     Spacer(Modifier.height(24.dp))
 
                     Button(
                         onClick = {
-                            val bookingDateLabel = selectedDateMillis?.let { displayDateFormat.format(Date(it)) }
-                                ?: "Not selected"
-                            val id = viewModel.createBooking(
-                                helperName = helperName,
-                                service    = serviceType,
-                                rating     = helperRating,
-                                date       = bookingDateLabel,
-                                time       = "$startHour:00 $startPeriod",
-                                address    = humanAddress
-                            )
-                            onBookingConfirmed(id)
+                            val dateMillis = selectedDateMillis
+                            val service = selectedService
+                            if (dateMillis != null && service != null) {
+                                viewModel.createBooking(
+                                    helperId            = helperId,
+                                    serviceId           = service.id,
+                                    bookingDate         = apiDateFormat.format(Date(dateMillis)),
+                                    startTime           = toApiTime(startHour, startPeriod),
+                                    endTime             = toApiTime(endHour, endPeriod),
+                                    specialInstructions = specialInstructions,
+                                    address             = humanAddress,
+                                    onSuccess           = onBookingConfirmed
+                                )
+                            }
                         },
                         shape    = RoundedCornerShape(12.dp),
                         colors   = ButtonDefaults.buttonColors(containerColor = GreenDark),
-                        enabled  = isFormValid,
+                        enabled  = isFormValid && !isSubmitting,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp)
                     ) {
-                        Text("Confirm Booking", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        if (isSubmitting) {
+                            CircularProgressIndicator(
+                                modifier    = Modifier.size(22.dp),
+                                strokeWidth = 2.dp,
+                                color       = Color.White
+                            )
+                        } else {
+                            Text("Confirm Booking", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
@@ -493,9 +518,9 @@ private fun WarningBanner(text: String) {
         )
         Spacer(Modifier.width(8.dp))
         Text(
-            text     = text,
-            fontSize = 12.sp,
-            color    = WarningRed,
+            text       = text,
+            fontSize   = 12.sp,
+            color      = WarningRed,
             fontWeight = FontWeight.Medium
         )
     }

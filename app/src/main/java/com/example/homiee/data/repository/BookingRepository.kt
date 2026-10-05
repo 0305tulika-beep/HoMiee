@@ -1,8 +1,6 @@
 package com.example.homiee.data.repository
 
-import com.example.homiee.data.model.HelperDetailResponse
-import com.example.homiee.data.model.NearbyHelpersResponse
-import com.example.homiee.data.model.ResidentApiErrorResponse
+import com.example.homiee.data.model.*
 import com.example.homiee.data.remote.RetrofitClient
 import com.google.gson.Gson
 import retrofit2.Response
@@ -22,6 +20,18 @@ class BookingRepository {
 
     suspend fun search(q: String? =null): ApiResult<NearbyHelpersResponse> =
         safeApiCall { api.search(q)}
+
+    suspend fun createBooking(request: CreateBookingRequest): ApiResult<BookingResponse> =
+        safeApiCall { api.createBooking(request) }
+
+    suspend fun myBookings(status: String? = null): ApiResult<BookingListResponse> =
+        safeApiCall { api.myBookings(status) }
+
+    suspend fun bookingDetail(id: Int): ApiResult<BookingResponse> =
+        safeApiCall { api.bookingDetail(id) }
+
+    suspend fun cancelBooking(id: Int): ApiResult<BookingResponse> =
+        safeApiCall { api.cancelBooking(id) }
 
     private suspend fun <T> safeApiCall(call: suspend () -> Response<T>): ApiResult<T> {
         return try {

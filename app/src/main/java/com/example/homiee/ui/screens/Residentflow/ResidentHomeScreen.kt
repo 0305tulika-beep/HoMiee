@@ -861,16 +861,11 @@ private fun ActivityCard(
     onClick: () -> Unit = {}
 ) {
 
-    val statusText = when (booking.status) {
-
-        BookingTab.ACTIVE ->
-            "In Progress"
-
-        BookingTab.UPCOMING ->
-            "Confirmed"
-
-        BookingTab.COMPLETED ->
-            "Completed"
+    val statusText = when {
+        booking.isPending                      -> "Pending"
+        booking.status == BookingTab.ACTIVE    -> "In Progress"
+        booking.status == BookingTab.UPCOMING  -> "Confirmed"
+        else                                   -> "Completed"
     }
 
 
