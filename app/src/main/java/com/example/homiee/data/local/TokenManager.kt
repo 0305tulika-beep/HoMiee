@@ -41,22 +41,11 @@ class TokenManager(private val context: Context) {
         return context.dataStore.data.first()[REFRESH_TOKEN_KEY]
     }
 
-    /**
-     * True while the user still holds a session. An expired ACCESS token does not
-     * mean logged out - the refresh token can get a new one - so check both.
-     */
     suspend fun isLoggedIn(): Boolean {
         val prefs = context.dataStore.data.first()
         return prefs[ACCESS_TOKEN_KEY] != null || prefs[REFRESH_TOKEN_KEY] != null
     }
 
-    // ── Clearing ──────────────────────────────────────────────────────────────
-
-    /**
-     * Removes ONLY the access + refresh tokens. The user's name, email and
-     * "forms completed" flag stay, so after logging back in nothing is lost.
-     * Use this when a session dies on its own (refresh token rejected).
-     */
     suspend fun clearSessionTokens() {
         context.dataStore.edit { prefs ->
             prefs.remove(ACCESS_TOKEN_KEY)
@@ -64,10 +53,6 @@ class TokenManager(private val context: Context) {
         }
     }
 
-    /**
-     * Wipes EVERYTHING (tokens, name, email, form progress).
-     * Use ONLY for a manual logout or account deletion.
-     */
     suspend fun clearAll() {
         context.dataStore.edit { it.clear() }
     }

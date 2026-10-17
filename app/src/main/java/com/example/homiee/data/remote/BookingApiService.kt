@@ -10,7 +10,7 @@ import retrofit2.http.Query
 
 interface BookingApiService {
 
-    // Both params are optional. Retrofit leaves out any query param that is null.
+    // nearby helpers ki api
     @GET("api/bookings/helpers/nearby/")
     suspend fun nearbyHelpers(
         @Query("radius_km") radiusKm: Double? = null,

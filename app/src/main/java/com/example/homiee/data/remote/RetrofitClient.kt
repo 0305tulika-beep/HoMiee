@@ -10,7 +10,6 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
-
     const val BASE_URL = "http://13.206.80.56/"
 
     private lateinit var appContext: Context
@@ -50,7 +49,6 @@ object RetrofitClient {
         chain.proceed(request)
     }
 
-    // CHANGED: val -> by lazy
     private val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
@@ -62,7 +60,6 @@ object RetrofitClient {
             .build()
     }
 
-    // CHANGED: val -> by lazy
     private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
@@ -71,11 +68,11 @@ object RetrofitClient {
             .build()
     }
 
-    // CHANGED: val -> by lazy
     val authApi: AuthApiService by lazy { retrofit.create(AuthApiService::class.java) }
     val residentApi: ResidentApiService by lazy { retrofit.create(ResidentApiService::class.java) }
     val bookingApi: BookingApiService by lazy { retrofit.create(BookingApiService::class.java) }
 
+    // ye refresh krta hai access token
     private val refreshOkHttpClient = OkHttpClient.Builder()
         .addInterceptor(loggingInterceptor)
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -83,7 +80,6 @@ object RetrofitClient {
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    // CHANGED: val -> by lazy (baseUrl is fine, but keep it lazy for consistency/safety)
     private val refreshRetrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)

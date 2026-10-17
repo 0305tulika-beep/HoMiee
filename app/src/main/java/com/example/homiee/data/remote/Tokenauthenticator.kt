@@ -13,31 +13,12 @@ import okhttp3.Route
 // One lock for the whole app: only ONE refresh may run at a time.
 private val REFRESH_LOCK = Any()
 
-/**
- * Fires automatically whenever a request on the main OkHttpClient comes back 401
- * (e.g. "Token is expired").
- *
- * Flow:
- *  1. Ignore 401s from requests that never carried an Authorization header
- *     (wrong password on login, wrong OTP, ...) - those are normal validation errors.
- *  2. Ignore if this request chain was already retried once (no infinite loop).
- *  3. Take the lock. If another request refreshed the token while we waited,
- *     just retry with that new token - do NOT refresh again.
- *     (The refresh token ROTATES: a second refresh with the already-used refresh
- *     token is rejected and would wrongly log the user out.)
- *  4. Otherwise call POST api/auth/refresh/, save BOTH new tokens, update
- *     SessionManager's in-memory copy, and retry with the new access token.
- *  5. Log the user out ONLY if the server rejects the refresh token itself
- *     (400 / 401 / 403) or there is no refresh token. A network error or a
- *     server error (5xx) keeps the session - the user can simply retry.
- *     On logout only the tokens are cleared; name, email and form progress stay.
- */
 class TokenAuthenticator(private val appContext: Context) : Authenticator {
 
     override fun authenticate(route: Route?, response: Response): Request? {
         val sentAuth = response.request.header("Authorization")
-            ?: return null                       // not an authenticated request
-        if (responseCount(response) >= 2) return null   // already retried once
+            ?: return null
+        if (responseCount(response) >= 2) return null
 
         synchronized(REFRESH_LOCK) {
             // Another request may have refreshed while we were waiting for the lock.

@@ -27,7 +27,7 @@ import com.example.homiee.BuildConfig
 import com.example.homiee.R
 import com.example.homiee.data.local.TokenManager
 import com.example.homiee.navigation.Routes
-import com.example.homiee.ui.theme.White
+import com.example.homiee.ui.theme.TextPrimary
 
 @Composable
 fun SplashScreen(onFinished: (String) -> Unit) {
@@ -120,16 +120,16 @@ fun SplashScreen(onFinished: (String) -> Unit) {
                     color      = Color(0xFF7ED4C9)
                 )
 
-                Spacer(Modifier.height(4.dp))
-
-                Text(
-                    text          = "Comfort, Just one Tap Away.",
-                    fontSize      = 14.sp,
-                    fontWeight    = FontWeight.Medium,
-                    fontStyle     = FontStyle.Italic,
-                    letterSpacing = 0.6.sp,
-                    color         = Color.White.copy(alpha = 0.88f)
-                )
+//                Spacer(Modifier.height(4.dp))
+//
+//                Text(
+//                    text          = "Comfort, Just one Tap Away.",
+//                    fontSize      = 14.sp,
+//                    fontWeight    = FontWeight.Medium,
+//                    fontStyle     = FontStyle.Italic,
+//                    letterSpacing = 0.6.sp,
+//                    color      = Color(0xFF1A1A1A)
+//                )
             }
         }
     }

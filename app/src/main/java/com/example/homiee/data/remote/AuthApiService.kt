@@ -32,9 +32,6 @@ interface AuthApiService {
     @HTTP(method = "DELETE", path = "api/auth/delete/", hasBody = true)
     suspend fun deleteAccount(@Body request: DeleteAccountRequest): Response<DeleteAccountResponse>
 
-    // NEW: confirmed live — takes the refresh token, returns a fresh
-    // access token (and a rotated refresh token). Used by TokenAuthenticator
-    // to silently recover from an expired access token.
     @POST("api/auth/refresh/")
     suspend fun refreshToken(@Body request: RefreshTokenRequest): Response<RefreshTokenResponse>
 }
