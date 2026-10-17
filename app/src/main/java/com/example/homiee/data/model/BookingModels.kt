@@ -112,3 +112,15 @@ data class BookingListResponse(
     val message: String? = null,
     val data: List<BookingDto>? = null
 )
+
+// POST /api/bookings/bookings/{id}/rate/
+data class RateBookingRequest(
+    val score: Int,                 // 1-5
+    val feedback: String? = null    // optional; null is omitted from the JSON
+)
+
+data class RatingResponse(
+    val status: String? = null,
+    val message: String? = null,
+    val data: HelperRatingDto? = null
+)

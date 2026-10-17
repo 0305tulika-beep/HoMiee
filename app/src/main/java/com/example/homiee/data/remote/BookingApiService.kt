@@ -47,5 +47,11 @@ interface BookingApiService {
     @POST("api/bookings/bookings/{id}/cancel/")
     suspend fun cancelBooking(@Path("id") id: Int): Response<BookingResponse>
 
+    @POST("api/bookings/bookings/{id}/rate/")
+    suspend fun rateBooking(
+        @Path("id") id: Int,
+        @Body request: RateBookingRequest
+    ): Response<RatingResponse>
+
 
 }

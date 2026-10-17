@@ -178,7 +178,7 @@ fun BookingsScreen(
                             )
                         }
                     }
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(40.dp))
                 }
 
                 when {
@@ -201,9 +201,11 @@ fun BookingsScreen(
                         item {
                             Column(
                                 modifier = Modifier
+                                    .fillParentMaxHeight(0.6f)
                                     .fillMaxWidth()
-                                    .padding(top = 60.dp, start = 24.dp, end = 24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                                    .padding(horizontal = 24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
                             ) {
                                 Text(
                                     text     = loadError ?: "",
@@ -246,8 +248,8 @@ fun BookingsScreen(
                             item {
                                 Box(
                                     modifier         = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 60.dp),
+                                        .fillParentMaxHeight(0.6f)
+                                        .fillMaxWidth(),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(

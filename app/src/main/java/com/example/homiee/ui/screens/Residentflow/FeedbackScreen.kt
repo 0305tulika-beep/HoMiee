@@ -33,9 +33,10 @@ private val FEEDBACK_TAGS = listOf("Professional", "Punctual", "Friendly", "Skil
 
 @Composable
 fun FeedbackScreen(
-    helperName: String = "Ramesh Kumar",
-    onBack:     () -> Unit = {},
-    onSubmit:   () -> Unit = {}
+    helperName:   String = "Ramesh Kumar",
+    isSubmitting: Boolean = false,
+    onBack:       () -> Unit = {},
+    onSubmit:     (rating: Int, feedback: String) -> Unit = { _, _ -> }
 ) {
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = false)
 
@@ -237,20 +238,28 @@ fun FeedbackScreen(
 
                     // ── Submit button ──
                     Button(
-                        onClick  = onSubmit,
+                        onClick  = { onSubmit(selectedRating, writtenFeedback) },
                         shape    = RoundedCornerShape(12.dp),
                         colors   = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
-                        enabled  = selectedRating > 0
+                        enabled  = selectedRating > 0 && !isSubmitting
                     ) {
-                        Text(
-                            text       = "Submit review",
-                            color      = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize   = 16.sp
-                        )
+                        if (isSubmitting) {
+                            CircularProgressIndicator(
+                                color       = Color.White,
+                                strokeWidth = 2.dp,
+                                modifier    = Modifier.size(22.dp)
+                            )
+                        } else {
+                            Text(
+                                text       = "Submit review",
+                                color      = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize   = 16.sp
+                            )
+                        }
                     }
                 }
             }

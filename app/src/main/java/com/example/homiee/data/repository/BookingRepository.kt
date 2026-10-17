@@ -33,6 +33,11 @@ class BookingRepository {
     suspend fun cancelBooking(id: Int): ApiResult<BookingResponse> =
         safeApiCall { api.cancelBooking(id) }
 
+    suspend fun rateBooking(id: Int, score: Int, feedback: String?): ApiResult<RatingResponse> =
+        safeApiCall {
+            api.rateBooking(id, RateBookingRequest(score, feedback?.trim()?.takeIf { it.isNotEmpty() }))
+        }
+
     private suspend fun <T> safeApiCall(call: suspend () -> Response<T>): ApiResult<T> {
         return try {
             val response = call()

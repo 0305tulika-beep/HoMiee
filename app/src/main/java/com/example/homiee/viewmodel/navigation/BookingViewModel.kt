@@ -46,7 +46,7 @@ class BookingViewModel(
 
     private var detailJob: Job? = null
 
-    // ── Create / cancel ──────────────────────────────────────────────────────
+    // ── Create / cancel / rate ───────────────────────────────────────────────
     private val _isSubmitting = MutableStateFlow(false)
     val isSubmitting: StateFlow<Boolean> = _isSubmitting.asStateFlow()
 
@@ -55,6 +55,9 @@ class BookingViewModel(
 
     private val _isCancelling = MutableStateFlow(false)
     val isCancelling: StateFlow<Boolean> = _isCancelling.asStateFlow()
+
+    private val _isRating = MutableStateFlow(false)
+    val isRating: StateFlow<Boolean> = _isRating.asStateFlow()
 
     /** One-shot messages (shown as toasts by the screens). */
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 4)
@@ -198,6 +201,33 @@ class BookingViewModel(
                 }
             }
             _isCancelling.value = false
+        }
+    }
+
+    /** POST /api/bookings/bookings/{id}/rate/ - score 1-5 + optional feedback. */
+    fun submitRating(
+        id: String,
+        score: Int,
+        feedback: String,
+        onResult: (success: Boolean) -> Unit = {}
+    ) {
+        val intId = id.toIntOrNull()
+        if (intId == null) {
+            _messages.tryEmit("Invalid booking.")
+            onResult(false)
+            return
+        }
+        if (_isRating.value) return
+        viewModelScope.launch {
+            _isRating.value = true
+            when (val result = repo.rateBooking(intId, score, feedback)) {
+                is ApiResult.Success -> onResult(true)
+                is ApiResult.Error -> {
+                    _messages.tryEmit(result.message)
+                    onResult(false)
+                }
+            }
+            _isRating.value = false
         }
     }
 

@@ -31,6 +31,7 @@ import com.example.homiee.viewmodel.RegisterViewModelFactory
 import com.example.homiee.viewmodel.navigation.ResidentOnboardingViewModel
 import java.net.URLDecoder
 import java.net.URLEncoder
+import android.widget.Toast
 
 object Routes {
     const val SPLASH             = "splash"
@@ -578,13 +579,31 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                 navArgument("helperName") { type = NavType.StringType }
             )
         ) { backStackEntry ->
+            val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
             val helperName = URLDecoder.decode(
                 backStackEntry.arguments?.getString("helperName") ?: "", "UTF-8"
             )
+            val isRating by bookingViewModel.isRating.collectAsState()
+
+            // BookingsScreen isn't composed while this screen is on top, so show errors here
+            LaunchedEffect(Unit) {
+                bookingViewModel.messages.collect {
+                    Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                }
+            }
+
             FeedbackScreen(
-                helperName = helperName,
-                onBack = { navController.popBackStack() },
-                onSubmit = { navController.popBackStack() }
+                helperName   = helperName,
+                isSubmitting = isRating,
+                onBack       = { navController.popBackStack() },
+                onSubmit     = { score, feedback ->
+                    bookingViewModel.submitRating(bookingId, score, feedback) { success ->
+                        if (success) {
+                            Toast.makeText(context, "Thanks for your review!", Toast.LENGTH_SHORT).show()
+                            navController.popBackStack()
+                        }
+                    }
+                }
             )
         }
     }

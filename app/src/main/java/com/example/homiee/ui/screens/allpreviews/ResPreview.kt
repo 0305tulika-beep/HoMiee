@@ -84,13 +84,15 @@ private fun previewBookingViewModel(): BookingViewModel =
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true, name = "Feedback Screen")
-@Composable fun FeedbackScreenPreview() {
+@Preview(showBackground = true, showSystemUi = true, name = "Feedback Screen - Submitting")
+@Composable
+fun FeedbackScreenSubmittingPreview() {
     HomieeTheme {
         FeedbackScreen(
-            helperName = "Ramesh Kumar",
-            onBack = {},
-            onSubmit = {}
+            helperName   = "Ramesh Kumar",
+            isSubmitting = true,
+            onBack       = {},
+            onSubmit     = { _, _ -> }
         )
     }
 }
