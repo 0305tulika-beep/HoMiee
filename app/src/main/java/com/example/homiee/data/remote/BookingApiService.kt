@@ -53,5 +53,8 @@ interface BookingApiService {
         @Body request: RateBookingRequest
     ): Response<RatingResponse>
 
+    // Empty body: Retrofit sends one automatically for a POST with no @Body
+    @POST("api/bookings/bookings/{id}/complete/")
+    suspend fun completeBooking(@Path("id") id: Int): Response<BookingResponse>
 
 }

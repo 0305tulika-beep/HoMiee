@@ -21,7 +21,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,6 +35,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
 import com.example.homiee.ui.theme.GreenDark
@@ -49,30 +52,35 @@ import kotlin.coroutines.suspendCoroutine
 data class ServiceOption(val id: Int, val name: String)
 
 private val GreenPrimary  = Color(0xFF1A5C3A)
+private val GreenTint     = GreenPrimary.copy(alpha = 0.12f)
 private val TextPrimary   = Color(0xFF1A1A1A)
 private val TextSecondary = Color(0xFF7A7A7A)
 private val CardBg        = Color.White
 private val WarningRed    = Color(0xFFD32F2F)
 private val BorderGray    = Color(0xFFCCCCCC)
 private val DisabledGray  = Color(0xFFBDBDBD)
-private val ALL_HOURS = (1..12).map { it.toString() }
 
 private const val SPECIAL_INSTRUCTIONS_LIMIT = 300
 
-// Converts a 12-hour clock (hour + AM/PM) into minutes-since-midnight for comparison
-private fun toMinutesOfDay(hour: String, period: String): Int {
-    val h = hour.toIntOrNull() ?: 0
-    val hour24 = when {
-        period == "AM" && h == 12 -> 0        // 12 AM = midnight
-        period == "PM" && h != 12 -> h + 12   // 1 PM–11 PM
-        else                      -> h        // 12 PM stays 12, AM hours 1–11 stay as-is
-    }
-    return hour24 * 60
-}
+/** Where the time picker opens the first time (9:00 AM) if the helper has no availability window. */
+private const val DEFAULT_PICKER_MINUTES = 9 * 60
 
-// "10" + "AM" -> "10:00:00" (the format the API expects)
-private fun toApiTime(hour: String, period: String): String =
-    String.format(Locale.ENGLISH, "%02d:00:00", toMinutesOfDay(hour, period) / 60)
+private const val LAST_MINUTE_OF_DAY = 24 * 60 - 1
+
+// 570 -> "09:30:00" (the format the API expects)
+private fun toApiTime(totalMinutes: Int): String =
+    String.format(Locale.ENGLISH, "%02d:%02d:00", (totalMinutes / 60) % 24, totalMinutes % 60)
+
+// 150 -> "2 h 30 min", 45 -> "45 min", 120 -> "2 h"
+private fun durationLabel(totalMinutes: Int): String {
+    val h = totalMinutes / 60
+    val m = totalMinutes % 60
+    return when {
+        h == 0 -> "$m min"
+        m == 0 -> "$h h"
+        else   -> "$h h $m min"
+    }
+}
 
 // Midnight of the user's LOCAL date, expressed in UTC millis — matches how Material3's DatePicker
 // represents dates internally. Using the local date (not the UTC date) means "yesterday" can never
@@ -231,27 +239,26 @@ fun NewBookingScreen(
     val isNotWorkingDay = selectedDateMillis != null && allowedDays.isNotEmpty() &&
             utcMillisToDayOfWeek(selectedDateMillis) !in allowedDays
 
-    var startHour    by remember { mutableStateOf("") }
-    var startPeriod  by remember { mutableStateOf("") }
-    var endHour      by remember { mutableStateOf("") }
-    var endPeriod    by remember { mutableStateOf("") }
+    // ── Time: picked to the exact minute, stored as minutes since midnight (null = not picked yet) ──
+    var startMinutes by remember { mutableStateOf<Int?>(null) }
+    var endMinutes   by remember { mutableStateOf<Int?>(null) }
+    var showStartPicker by remember { mutableStateOf(false) }
+    var showEndPicker   by remember { mutableStateOf(false) }
     var specialInstructions by remember { mutableStateOf("") }
 
-    // ── Time validation: only meaningful once every field is picked ──
-    val allTimeFieldsFilled = startHour.isNotBlank() && startPeriod.isNotBlank() &&
-            endHour.isNotBlank() && endPeriod.isNotBlank()
-    val startMinutes = remember(startHour, startPeriod) { toMinutesOfDay(startHour, startPeriod) }
-    val endMinutes   = remember(endHour, endPeriod)     { toMinutesOfDay(endHour, endPeriod) }
-    val isTimeRangeInvalid = allTimeFieldsFilled && endMinutes <= startMinutes
+    // ── Time validation: only meaningful once both times are picked ──
+    val startMin = startMinutes
+    val endMin   = endMinutes
+    val allTimeFieldsFilled = startMin != null && endMin != null
+    val isTimeRangeInvalid = startMin != null && endMin != null && endMin <= startMin
 
-    // If the booking is for today, neither start nor end time may already have passed
+    // If the booking is for today, the start time may not already have passed
     val nowMinutes = currentMinutesOfDay()
-    val isPastTimeInvalid = isSelectedDateToday && allTimeFieldsFilled &&
-            (startMinutes < nowMinutes || endMinutes < nowMinutes)
+    val isPastTimeInvalid = isSelectedDateToday && startMin != null && startMin < nowMinutes
 
     // The chosen slot must sit fully inside the helper's availability window
-    val isOutsideAvailability = hasAvailabilityWindow && allTimeFieldsFilled &&
-            (startMinutes < availStartMin!! || endMinutes > availEndMin!!)
+    val isOutsideAvailability = hasAvailabilityWindow && startMin != null && endMin != null &&
+            (startMin < availStartMin!! || endMin > availEndMin!!)
 
     // ── GPS location + human-readable address ──
     var latitude by remember { mutableStateOf("") }
@@ -455,6 +462,7 @@ fun NewBookingScreen(
                         }
                     }
 
+                    // ── Time: tap a card, pick the exact hour AND minute ──
                     Spacer(Modifier.height(20.dp))
                     SectionLabel("SELECT TIME")
                     if (hasAvailabilityWindow) {
@@ -466,17 +474,49 @@ fun NewBookingScreen(
                         Spacer(Modifier.height(6.dp))
                     }
 
-                    Text("Starting Time", fontSize = 16.sp, color = GreenDark)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        DropdownBox(startHour, ALL_HOURS, "Hour", Modifier.weight(1f)) { startHour = it }
-                        DropdownBox(startPeriod, listOf("AM", "PM"), "AM/PM", Modifier.weight(1f)) { startPeriod = it }
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        TimeCard(
+                            label    = "Start time",
+                            value    = startMin?.let { minutesToLabel(it) },
+                            modifier = Modifier.weight(1f),
+                            onClick  = { showStartPicker = true }
+                        )
+                        TimeCard(
+                            label    = "End time",
+                            value    = endMin?.let { minutesToLabel(it) },
+                            modifier = Modifier.weight(1f),
+                            onClick  = { showEndPicker = true }
+                        )
                     }
 
-                    Spacer(Modifier.height(5.dp))
-                    Text("Ending Time", fontSize = 16.sp, color = GreenDark)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        DropdownBox(endHour, ALL_HOURS, "Hour", Modifier.weight(1f)) { endHour = it }
-                        DropdownBox(endPeriod, listOf("AM", "PM"), "AM/PM", Modifier.weight(1f)) { endPeriod = it }
+                    // Total length of the booking, once the range is valid
+                    if (startMin != null && endMin != null && !isTimeRangeInvalid) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text       = "Duration: ${durationLabel(endMin - startMin)}",
+                            fontSize   = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color      = GreenPrimary
+                        )
+                    }
+
+                    if (showStartPicker) {
+                        TimePickerDialog(
+                            title          = "Start time",
+                            initialMinutes = startMin ?: availStartMin ?: DEFAULT_PICKER_MINUTES,
+                            onConfirm      = { startMinutes = it; showStartPicker = false },
+                            onDismiss      = { showStartPicker = false }
+                        )
+                    }
+                    if (showEndPicker) {
+                        TimePickerDialog(
+                            title          = "End time",
+                            initialMinutes = endMin
+                                ?: startMin?.let { (it + 60).coerceAtMost(LAST_MINUTE_OF_DAY) }
+                                ?: (DEFAULT_PICKER_MINUTES + 60),
+                            onConfirm      = { endMinutes = it; showEndPicker = false },
+                            onDismiss      = { showEndPicker = false }
+                        )
                     }
 
                     // ── Warning shown when the time range doesn't make sense ──
@@ -517,7 +557,7 @@ fun NewBookingScreen(
                         shape         = RoundedCornerShape(10.dp),
                         colors        = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor   = GreenPrimary,
-                            unfocusedBorderColor = Color(0xFFCCCCCC),
+                            unfocusedBorderColor = BorderGray,
                             focusedTextColor     = TextPrimary,
                             unfocusedTextColor   = TextPrimary
                         )
@@ -590,13 +630,15 @@ fun NewBookingScreen(
                         onClick = {
                             val dateMillis = selectedDateMillis
                             val service = selectedService
-                            if (dateMillis != null && service != null) {
+                            val start = startMinutes
+                            val end = endMinutes
+                            if (dateMillis != null && service != null && start != null && end != null) {
                                 viewModel.createBooking(
                                     helperId            = helperId,
                                     serviceId           = service.id,
                                     bookingDate         = apiDateFormat.format(Date(dateMillis)),
-                                    startTime           = toApiTime(startHour, startPeriod),
-                                    endTime             = toApiTime(endHour, endPeriod),
+                                    startTime           = toApiTime(start),
+                                    endTime             = toApiTime(end),
                                     specialInstructions = specialInstructions,
                                     address             = humanAddress,
                                     onSuccess           = onBookingConfirmed
@@ -624,6 +666,124 @@ fun NewBookingScreen(
                         } else {
                             Text("Confirm Booking", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Tappable card showing one chosen time (or a placeholder). */
+@Composable
+private fun TimeCard(
+    label: String,
+    value: String?,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        shape     = RoundedCornerShape(14.dp),
+        colors    = CardDefaults.cardColors(containerColor = CardBg),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+        modifier  = modifier.clickable { onClick() }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment     = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(label, fontSize = 11.sp, color = TextSecondary)
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text       = value ?: "Select",
+                    fontSize   = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color      = if (value != null) TextPrimary else TextSecondary
+                )
+            }
+            Icon(
+                imageVector        = Icons.Default.Schedule,
+                contentDescription = "Pick $label",
+                tint               = GreenPrimary,
+                modifier           = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Clock-style time picker in a dialog. The keyboard button switches to typing the
+ * time in directly. Returns the result as minutes since midnight.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TimePickerDialog(
+    title: String,
+    initialMinutes: Int,
+    onConfirm: (minutes: Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val state = rememberTimePickerState(
+        initialHour   = (initialMinutes / 60).coerceIn(0, 23),
+        initialMinute = (initialMinutes % 60).coerceIn(0, 59),
+        is24Hour      = false
+    )
+    var typeIn by remember { mutableStateOf(false) }
+
+    val pickerColors = TimePickerDefaults.colors(
+        clockDialSelectedContentColor           = Color.White,
+        selectorColor                           = GreenPrimary,
+        periodSelectorSelectedContainerColor    = GreenTint,
+        periodSelectorSelectedContentColor      = GreenPrimary,
+        timeSelectorSelectedContainerColor      = GreenTint,
+        timeSelectorSelectedContentColor        = GreenPrimary
+    )
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = CardBg
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text       = title,
+                    fontSize   = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color      = TextPrimary,
+                    modifier   = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(16.dp))
+
+                if (typeIn) {
+                    TimeInput(state = state, colors = pickerColors)
+                } else {
+                    TimePicker(state = state, colors = pickerColors)
+                }
+
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { typeIn = !typeIn }) {
+                        Icon(
+                            imageVector        = if (typeIn) Icons.Default.Schedule else Icons.Default.Keyboard,
+                            contentDescription = if (typeIn) "Use clock" else "Type time",
+                            tint               = TextSecondary
+                        )
+                    }
+                    Spacer(Modifier.weight(1f))
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel", color = TextSecondary)
+                    }
+                    TextButton(onClick = { onConfirm(state.hour * 60 + state.minute) }) {
+                        Text("OK", color = GreenPrimary, fontWeight = FontWeight.Bold)
                     }
                 }
             }

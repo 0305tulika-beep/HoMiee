@@ -8,7 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -27,7 +26,6 @@ import com.example.homiee.ui.theme.GreenDark
 
 enum class NavTab { HOME, SEARCH, BOOKINGS, MESSAGE, ACCOUNT }
 
-//private val GreenSelected  = Color(0xFF1A5C3A)
 private val GreenSoftBg    = Color(0xFFE3EFE8)
 private val GreyUnselected = Color(0xFF9A9A9A)
 
@@ -61,7 +59,7 @@ fun BottomNavBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 4.dp, vertical = 10.dp),
+                .padding(horizontal = 4.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment     = Alignment.CenterVertically
         ) {
@@ -82,9 +80,9 @@ private fun NavBarItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    // Pops bigger when selected, springs back naturally
+    // Pops slightly bigger when selected, springs back naturally
     val iconSize by animateDpAsState(
-        targetValue = if (isSelected) 30.dp else 24.dp,
+        targetValue = if (isSelected) 26.dp else 22.dp,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness    = Spring.StiffnessMedium
@@ -102,15 +100,6 @@ private fun NavBarItem(
         label = "contentColor"
     )
 
-    val pillWidth by animateDpAsState(
-        targetValue = if (isSelected) 64.dp else 0.dp,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness    = Spring.StiffnessMedium
-        ),
-        label = "pillWidth"
-    )
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -118,13 +107,14 @@ private fun NavBarItem(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) { onClick() }
-            .padding(vertical = 4.dp)
+            .padding(horizontal = 6.dp, vertical = 2.dp)
     ) {
+        // Pill hugs the icon: icon width + 14dp padding on each side.
         Box(
             modifier = Modifier
-//                .width(pillWidth.coerceAtLeast(iconSize + 16.dp))
-                .height(38.dp)
-                .background(bgColor, shape = RoundedCornerShape(20.dp)),
+                .height(30.dp)
+                .background(bgColor, shape = RoundedCornerShape(16.dp))
+                .padding(horizontal = 14.dp),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -134,7 +124,6 @@ private fun NavBarItem(
                 modifier           = Modifier.size(iconSize)
             )
         }
-//        Spacer(Modifier.height(2.dp))
         Text(
             text       = item.label,
             fontSize   = 10.sp,

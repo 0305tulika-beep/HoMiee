@@ -4,10 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.homiee.data.local.BookingPrefsManager
+import com.example.homiee.data.model.BookingDto
 import com.example.homiee.data.model.CreateBookingRequest
 import com.example.homiee.data.repository.ApiResult
 import com.example.homiee.data.repository.BookingRepository
 import com.example.homiee.ui.screens.Residentflow.BookingItem
+import com.example.homiee.ui.screens.Residentflow.tabAt
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,12 +18,41 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 data class BookingDetailState(
     val isLoading: Boolean = true,
     val booking: BookingItem? = null,
     val errorMessage: String? = null
 )
+
+private const val STATUS_CONFIRMED = "confirmed"
+private const val STATUS_COMPLETED = "completed"
+
+/** "2026-07-12" + "10:30:00" -> epoch millis in the phone's time zone (0 if it can't be parsed). */
+private fun parseBookingMillis(date: String, time: String): Long = try {
+    SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).parse("$date $time")?.time ?: 0L
+} catch (e: Exception) {
+    0L
+}
+
+/**
+ * Applies the booking's real start/end moments to a mapped item, so the screens can move a
+ * confirmed booking Upcoming -> Active -> Completed as the clock passes (see BookingItem.tabAt).
+ */
+private fun BookingItem.withTiming(dto: BookingDto): BookingItem {
+    val timed = copy(
+        rawStatus = dto.status,
+        startMillis = parseBookingMillis(dto.bookingDate, dto.startTime),
+        endMillis = parseBookingMillis(dto.bookingDate, dto.endTime)
+    )
+    return timed.copy(status = timed.tabAt(System.currentTimeMillis()))
+}
+
+private fun BookingDto.toTimedItemOrNull(): BookingItem? = toBookingItemOrNull()?.withTiming(this)
+
+private fun BookingDto.toTimedItem(): BookingItem = toBookingItem().withTiming(this)
 
 class BookingViewModel(
     private val bookingPrefsManager: BookingPrefsManager,
@@ -73,6 +104,9 @@ class BookingViewModel(
     // The create endpoint has no address field, so the GPS address is only kept on the device.
     private val localAddresses = mutableMapOf<String, String>()
 
+    // Bookings we've already asked the server to mark completed (so we don't repeat the call).
+    private val completeAttempted = mutableSetOf<String>()
+
     private fun BookingItem.withLocalAddress(): BookingItem =
         localAddresses[id]?.let { copy(address = it) } ?: this
 
@@ -88,7 +122,7 @@ class BookingViewModel(
                 is ApiResult.Success -> {
                     val previous = _bookings.value.associateBy { it.id }
                     val fresh = result.data.data.orEmpty()
-                        .mapNotNull { it.toBookingItemOrNull() }
+                        .mapNotNull { it.toTimedItemOrNull() }
                         .map { it.withLocalAddress() }
                     _bookings.value = fresh
 
@@ -101,10 +135,43 @@ class BookingViewModel(
                         _showConfirmation.value = true
                         bookingPrefsManager.markBookingConfirmed(accepted.id)
                     }
+
+                    completeFinishedBookings(fresh)
                 }
                 is ApiResult.Error -> _loadError.value = result.message
             }
             _isLoading.value = false
+        }
+    }
+
+    /**
+     * Confirmed bookings whose end time has passed are marked completed on the server too, so the
+     * helper's app and the rating API (which needs a completed booking) agree with the Completed tab.
+     */
+    private fun completeFinishedBookings(list: List<BookingItem>) {
+        val now = System.currentTimeMillis()
+        list.filter {
+            it.rawStatus.equals(STATUS_CONFIRMED, true) && it.endMillis in 1..now
+        }.forEach { item ->
+            if (completeAttempted.add(item.id)) {
+                viewModelScope.launch {
+                    if (!markCompleted(item.id)) completeAttempted.remove(item.id)   // allow a retry next refresh
+                }
+            }
+        }
+    }
+
+    /** Calls the complete endpoint and, on success, flips the local copy to completed. */
+    private suspend fun markCompleted(id: String): Boolean {
+        val intId = id.toIntOrNull() ?: return false
+        return when (repo.completeBooking(intId)) {
+            is ApiResult.Success -> {
+                _bookings.value = _bookings.value.map {
+                    if (it.id == id) it.copy(rawStatus = STATUS_COMPLETED) else it
+                }
+                true
+            }
+            is ApiResult.Error -> false
         }
     }
 
@@ -121,7 +188,7 @@ class BookingViewModel(
             }
             when (val result = repo.bookingDetail(intId)) {
                 is ApiResult.Success -> {
-                    val item = result.data.data?.toBookingItem()?.withLocalAddress()
+                    val item = result.data.data?.toTimedItem()?.withLocalAddress()
                     _detail.value = BookingDetailState(
                         isLoading = false,
                         booking = item ?: cached,
@@ -168,7 +235,7 @@ class BookingViewModel(
                     if (dto == null) {
                         _submitError.value = "Something went wrong. Please try again."
                     } else {
-                        val item = dto.toBookingItem()
+                        val item = dto.toTimedItem()
                         if (address.isNotBlank()) localAddresses[item.id] = address
                         val withAddress = item.withLocalAddress()
                         _bookings.value = _bookings.value.filterNot { it.id == withAddress.id } + withAddress
@@ -220,6 +287,19 @@ class BookingViewModel(
         if (_isRating.value) return
         viewModelScope.launch {
             _isRating.value = true
+
+            // Rating only works on a completed booking. If the time has run out but the server
+            // doesn't know yet (the Completed tab is clock-based), mark it completed first.
+            val booking = getBookingById(id)
+            if (booking != null && !booking.rawStatus.equals(STATUS_COMPLETED, true)) {
+                if (!markCompleted(id)) {
+                    _messages.tryEmit("Couldn't complete this booking yet. Please try again.")
+                    _isRating.value = false
+                    onResult(false)
+                    return@launch
+                }
+            }
+
             when (val result = repo.rateBooking(intId, score, feedback)) {
                 is ApiResult.Success -> onResult(true)
                 is ApiResult.Error -> {
@@ -246,7 +326,7 @@ class BookingViewModel(
                 val intId = id.toIntOrNull() ?: return@launch
                 val result = repo.bookingDetail(intId)
                 if (result is ApiResult.Success) {
-                    booking = result.data.data?.toBookingItem()?.withLocalAddress()
+                    booking = result.data.data?.toTimedItem()?.withLocalAddress()
                 }
             }
             _lastCreatedBooking.value = booking

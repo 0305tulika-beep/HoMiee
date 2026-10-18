@@ -33,6 +33,9 @@ class BookingRepository {
     suspend fun cancelBooking(id: Int): ApiResult<BookingResponse> =
         safeApiCall { api.cancelBooking(id) }
 
+    suspend fun completeBooking(id: Int): ApiResult<BookingResponse> =
+        safeApiCall { api.completeBooking(id) }
+
     suspend fun rateBooking(id: Int, score: Int, feedback: String?): ApiResult<RatingResponse> =
         safeApiCall {
             api.rateBooking(id, RateBookingRequest(score, feedback?.trim()?.takeIf { it.isNotEmpty() }))

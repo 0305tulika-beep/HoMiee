@@ -33,6 +33,7 @@ import com.example.homiee.ui.components.NavTab
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
 import com.example.homiee.ui.theme.GreenDark
 import com.example.homiee.viewmodel.BookingViewModel
+import kotlinx.coroutines.delay
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 private val Teal   = Color(0xFFE0F2EF)
@@ -47,6 +48,9 @@ private val CancelRed     = Color(0xFFD32F2F)
 // Pending card palette
 private val PendingOrange = Color(0xFFF57C1F)
 private val PendingTint   = Color(0xFFFFF4E0)
+
+/** How often the clock is re-checked so bookings move between tabs on their own. */
+private const val CLOCK_TICK_MS = 30_000L
 
 // ── Data ───────────────────────────────────────────────────────────────────────
 enum class BookingTab { UPCOMING, ACTIVE, COMPLETED }
@@ -68,8 +72,21 @@ data class BookingItem(
     val durationLabel: String = "",
     val totalAmount: String = "",
     val specialInstructions: String = "",
-    val rawStatus: String = ""          // pending | confirmed | completed | rejected | cancelled
+    val rawStatus: String = "",         // pending | confirmed | completed | rejected | cancelled
+    val startMillis: Long = 0L,         // booking start, epoch millis (0 = unknown)
+    val endMillis: Long = 0L            // booking end, epoch millis (0 = unknown)
 )
+
+/** The tab this booking belongs in right now: confirmed ones move Upcoming -> Active -> Completed. */
+fun BookingItem.tabAt(nowMillis: Long): BookingTab = when {
+    rawStatus.equals("completed", true) -> BookingTab.COMPLETED
+    rawStatus.equals("confirmed", true) && startMillis > 0L && endMillis > startMillis -> when {
+        nowMillis >= endMillis   -> BookingTab.COMPLETED
+        nowMillis >= startMillis -> BookingTab.ACTIVE
+        else                     -> BookingTab.UPCOMING
+    }
+    else -> status
+}
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
 @Composable
@@ -100,8 +117,20 @@ fun BookingsScreen(
         viewModel.messages.collect { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
     }
 
-    val filteredBookings = remember(bookings, selectedTab) {
-        bookings.filter { it.status == selectedTab }
+    // Re-check the clock every 30s so bookings move between tabs on their own
+    val nowMillis by produceState(initialValue = System.currentTimeMillis()) {
+        while (true) {
+            delay(CLOCK_TICK_MS)
+            value = System.currentTimeMillis()
+        }
+    }
+
+    // Each booking gets the tab it belongs in RIGHT NOW (cards and badges read this status)
+    val timedBookings = remember(bookings, nowMillis) {
+        bookings.map { it.copy(status = it.tabAt(nowMillis)) }
+    }
+    val filteredBookings = remember(timedBookings, selectedTab) {
+        timedBookings.filter { it.status == selectedTab }
     }
 
     cancelTargetId?.let { id ->
@@ -187,8 +216,8 @@ fun BookingsScreen(
                         item {
                             Box(
                                 modifier         = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 60.dp),
+                                    .fillParentMaxHeight(0.6f)
+                                    .fillMaxWidth(),
                                 contentAlignment = Alignment.Center
                             ) {
                                 CircularProgressIndicator(color = GreenDark)

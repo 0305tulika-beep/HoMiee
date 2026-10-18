@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.homiee.R
 import com.example.homiee.ui.components.TransparentStatusBarWhiteNavBar
 import java.util.Locale
@@ -111,6 +112,13 @@ fun HelperProfileScreen(
     onViewReviews: (String) -> Unit = {}
 ) {
     TransparentStatusBarWhiteNavBar(lightStatusBarIcons = false)
+
+    // Real reviews for the REVIEWS card (same endpoint as the full reviews screen)
+    val reviewsViewModel: HelperReviewsViewModel = viewModel(key = "profile_reviews_$helperId")
+    val reviewsState by reviewsViewModel.state.collectAsState()
+    LaunchedEffect(helperId) {
+        if (helperId.isNotBlank()) reviewsViewModel.load(helperId)
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
 
@@ -412,6 +420,62 @@ fun HelperProfileScreen(
                                 color      = GreenText,
                                 fontWeight = FontWeight.Medium
                             )
+                        }
+                    }
+                }
+
+                // ── Reviews (real data from the ratings API) ─────────────────
+                item {
+                    val reviewTotal = if (reviewsState.isLoading) helper.reviewCount else reviewsState.count
+                    SectionCard(title = "REVIEWS ($reviewTotal)") {
+                        when {
+                            reviewsState.isLoading -> {
+                                Text("Loading reviews...", fontSize = 13.sp, color = TextSecondary)
+                            }
+
+                            reviewsState.errorMessage != null -> {
+                                Text(
+                                    text     = reviewsState.errorMessage ?: "",
+                                    fontSize = 13.sp,
+                                    color    = TextSecondary
+                                )
+                                TextButton(onClick = { reviewsViewModel.retry() }) {
+                                    Text("Retry", color = GreenPrimary, fontWeight = FontWeight.Bold)
+                                }
+                            }
+
+                            reviewsState.reviews.isEmpty() -> {
+                                Text("No reviews yet", fontSize = 13.sp, color = TextSecondary)
+                            }
+
+                            else -> {
+                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    reviewsState.reviews.take(3).forEach { review ->
+                                        Column {
+                                            Row(
+                                                modifier              = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment     = Alignment.CenterVertically
+                                            ) {
+                                                StarRow(review.score, 14.dp)
+                                                Text(review.timeAgo, fontSize = 11.sp, color = TextSecondary)
+                                            }
+                                            if (review.feedback.isNotBlank()) {
+                                                Spacer(Modifier.height(4.dp))
+                                                Text(
+                                                    text       = review.feedback,
+                                                    fontSize   = 13.sp,
+                                                    color      = TextSecondary,
+                                                    lineHeight = 18.sp
+                                                )
+                                            }
+                                        }
+                                    }
+                                    TextButton(onClick = { onViewReviews(helperId) }) {
+                                        Text("See all reviews", color = GreenPrimary, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
