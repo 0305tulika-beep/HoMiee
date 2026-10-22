@@ -1,6 +1,7 @@
 package com.example.homiee.navigation
 
 import android.app.Activity
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -10,6 +11,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -31,7 +34,6 @@ import com.example.homiee.viewmodel.RegisterViewModelFactory
 import com.example.homiee.viewmodel.navigation.ResidentOnboardingViewModel
 import java.net.URLDecoder
 import java.net.URLEncoder
-import android.widget.Toast
 
 object Routes {
     const val SPLASH             = "splash"
@@ -61,6 +63,7 @@ object Routes {
     // Booking flow
     const val NEW_BOOKING       = "new_booking/{helperId}/{helperName}"
     const val BOOKING_CONFIRMED = "booking_confirmed/{bookingId}"
+    const val BOOKING_DECLINED  = "booking_declined/{bookingId}"
     const val BOOKING_DETAILS   = "booking_details/{bookingId}"
 
     // Chat / Activity / Feedback
@@ -87,6 +90,7 @@ object Routes {
     fun helperProfileRoute(helperId: String)     = "helper_profile/$helperId"
     fun helperReviewsRoute(helperId: String)     = "helper_reviews/$helperId"
     fun bookingConfirmedRoute(bookingId: String) = "booking_confirmed/$bookingId"
+    fun bookingDeclinedRoute(bookingId: String)  = "booking_declined/$bookingId"
     fun bookingDetailsRoute(bookingId: String)   = "booking_details/$bookingId"
     fun chatRoute(threadId: String, helperName: String, service: String): String {
         val encodedName    = URLEncoder.encode(helperName, "UTF-8")
@@ -165,7 +169,32 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             BackHandler { (context as? Activity)?.finish() }
 
             val bookings by bookingViewModel.bookings.collectAsState()
-            LaunchedEffect(Unit) { bookingViewModel.refresh() }
+            val showConfirmation by bookingViewModel.showConfirmation.collectAsState()
+            val confirmedBooking by bookingViewModel.lastCreatedBooking.collectAsState()
+            val showDeclined by bookingViewModel.showDeclined.collectAsState()
+            val declinedBooking by bookingViewModel.declinedBooking.collectAsState()
+
+            // Refresh when Home appears AND whenever the app comes back from the background,
+            // so a booking the helper just accepted is picked up.
+            LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+                bookingViewModel.refresh()
+            }
+
+            // A booking the resident was waiting on has been accepted -> show the confirmation screen
+            LaunchedEffect(showConfirmation, confirmedBooking) {
+                val b = confirmedBooking
+                if (showConfirmation && b != null) {
+                    navController.navigate(Routes.bookingConfirmedRoute(b.id))
+                }
+            }
+
+            // A booking the resident was waiting on has been declined -> show the declined screen
+            LaunchedEffect(showDeclined, declinedBooking) {
+                val b = declinedBooking
+                if (showDeclined && b != null) {
+                    navController.navigate(Routes.bookingDeclinedRoute(b.id))
+                }
+            }
 
             ResidentHomeScreen(
                 recentActivities = bookings,
@@ -395,6 +424,7 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                 onNavItemClick = { navController.navigateMain(it) },
                 onMyReviewsClick = { navController.navigate(Routes.MY_REVIEWS) },
                 onLoggedOut = {
+                    bookingViewModel.clearSessionState()
                     navController.navigate(Routes.SIGNUP_ROUTE) {
                         popUpTo(0) { inclusive = true }
                     }
@@ -501,17 +531,71 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
             val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
             val booking = bookingViewModel.getBookingById(bookingId)
 
+            // Mark as seen as soon as the screen appears, so it can't pop up again
+            // even if the app is closed before a button is tapped
+            LaunchedEffect(bookingId) { bookingViewModel.dismissConfirmation(bookingId) }
+
+            // Back press also counts as "seen", otherwise Home would reopen this screen
+            BackHandler {
+                bookingViewModel.dismissConfirmation(bookingId)
+                navController.popBackStack()
+            }
+
             BookingConfirmationScreen(
                 bookingId = bookingId,
                 helperName = booking?.helperName ?: "Helper",
                 bookingDate = booking?.bookingDate ?: "",
                 bookingTime = booking?.bookingTime ?: "",
                 totalAmount = booking?.totalAmount?.takeIf { it.isNotBlank() }?.let { "₹$it" } ?: "",
-                onTimeout = {
-                    bookingViewModel.dismissConfirmation()
-                    navController.navigate(Routes.bookingDetailsRoute(bookingId)) {
+                // Nothing happens automatically: the resident decides what to do next
+                onViewHelperDetails = {
+                    val helperId = booking?.helperId.orEmpty()
+                    val target = if (helperId.isNotBlank() && helperId != "0")
+                        Routes.helperProfileRoute(helperId)
+                    else
+                        Routes.bookingDetailsRoute(bookingId)      // fallback if we have no helper id
+                    navController.navigate(target) {
                         popUpTo(Routes.BOOKING_CONFIRMED) { inclusive = true }
                     }
+                },
+                onBackToHome = {
+                    navController.navigateMain(Routes.HOME_RES)
+                }
+            )
+        }
+
+        // ── Booking Declined ──────────────────────────────────────────────────
+        composable(
+            route = Routes.BOOKING_DECLINED,
+            arguments = listOf(navArgument("bookingId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
+            // Declined bookings aren't in the normal bookings list, so read it from the ViewModel
+            val booking = bookingViewModel.declinedBooking.value?.takeIf { it.id == bookingId }
+                ?: bookingViewModel.getBookingById(bookingId)
+
+            // Mark as seen as soon as the screen appears, so it can't pop up again
+            LaunchedEffect(bookingId) { bookingViewModel.dismissDeclined(bookingId) }
+
+            // Back press also counts as "seen", otherwise Home would reopen this screen
+            BackHandler {
+                bookingViewModel.dismissDeclined(bookingId)
+                navController.popBackStack()
+            }
+
+            BookingDeclinedScreen(
+                bookingId = bookingId,
+                helperName = booking?.helperName ?: "Helper",
+                service = booking?.service ?: "",
+                bookingDate = booking?.bookingDate ?: "",
+                bookingTime = booking?.bookingTime ?: "",
+                onFindAnotherHelper = {
+                    bookingViewModel.dismissDeclined(bookingId)
+                    navController.navigateMain(Routes.SEARCH)
+                },
+                onBackToHome = {
+                    bookingViewModel.dismissDeclined(bookingId)
+                    navController.navigateMain(Routes.HOME_RES)
                 }
             )
         }
@@ -562,12 +646,19 @@ fun HomieeNavGraph(navController: NavHostController = rememberNavController()) {
                 navArgument("helperName") { type = NavType.StringType }
             )
         ) { backStackEntry ->
+            val bookingId = backStackEntry.arguments?.getString("bookingId").orEmpty()
             val helperName = URLDecoder.decode(
                 backStackEntry.arguments?.getString("helperName") ?: "", "UTF-8"
             )
+
             ActivityScreen(
+                bookingId = bookingId,
                 helperName = helperName,
-                onBack = { navController.popBackStack() }
+                viewModel = bookingViewModel,   // shared instance from the top of HomieeNavGraph
+                onBack = { navController.popBackStack() },
+                onRate = {
+                    navController.navigate(Routes.feedbackRoute(bookingId, helperName))
+                }
             )
         }
 

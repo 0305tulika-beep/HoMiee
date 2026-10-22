@@ -30,6 +30,11 @@ data class BookingDetailState(
 private const val STATUS_CONFIRMED = "confirmed"
 private const val STATUS_COMPLETED = "completed"
 
+// What the backend sends when a helper declines. CHANGE THESE to match your Django status values.
+private val DECLINED_STATUSES = setOf("rejected", "declined")
+
+private fun BookingItem.isDeclined(): Boolean = rawStatus.lowercase() in DECLINED_STATUSES
+
 /** "2026-07-12" + "10:30:00" -> epoch millis in the phone's time zone (0 if it can't be parsed). */
 private fun parseBookingMillis(date: String, time: String): Long = try {
     SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).parse("$date $time")?.time ?: 0L
@@ -94,12 +99,21 @@ class BookingViewModel(
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 4)
     val messages: SharedFlow<String> = _messages.asSharedFlow()
 
-    // ── Confirmation popup (existing behaviour) ──────────────────────────────
+    // ── Confirmation popup ───────────────────────────────────────────────────
+    // Set when a booking the resident was waiting on has been accepted by the helper.
     private val _lastCreatedBooking = MutableStateFlow<BookingItem?>(null)
     val lastCreatedBooking: StateFlow<BookingItem?> = _lastCreatedBooking.asStateFlow()
 
     private val _showConfirmation = MutableStateFlow(false)
     val showConfirmation: StateFlow<Boolean> = _showConfirmation.asStateFlow()
+
+    // ── Declined popup ───────────────────────────────────────────────────────
+    // Set when a booking the resident was waiting on has been declined by the helper.
+    private val _declinedBooking = MutableStateFlow<BookingItem?>(null)
+    val declinedBooking: StateFlow<BookingItem?> = _declinedBooking.asStateFlow()
+
+    private val _showDeclined = MutableStateFlow(false)
+    val showDeclined: StateFlow<Boolean> = _showDeclined.asStateFlow()
 
     // The create endpoint has no address field, so the GPS address is only kept on the device.
     private val localAddresses = mutableMapOf<String, String>()
@@ -120,27 +134,77 @@ class BookingViewModel(
 
             when (val result = repo.myBookings(null)) {
                 is ApiResult.Success -> {
-                    val previous = _bookings.value.associateBy { it.id }
-                    val fresh = result.data.data.orEmpty()
+                    val raw = result.data.data.orEmpty()
+                    val fresh = raw
                         .mapNotNull { it.toTimedItemOrNull() }
                         .map { it.withLocalAddress() }
+                    // The mapper skips rejected bookings (they don't belong in any tab), but we
+                    // still need them here to detect a decline. They are NOT added to the list.
+                    val declinedItems = raw
+                        .filter { it.status.lowercase() in DECLINED_STATUSES }
+                        .map { it.toTimedItem().withLocalAddress() }
                     _bookings.value = fresh
 
-                    // A booking that was pending and is now confirmed = helper accepted it
-                    val accepted = fresh.firstOrNull { b ->
-                        previous[b.id]?.isPending == true && !b.isPending
-                    }
-                    if (accepted != null) {
-                        _lastCreatedBooking.value = accepted
-                        _showConfirmation.value = true
-                        bookingPrefsManager.markBookingConfirmed(accepted.id)
-                    }
+                    android.util.Log.d(
+                        "BOOKING_POPUP",
+                        "server returned ${raw.size}, mapped ${fresh.size}, " +
+                                "server statuses=${raw.map { "${it.id}:${it.status}" }}"
+                    )
 
+                    detectAcceptedBooking(fresh, declinedItems)
                     completeFinishedBookings(fresh)
                 }
                 is ApiResult.Error -> _loadError.value = result.message
             }
             _isLoading.value = false
+        }
+    }
+
+    /**
+     * Compares the fresh list against the persisted "awaiting acceptance" ids.
+     *  - a booking that is pending now is remembered as awaiting
+     *  - an awaiting booking that the server now reports as confirmed = helper accepted it -> popup
+     *  - an awaiting booking that is gone, cancelled, rejected or already completed is forgotten
+     * Because the ids live in DataStore, this works even if the app was closed when the helper accepted.
+     */
+    private suspend fun detectAcceptedBooking(
+        fresh: List<BookingItem>,
+        declinedItems: List<BookingItem>
+    ) {
+        val awaiting = bookingPrefsManager.getAwaitingIds()
+        android.util.Log.d(
+            "BOOKING_POPUP",
+            "awaiting=$awaiting, app view=${fresh.map { "${it.id}:${it.rawStatus}:pending=${it.isPending}" }}"
+        )
+
+        val pendingIds = fresh.filter { it.isPending }.map { it.id }
+        bookingPrefsManager.addAwaiting(pendingIds)
+
+        val byId = (fresh + declinedItems).associateBy { it.id }
+        val stale = awaiting.filter { id ->
+            val b = byId[id]
+            b == null || (!b.isPending &&
+                    !b.rawStatus.equals(STATUS_CONFIRMED, true) &&
+                    !b.isDeclined())
+        }
+        bookingPrefsManager.removeAwaiting(stale)
+
+        val accepted = fresh.firstOrNull {
+            it.id in awaiting && it.rawStatus.equals(STATUS_CONFIRMED, true)
+        }
+        // Only one popup at a time; accepted takes priority, a declined one shows on a later refresh
+        if (_showConfirmation.value || _showDeclined.value) return
+
+        if (accepted != null) {
+            _lastCreatedBooking.value = accepted
+            _showConfirmation.value = true
+            return
+        }
+
+        val declined = declinedItems.firstOrNull { it.id in awaiting }
+        if (declined != null) {
+            _declinedBooking.value = declined
+            _showDeclined.value = true
         }
     }
 
@@ -239,7 +303,11 @@ class BookingViewModel(
                         if (address.isNotBlank()) localAddresses[item.id] = address
                         val withAddress = item.withLocalAddress()
                         _bookings.value = _bookings.value.filterNot { it.id == withAddress.id } + withAddress
-                        _lastCreatedBooking.value = withAddress
+
+                        // Remember it as "waiting for the helper" so we can pop the confirmation
+                        // later, even if the app is closed when the helper accepts.
+                        bookingPrefsManager.addAwaiting(listOf(withAddress.id))
+
                         onSuccess(withAddress.id)
                     }
                 }
@@ -259,6 +327,7 @@ class BookingViewModel(
             when (val result = repo.cancelBooking(intId)) {
                 is ApiResult.Success -> {
                     _bookings.value = _bookings.value.filterNot { it.id == id }
+                    bookingPrefsManager.removeAwaiting(id)
                     _messages.tryEmit("Booking cancelled")
                     onResult(true)
                 }
@@ -315,28 +384,32 @@ class BookingViewModel(
         _bookings.value.find { it.id == id }
             ?: _detail.value.booking?.takeIf { it.id == id }
 
-    // ── Called by Splash or Home to check if a confirmation popup is owed ──
-    fun checkPendingConfirmation() {
-        viewModelScope.launch {
-            if (!bookingPrefsManager.hasUnseenConfirmation()) return@launch
-            val id = bookingPrefsManager.getConfirmedBookingId() ?: return@launch
-
-            var booking: BookingItem? = getBookingById(id)
-            if (booking == null) {
-                val intId = id.toIntOrNull() ?: return@launch
-                val result = repo.bookingDetail(intId)
-                if (result is ApiResult.Success) {
-                    booking = result.data.data?.toTimedItem()?.withLocalAddress()
-                }
-            }
-            _lastCreatedBooking.value = booking
-            _showConfirmation.value = booking != null
-        }
+    /**
+     * Call when the confirmation screen is closed (timeout or back press).
+     * The id is removed first so the next refresh can't trigger the popup again.
+     */
+    fun dismissConfirmation(bookingId: String) {
+        // Flip the flag first: Home re-enters composition right after this and must not see "true"
+        _showConfirmation.value = false
+        viewModelScope.launch { bookingPrefsManager.removeAwaiting(bookingId) }
     }
 
-    fun dismissConfirmation() {
-        _showConfirmation.value = false
-        viewModelScope.launch { bookingPrefsManager.clearConfirmation() }
+    /** Call when the declined screen is closed (either button or back press). */
+    fun dismissDeclined(bookingId: String) {
+        _showDeclined.value = false
+        viewModelScope.launch { bookingPrefsManager.removeAwaiting(bookingId) }
+    }
+
+    /** Call on logout so the next account doesn't inherit this account's pending state. */
+    fun clearSessionState() {
+        viewModelScope.launch {
+            bookingPrefsManager.clearAll()
+            _bookings.value = emptyList()
+            _showConfirmation.value = false
+            _lastCreatedBooking.value = null
+            _showDeclined.value = false
+            _declinedBooking.value = null
+        }
     }
 }
 

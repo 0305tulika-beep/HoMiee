@@ -19,6 +19,7 @@ import com.example.homiee.ui.theme.HomieeTheme
 import com.example.homiee.ui.screens.Residentflow.HelperReviewsScreen
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.homiee.ui.screens.Residentflow.ActivityContent
 import com.example.homiee.viewmodel.BookingViewModel
 import com.example.homiee.viewmodel.BookingViewModelFactory
 import com.example.homiee.ui.screens.Residentflow.ServiceOption
@@ -75,11 +76,17 @@ private fun previewBookingViewModel(): BookingViewModel =
 }
 
 @Preview(showBackground = true, showSystemUi = true, name = "Activity Screen")
-@Composable fun ActivityScreenPreview() {
+@Composable
+private fun ActivityScreenPreview() {
     HomieeTheme {
-        ActivityScreen(
+        ActivityContent(
+            booking = null, // swap for a sample BookingItem, see below
             helperName = "Ramesh Kumar",
+            isLoading = false,
+            errorMessage = null,
             onBack = {},
+            onRate = {},
+            onJobEnded = {}
         )
     }
 }
@@ -136,14 +143,17 @@ fun FeedbackScreenSubmittingPreview() {
 }
 
 @Preview(showBackground = true, showSystemUi = true, name = "Booking Confirmation")
-@Composable fun BookingConfirmationScreenPreview() {
+@Composable
+fun BookingConfirmationScreenPreview() {
     HomieeTheme {
         BookingConfirmationScreen(
             bookingId = "hsdgfsgd",
             helperName = "Ramesh Kumar",
             bookingDate = "Jun 12, 2026",
             bookingTime = "10:00 AM",
-            onTimeout = {}
+            totalAmount = "₹2000",
+            onViewHelperDetails = {},
+            onBackToHome = {}
         )
     }
 }
